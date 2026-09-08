@@ -2,8 +2,7 @@
 (function () {
   'use strict';
 
-  let calendarMonth = new Date();
-  calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+  let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   let selectedDate = null;
 
   function isoDate(year, monthIndex, day) {
@@ -11,8 +10,8 @@
   }
 
   function parseIsoDate(value) {
-    const [y, m, d] = String(value || '').split('-').map(Number);
-    return new Date(y, (m || 1) - 1, d || 1);
+    const parts = String(value || '').split('-').map(Number);
+    return new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
   }
 
   function addDays(dateString, days) {
@@ -22,14 +21,15 @@
   }
 
   function monthTitle(date) {
-    const value = date.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
-    return value.charAt(0).toUpperCase() + value.slice(1);
+    const text = date.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
   function activeActionsForDepartment() {
     const company = getCompany();
+    if (!company) return [];
     const deptId = getActiveDeptId();
-    return (company?.actions || []).filter(action =>
+    return (company.actions || []).filter(action =>
       action.departmentId === deptId &&
       isDepartmentActive(action.departmentId) &&
       isEquipmentActive(action.equipmentId)
@@ -37,7 +37,9 @@
   }
 
   function persistedTasksForDate(dateString) {
-    return getDeptTasks(dateString);
+    const company = getCompany();
+    if (!company) return [];
+    return getDeptTasks(dateString) || [];
   }
 
   function projectedTasksForDate(dateString) {
@@ -62,9 +64,7 @@
       if (firstDue < today) firstDue = today;
       if (dateString < firstDue) return;
 
-      const due = parseIsoDate(firstDue);
-      const target = parseIsoDate(dateString);
-      const diffDays = Math.round((target - due) / 86400000);
+      const diffDays = Math.round((parseIsoDate(dateString) - parseIsoDate(firstDue)) / 86400000);
       if (diffDays < 0 || diffDays % frequency !== 0) return;
 
       const equipment = (company.equipment || []).find(item => item.id === action.equipmentId);
@@ -94,74 +94,83 @@
     return tasksForCalendarDate(dateString).length > 0;
   }
 
-  function injectCalendarUI() {
-    if (!document.getElementById('page-calendar')) {
-      const main = document.querySelector('#app-screen main');
-      if (main) {
-        const page = document.createElement('div');
-        page.id = 'page-calendar';
-        page.className = 'page hidden space-y-5 fade-in';
-        page.innerHTML = `
-          <div class="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Календарь</h1>
-              <p class="text-sm text-slate-400 mt-1">Плановые работы и обслуживание оборудования</p>
-            </div>
-            <button type="button" id="calendar-today-btn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-medium transition">Сегодня</button>
+  function ensureCalendarPage() {
+    if (document.getElementById('page-calendar')) return;
+    const main = document.querySelector('#app-screen main');
+    if (!main) return;
+
+    const page = document.createElement('div');
+    page.id = 'page-calendar';
+    page.className = 'page hidden space-y-5 fade-in';
+    page.innerHTML = `
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Календарь</h1>
+          <p class="text-sm text-slate-400 mt-1">Информационный календарь плановых работ и обслуживания</p>
+        </div>
+        <button type="button" id="calendar-today-btn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-medium transition">Сегодня</button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-5 items-start">
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm">
+          <div class="flex items-center justify-between gap-3 mb-5">
+            <button type="button" id="calendar-prev" aria-label="Предыдущий месяц" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xl transition">‹</button>
+            <div id="calendar-month-title" class="font-semibold text-center text-base sm:text-lg"></div>
+            <button type="button" id="calendar-next" aria-label="Следующий месяц" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xl transition">›</button>
           </div>
+          <div class="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-[11px] sm:text-xs font-medium text-slate-500 mb-2">
+            <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+          </div>
+          <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2"></div>
+          <div class="flex flex-wrap gap-x-5 gap-y-2 mt-5 pt-4 border-t border-slate-800 text-xs text-slate-400">
+            <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-white border border-slate-300"></span><span>Задач нет</span></div>
+            <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-sky-500 border border-sky-400"></span><span>Есть задача</span></div>
+            <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Сегодня</span></div>
+          </div>
+        </section>
 
-          <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-5 items-start">
-            <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm">
-              <div class="flex items-center justify-between gap-3 mb-5">
-                <button type="button" id="calendar-prev" aria-label="Предыдущий месяц" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xl transition">‹</button>
-                <div id="calendar-month-title" class="font-semibold text-center text-base sm:text-lg"></div>
-                <button type="button" id="calendar-next" aria-label="Следующий месяц" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xl transition">›</button>
-              </div>
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm lg:sticky lg:top-24">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 id="calendar-selected-title" class="font-semibold text-lg">Выберите дату</h2>
+              <p class="text-xs text-slate-500 mt-1">Информация о работах на выбранный день</p>
+            </div>
+            <span id="calendar-selected-count" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">0</span>
+          </div>
+          <div id="calendar-task-list" class="space-y-3"></div>
+          <div id="calendar-empty" class="text-center py-10 px-4 text-slate-500 text-sm">На выбранную дату задач нет</div>
+        </section>
+      </div>`;
+    main.appendChild(page);
+  }
 
-              <div class="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-[11px] sm:text-xs font-medium text-slate-500 mb-2">
-                <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
-              </div>
-              <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2"></div>
+  function ensureCalendarNav() {
+    if (document.getElementById('calendar-nav')) return;
+    const appScreen = document.getElementById('app-screen');
+    if (!appScreen) return;
 
-              <div class="flex flex-wrap gap-x-5 gap-y-2 mt-5 pt-4 border-t border-slate-800 text-xs text-slate-400">
-                <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-white border border-slate-300"></span><span>Задач нет</span></div>
-                <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-sky-500 border border-sky-400"></span><span>Есть задача</span></div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Сегодня</span></div>
-              </div>
-            </section>
+    const nav = document.createElement('nav');
+    nav.id = 'calendar-nav';
+    nav.className = 'bg-slate-900 border-b border-slate-800';
+    nav.style.display = 'block';
+    nav.innerHTML = `
+      <div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin">
+        <button type="button" data-page="calendar" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-400 hover:text-white transition">📅 Календарь</button>
+      </div>`;
 
-            <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm lg:sticky lg:top-24">
-              <div class="flex items-center justify-between gap-3 mb-4">
-                <div>
-                  <h2 id="calendar-selected-title" class="font-semibold text-lg">Выберите дату</h2>
-                  <p class="text-xs text-slate-500 mt-1">Список работ на выбранный день</p>
-                </div>
-                <span id="calendar-selected-count" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">0</span>
-              </div>
-              <div id="calendar-task-list" class="space-y-3"></div>
-              <div id="calendar-empty" class="text-center py-10 px-4 text-slate-500 text-sm">На выбранную дату задач нет</div>
-            </section>
-          </div>`;
-        main.appendChild(page);
-      }
-    }
-
-    // Calendar is a common navigation tab and must be visible for every authenticated role.
-    // The existing manager navigation remains role-restricted in app.js.
+    const deptBar = document.getElementById('dept-bar');
     const managerNav = document.getElementById('manager-nav');
-    if (managerNav && !document.getElementById('calendar-nav')) {
-      const calendarNav = document.createElement('nav');
-      calendarNav.id = 'calendar-nav';
-      calendarNav.className = 'bg-slate-900 border-b border-slate-800';
-      calendarNav.innerHTML = `
-        <div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin">
-          <button type="button" data-page="calendar" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-400 hover:text-white transition">📅 Календарь</button>
-        </div>`;
-      managerNav.parentNode.insertBefore(calendarNav, managerNav);
-      calendarNav.querySelector('[data-page="calendar"]')?.addEventListener('click', () => window.showPage('calendar'));
+    if (deptBar?.parentNode === appScreen) {
+      deptBar.insertAdjacentElement('afterend', nav);
+    } else if (managerNav?.parentNode === appScreen) {
+      managerNav.insertAdjacentElement('beforebegin', nav);
+    } else {
+      appScreen.appendChild(nav);
     }
 
-    bindCalendarControls();
+    nav.querySelector('[data-page="calendar"]')?.addEventListener('click', () => {
+      if (typeof window.showPage === 'function') window.showPage('calendar');
+    });
   }
 
   function bindCalendarControls() {
@@ -185,6 +194,12 @@
       selectedDate = todayStr();
       renderCalendar();
     });
+  }
+
+  function injectCalendarUI() {
+    ensureCalendarPage();
+    ensureCalendarNav();
+    bindCalendarControls();
   }
 
   function renderCalendar() {
@@ -221,8 +236,7 @@
         'aspect-square min-h-[42px] rounded-xl border font-semibold text-sm transition flex items-center justify-center relative',
         hasTask ? 'bg-sky-500 border-sky-400 text-white hover:bg-sky-400' : 'bg-white border-slate-300 text-slate-900 hover:bg-slate-100',
         isSelected ? 'ring-2 ring-primary-400 ring-offset-2 ring-offset-slate-900' : '',
-        isToday && !hasTask ? 'after:absolute after:bottom-1 after:w-1.5 after:h-1.5 after:rounded-full after:bg-amber-400' : '',
-        isToday && hasTask ? 'after:absolute after:bottom-1 after:w-1.5 after:h-1.5 after:rounded-full after:bg-amber-300' : ''
+        isToday ? 'after:absolute after:bottom-1 after:w-1.5 after:h-1.5 after:rounded-full after:bg-amber-300' : ''
       ].join(' ');
       button.textContent = String(day);
       button.addEventListener('click', () => {
@@ -260,14 +274,13 @@
     list.innerHTML = tasks.map(task => {
       const isDone = task.status === 'done';
       const isPlanned = task._forecast === true;
-      const canComplete = !isDone && !isPlanned && task.date === todayStr();
       const badge = isDone
         ? '<span class="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400">✓ Выполнено</span>'
         : isPlanned
           ? '<span class="text-[11px] px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-300">Запланировано</span>'
           : '<span class="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400">Ожидает</span>';
 
-      return `<div class="bg-slate-800/60 border border-slate-700 rounded-xl p-4 hover:border-slate-600 transition ${isDone ? 'opacity-60' : ''}">
+      return `<div class="bg-slate-800/60 border border-slate-700 rounded-xl p-4 ${isDone ? 'opacity-60' : ''}">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 flex-shrink-0 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center text-lg">🔧</div>
           <div class="min-w-0 flex-1">
@@ -275,10 +288,7 @@
             <div class="text-sm text-slate-400 mt-1">${esc(task.equipName || '—')}</div>
             ${task.equipCode ? `<div class="text-[11px] text-slate-500 mt-1">${esc(task.equipCode)}</div>` : ''}
             ${task.description ? `<div class="text-xs text-slate-500 mt-2 leading-relaxed">${esc(task.description)}</div>` : ''}
-            <div class="flex items-center gap-2 flex-wrap mt-3">
-              ${badge}
-              ${canComplete ? `<button type="button" onclick="openCompleteModal('${task.id}')" class="bg-primary-600 hover:bg-primary-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition">Выполнить</button>` : ''}
-            </div>
+            <div class="mt-3">${badge}</div>
           </div>
         </div>
       </div>`;
@@ -286,6 +296,7 @@
   }
 
   function showCalendarPage() {
+    injectCalendarUI();
     document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
     document.getElementById('page-calendar')?.classList.remove('hidden');
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -298,8 +309,6 @@
     renderCalendar();
   }
 
-  injectCalendarUI();
-
   const originalShowPage = window.showPage;
   if (typeof originalShowPage === 'function') {
     window.showPage = function (page) {
@@ -311,5 +320,6 @@
     };
   }
 
+  injectCalendarUI();
   window.renderCalendar = renderCalendar;
 })();
