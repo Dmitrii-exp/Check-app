@@ -87,9 +87,7 @@
   }
 
   function tasksForCalendarDate(dateString) {
-    const actual = persistedTasksForDate(dateString);
-    const forecast = projectedTasksForDate(dateString);
-    return [...actual, ...forecast];
+    return [...persistedTasksForDate(dateString), ...projectedTasksForDate(dateString)];
   }
 
   function hasCalendarTask(dateString) {
@@ -106,37 +104,43 @@
         page.innerHTML = `
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h1 class="text-2xl font-bold">Календарь задач</h1>
-              <p class="text-sm text-slate-400 mt-1">Нажмите на дату, чтобы посмотреть работы.</p>
+              <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Календарь</h1>
+              <p class="text-sm text-slate-400 mt-1">Плановые работы и обслуживание оборудования</p>
             </div>
-            <button type="button" id="calendar-today-btn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-medium">Сегодня</button>
+            <button type="button" id="calendar-today-btn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-medium transition">Сегодня</button>
           </div>
 
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
-            <div class="flex items-center justify-between gap-3 mb-4">
-              <button type="button" id="calendar-prev" aria-label="Предыдущий месяц" class="w-11 h-11 rounded-xl bg-slate-800 hover:bg-slate-700 text-xl">‹</button>
-              <div id="calendar-month-title" class="font-semibold text-center"></div>
-              <button type="button" id="calendar-next" aria-label="Следующий месяц" class="w-11 h-11 rounded-xl bg-slate-800 hover:bg-slate-700 text-xl">›</button>
-            </div>
+          <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-5 items-start">
+            <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm">
+              <div class="flex items-center justify-between gap-3 mb-5">
+                <button type="button" id="calendar-prev" aria-label="Предыдущий месяц" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xl transition">‹</button>
+                <div id="calendar-month-title" class="font-semibold text-center text-base sm:text-lg"></div>
+                <button type="button" id="calendar-next" aria-label="Следующий месяц" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xl transition">›</button>
+              </div>
 
-            <div class="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-xs text-slate-500 mb-2">
-              <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
-            </div>
-            <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2"></div>
+              <div class="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-[11px] sm:text-xs font-medium text-slate-500 mb-2">
+                <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+              </div>
+              <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2"></div>
 
-            <div class="flex flex-wrap gap-4 mt-5 text-xs text-slate-400">
-              <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-white border border-slate-300"></span><span>задач нет</span></div>
-              <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-sky-500 border border-sky-400"></span><span>есть задача</span></div>
-            </div>
-          </div>
+              <div class="flex flex-wrap gap-x-5 gap-y-2 mt-5 pt-4 border-t border-slate-800 text-xs text-slate-400">
+                <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-white border border-slate-300"></span><span>Задач нет</span></div>
+                <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-sky-500 border border-sky-400"></span><span>Есть задача</span></div>
+                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Сегодня</span></div>
+              </div>
+            </section>
 
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
-            <div class="flex items-center justify-between gap-3 mb-4">
-              <h2 id="calendar-selected-title" class="font-semibold">Выберите дату</h2>
-              <span id="calendar-selected-count" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">0</span>
-            </div>
-            <div id="calendar-task-list" class="space-y-3"></div>
-            <div id="calendar-empty" class="text-center py-8 text-slate-500 text-sm">На выбранную дату задач нет</div>
+            <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm lg:sticky lg:top-24">
+              <div class="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <h2 id="calendar-selected-title" class="font-semibold text-lg">Выберите дату</h2>
+                  <p class="text-xs text-slate-500 mt-1">Список работ на выбранный день</p>
+                </div>
+                <span id="calendar-selected-count" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">0</span>
+              </div>
+              <div id="calendar-task-list" class="space-y-3"></div>
+              <div id="calendar-empty" class="text-center py-10 px-4 text-slate-500 text-sm">На выбранную дату задач нет</div>
+            </section>
           </div>`;
         main.appendChild(page);
       }
@@ -151,7 +155,7 @@
       calendarNav.className = 'bg-slate-900 border-b border-slate-800';
       calendarNav.innerHTML = `
         <div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin">
-          <button type="button" data-page="calendar" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-400 hover:text-white">📅 Календарь</button>
+          <button type="button" data-page="calendar" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-400 hover:text-white transition">📅 Календарь</button>
         </div>`;
       managerNav.parentNode.insertBefore(calendarNav, managerNav);
       calendarNav.querySelector('[data-page="calendar"]')?.addEventListener('click', () => window.showPage('calendar'));
@@ -200,7 +204,7 @@
 
     for (let i = 0; i < firstWeekday; i++) {
       const spacer = document.createElement('div');
-      spacer.className = 'aspect-square';
+      spacer.className = 'aspect-square min-h-[42px]';
       grid.appendChild(spacer);
     }
 
@@ -217,7 +221,8 @@
         'aspect-square min-h-[42px] rounded-xl border font-semibold text-sm transition flex items-center justify-center relative',
         hasTask ? 'bg-sky-500 border-sky-400 text-white hover:bg-sky-400' : 'bg-white border-slate-300 text-slate-900 hover:bg-slate-100',
         isSelected ? 'ring-2 ring-primary-400 ring-offset-2 ring-offset-slate-900' : '',
-        isToday ? 'after:absolute after:bottom-1 after:w-1.5 after:h-1.5 after:rounded-full after:bg-amber-400' : ''
+        isToday && !hasTask ? 'after:absolute after:bottom-1 after:w-1.5 after:h-1.5 after:rounded-full after:bg-amber-400' : '',
+        isToday && hasTask ? 'after:absolute after:bottom-1 after:w-1.5 after:h-1.5 after:rounded-full after:bg-amber-300' : ''
       ].join(' ');
       button.textContent = String(day);
       button.addEventListener('click', () => {
@@ -257,21 +262,23 @@
       const isPlanned = task._forecast === true;
       const canComplete = !isDone && !isPlanned && task.date === todayStr();
       const badge = isDone
-        ? '<span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400">✓ Выполнено</span>'
+        ? '<span class="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400">✓ Выполнено</span>'
         : isPlanned
-          ? '<span class="text-xs px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-300">Запланировано</span>'
-          : '<span class="text-xs px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400">Ожидает</span>';
+          ? '<span class="text-[11px] px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-300">Запланировано</span>'
+          : '<span class="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400">Ожидает</span>';
 
-      return `<div class="bg-slate-800/60 border border-slate-700 rounded-xl p-4 ${isDone ? 'opacity-60' : ''}">
-        <div class="flex items-start justify-between gap-3 flex-wrap">
+      return `<div class="bg-slate-800/60 border border-slate-700 rounded-xl p-4 hover:border-slate-600 transition ${isDone ? 'opacity-60' : ''}">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 flex-shrink-0 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center text-lg">🔧</div>
           <div class="min-w-0 flex-1">
-            <div class="font-semibold">${esc(task.title)}</div>
-            <div class="text-sm text-slate-400 mt-0.5">${esc(task.equipName || '—')}</div>
-            ${task.description ? `<div class="text-xs text-slate-500 mt-2">${esc(task.description)}</div>` : ''}
-          </div>
-          <div class="flex items-center gap-2 flex-wrap">
-            ${badge}
-            ${canComplete ? `<button type="button" onclick="openCompleteModal('${task.id}')" class="bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-4 py-2 rounded-xl">Выполнить</button>` : ''}
+            <div class="font-semibold leading-snug">${esc(task.title)}</div>
+            <div class="text-sm text-slate-400 mt-1">${esc(task.equipName || '—')}</div>
+            ${task.equipCode ? `<div class="text-[11px] text-slate-500 mt-1">${esc(task.equipCode)}</div>` : ''}
+            ${task.description ? `<div class="text-xs text-slate-500 mt-2 leading-relaxed">${esc(task.description)}</div>` : ''}
+            <div class="flex items-center gap-2 flex-wrap mt-3">
+              ${badge}
+              ${canComplete ? `<button type="button" onclick="openCompleteModal('${task.id}')" class="bg-primary-600 hover:bg-primary-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition">Выполнить</button>` : ''}
+            </div>
           </div>
         </div>
       </div>`;
