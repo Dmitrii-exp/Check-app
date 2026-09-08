@@ -6,3 +6,6 @@
     input[type="file"] { display: none; }
     .scroll-thin::-webkit-scrollbar { width: 4px; }
     .scroll-thin::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
+
+    /* Calendar is informational: actions are performed from Today/Tasks, not here. */
+    #calendar-task-list button { display: none !important; }
