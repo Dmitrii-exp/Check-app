@@ -116,3 +116,32 @@
   setTimeout(boot,100); setTimeout(boot,500); setTimeout(boot,1500); setInterval(boot,2000);
   window.openCalendar=open;
 })();
+
+// Auth hotfix: Supabase's current JavaScript API verifies email signup OTPs with type:'email'.
+// The app previously sent the correct signup confirmation email but attempted verification with
+// type:'signup', which can produce an OTP error. Keep the existing auth flow intact and translate
+// only that legacy verification type at the Supabase client boundary.
+(function () {
+  'use strict';
+  function installOtpFix() {
+    try {
+      if (typeof supabaseClient === 'undefined' || !supabaseClient?.auth) return;
+      const auth = supabaseClient.auth;
+      if (auth.__checkAppOtpFixInstalled) return;
+      const originalVerifyOtp = auth.verifyOtp.bind(auth);
+      auth.verifyOtp = function (params) {
+        if (params && params.type === 'signup' && params.email && params.token) {
+          return originalVerifyOtp({ ...params, type: 'email' });
+        }
+        return originalVerifyOtp(params);
+      };
+      auth.__checkAppOtpFixInstalled = true;
+      console.log('[Check App] Email OTP verification compatibility fix installed');
+    } catch (e) {
+      console.error('[Check App] OTP compatibility fix failed', e);
+    }
+  }
+  installOtpFix();
+  setTimeout(installOtpFix, 100);
+  setTimeout(installOtpFix, 500);
+})();
