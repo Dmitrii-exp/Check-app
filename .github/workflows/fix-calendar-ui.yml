@@ -1,0 +1,51 @@
+name: Fix calendar UI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch calendar module
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('js/calendar.js')
+          s = p.read_text(encoding='utf-8')
+
+          old = r'''    // Calendar is a common navigation tab and must be visible for every authenticated role.\n    // The existing manager navigation remains role-restricted in app.js.\n    const managerNav = document.getElementById('manager-nav');\n    if (managerNav && !document.getElementById('calendar-nav')) {\n      const calendarNav = document.createElement('nav');\n      calendarNav.id = 'calendar-nav';\n      calendarNav.className = 'bg-slate-900 border-b border-slate-800';\n      calendarNav.innerHTML = `\n        <div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin">\n          <button type="button" data-page="calendar" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-400 hover:text-white transition">📅 Календарь</button>\n        </div>`;\n      managerNav.parentNode.insertBefore(calendarNav, managerNav);\n      calendarNav.querySelector('[data-page="calendar"]')?.addEventListener('click', () => window.showPage('calendar'));\n    }\n\n    bindCalendarControls();'''
+
+          new = r'''    // Calendar is a common navigation tab. Do not depend on manager-nav: that\n    // navigation is hidden for employees/responsibles. The calendar must be visible\n    // for every authenticated role, so place it directly inside app-screen.\n    const appScreen = document.getElementById('app-screen');\n    if (appScreen && !document.getElementById('calendar-nav')) {\n      const calendarNav = document.createElement('nav');\n      calendarNav.id = 'calendar-nav';\n      calendarNav.className = 'bg-slate-900 border-b border-slate-800';\n      calendarNav.style.display = 'block';\n      calendarNav.innerHTML = `\n        <div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin">\n          <button type="button" data-page="calendar" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-400 hover:text-white transition">📅 Календарь</button>\n        </div>`;\n      const deptBar = document.getElementById('dept-bar');\n      const managerNav = document.getElementById('manager-nav');\n      if (deptBar?.parentNode === appScreen) {\n        deptBar.insertAdjacentElement('afterend', calendarNav);\n      } else if (managerNav?.parentNode === appScreen) {\n        managerNav.insertAdjacentElement('beforebegin', calendarNav);\n      } else {\n        appScreen.appendChild(calendarNav);\n      }\n      calendarNav.querySelector('[data-page="calendar"]')?.addEventListener('click', () => window.showPage('calendar'));\n    }\n\n    bindCalendarControls();'''
+
+          if old not in s:
+              raise SystemExit('Expected calendar navigation block was not found')
+          s = s.replace(old, new, 1)
+
+          s = s.replace("      const canComplete = !isDone && !isPlanned && task.date === todayStr();\n", "")
+          s = re.sub(r"\n\s*\$\{canComplete \? `\\<button type=\\\"button\\\" onclick=\\\"openCompleteModal\('[^`]+?\\` : ''\}\", "", s)
+          s = s.replace("              ${canComplete ? `<button type=\"button\" onclick=\"openCompleteModal('${task.id}')\" class=\"bg-primary-600 hover:bg-primary-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition\">Выполнить</button>` : ''}\n", "")
+
+          old_boot = "  injectCalendarUI();\n\n  const originalShowPage = window.showPage;"
+          new_boot = "  function bootCalendar() {\n    injectCalendarUI();\n  }\n\n  if (document.readyState === 'loading') {\n    document.addEventListener('DOMContentLoaded', bootCalendar, { once: true });\n  } else {\n    bootCalendar();\n  }\n  setTimeout(bootCalendar, 0);\n\n  const originalShowPage = window.showPage;"
+          if old_boot not in s:
+              raise SystemExit('Expected calendar bootstrap block was not found')
+          s = s.replace(old_boot, new_boot, 1)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit patched calendar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/calendar.js
+          git diff --cached --quiet || git commit -m "Fix calendar visibility for all roles"
+          git push
