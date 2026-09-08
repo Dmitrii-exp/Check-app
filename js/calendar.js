@@ -45,7 +45,7 @@
     if(!nav){
       nav=document.createElement('nav'); nav.id='calendar-nav';
       nav.className='bg-slate-900 border-b border-slate-800';
-      nav.innerHTML='<div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin"><button type="button" data-calendar-open class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white transition">📅 Календарь</button></div>';
+      nav.innerHTML='<div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin"><button type="button" data-calendar-open class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-400 hover:text-white transition">📅 Календарь</button></div>';
       const deptBar=document.getElementById('dept-bar');
       const manager=document.getElementById('manager-nav');
       if(deptBar?.parentNode===app) deptBar.insertAdjacentElement('afterend',nav);
@@ -54,6 +54,18 @@
     }
     const b=nav.querySelector('[data-calendar-open]');
     if(b && !b.dataset.bound){ b.dataset.bound='1'; b.addEventListener('click',open); }
+  }
+
+  function ensureFloatingAccess(){
+    let b=document.getElementById('calendar-floating-access');
+    if(!b){
+      b=document.createElement('button'); b.id='calendar-floating-access'; b.type='button'; b.textContent='📅 Календарь';
+      b.setAttribute('aria-label','Открыть календарь');
+      b.style.cssText='position:fixed;right:18px;bottom:18px;z-index:9999;padding:12px 18px;border-radius:14px;border:1px solid #38bdf8;background:#0ea5e9;color:#fff;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:pointer;display:none;';
+      b.onclick=open; document.body.appendChild(b);
+    }
+    const app=document.getElementById('app-screen');
+    b.style.display=app && !app.classList.contains('hidden') ? 'block' : 'none';
   }
 
   function ensurePage(){
@@ -75,7 +87,7 @@
   }
 
   function render(){
-    ensurePage(); ensureNav(); bind();
+    ensurePage(); ensureNav(); ensureFloatingAccess(); bind();
     const grid=document.getElementById('calendar-grid'), mt=document.getElementById('calendar-month-title'); if(!grid||!mt) return;
     mt.textContent=title(month); grid.innerHTML='';
     const y=month.getFullYear(),m=month.getMonth(), days=new Date(y,m+1,0).getDate(), first=(new Date(y,m,1).getDay()+6)%7, today=todayStr();
@@ -88,10 +100,17 @@
   }
 
   function open(){
-    ensurePage(); ensureNav(); document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden')); document.getElementById('page-calendar')?.classList.remove('hidden'); render();
+    ensurePage(); ensureNav(); ensureFloatingAccess(); document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden')); document.getElementById('page-calendar')?.classList.remove('hidden'); render();
   }
 
-  function boot(){ ensurePage(); ensureNav(); const old=window.showPage; if(typeof old==='function'&&!old.__calendarWrapped){ const wrap=function(page){if(page==='calendar'){open();return;}return old(page);}; wrap.__calendarWrapped=true; window.showPage=wrap; } }
+  function boot(){
+    ensurePage(); ensureNav(); ensureFloatingAccess();
+    const old=window.showPage;
+    if(typeof old==='function'&&!old.__calendarWrapped){
+      const wrap=function(page){if(page==='calendar'){open();return;}return old(page);};
+      wrap.__calendarWrapped=true; window.showPage=wrap;
+    }
+  }
   document.addEventListener('DOMContentLoaded',boot);
   boot();
   setTimeout(boot,100); setTimeout(boot,500); setTimeout(boot,1500); setInterval(boot,2000);
