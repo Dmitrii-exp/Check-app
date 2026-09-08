@@ -142,30 +142,19 @@
       }
     }
 
-    const nav = document.querySelector('#manager-nav > div');
-    if (nav && !document.querySelector('.nav-btn[data-page="calendar"]')) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.dataset.page = 'calendar';
-      btn.className = 'nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white';
-      btn.textContent = 'Календарь';
-      btn.addEventListener('click', () => window.showPage('calendar'));
-      const todayBtn = nav.querySelector('.nav-btn[data-page="today"]');
-      if (todayBtn?.nextSibling) nav.insertBefore(btn, todayBtn.nextSibling);
-      else nav.appendChild(btn);
-    }
-
-    const todayPage = document.getElementById('page-today');
-    if (todayPage && !document.getElementById('open-calendar-btn')) {
-      const shortcut = document.createElement('button');
-      shortcut.id = 'open-calendar-btn';
-      shortcut.type = 'button';
-      shortcut.className = 'w-full sm:w-auto bg-sky-500/15 border border-sky-500/30 text-sky-300 hover:bg-sky-500/20 font-medium px-4 py-3 rounded-xl transition';
-      shortcut.textContent = '📅 Открыть календарь задач';
-      shortcut.addEventListener('click', () => window.showPage('calendar'));
-      const label = document.getElementById('today-dept-label');
-      if (label?.nextSibling) todayPage.insertBefore(shortcut, label.nextSibling);
-      else todayPage.appendChild(shortcut);
+    // Calendar is a common navigation tab and must be visible for every authenticated role.
+    // The existing manager navigation remains role-restricted in app.js.
+    const managerNav = document.getElementById('manager-nav');
+    if (managerNav && !document.getElementById('calendar-nav')) {
+      const calendarNav = document.createElement('nav');
+      calendarNav.id = 'calendar-nav';
+      calendarNav.className = 'bg-slate-900 border-b border-slate-800';
+      calendarNav.innerHTML = `
+        <div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin">
+          <button type="button" data-page="calendar" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-400 hover:text-white">📅 Календарь</button>
+        </div>`;
+      managerNav.parentNode.insertBefore(calendarNav, managerNav);
+      calendarNav.querySelector('[data-page="calendar"]')?.addEventListener('click', () => window.showPage('calendar'));
     }
 
     bindCalendarControls();
