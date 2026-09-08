@@ -1,0 +1,87 @@
+name: Add static calendar shell
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add calendar shell
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          nav_marker = '    <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-6">'
+          nav = '''    <nav id="calendar-nav" class="bg-slate-900 border-b border-slate-800">
+        <div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin">
+          <button type="button" onclick="showPage('calendar')" data-page="calendar" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white transition">📅 Календарь</button>
+        </div>
+      </nav>
+
+'''
+          if 'id="calendar-nav"' not in s:
+              if nav_marker not in s:
+                  raise SystemExit('main marker not found')
+              s = s.replace(nav_marker, nav + nav_marker, 1)
+          page_marker = '      <div id="page-dashboard" class="page hidden space-y-6 fade-in">'
+          page = '''      <div id="page-calendar" class="page hidden space-y-5 fade-in">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Календарь</h1>
+            <p class="text-sm text-slate-400 mt-1">Информационный календарь плановых работ и обслуживания</p>
+          </div>
+          <button type="button" id="calendar-today-btn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-medium transition">Сегодня</button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-5 items-start">
+          <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-3 mb-5">
+              <button type="button" id="calendar-prev" aria-label="Предыдущий месяц" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xl transition">‹</button>
+              <div id="calendar-month-title" class="font-semibold text-center text-base sm:text-lg"></div>
+              <button type="button" id="calendar-next" aria-label="Следующий месяц" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xl transition">›</button>
+            </div>
+            <div class="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-[11px] sm:text-xs font-medium text-slate-500 mb-2">
+              <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+            </div>
+            <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2"></div>
+            <div class="flex flex-wrap gap-x-5 gap-y-2 mt-5 pt-4 border-t border-slate-800 text-xs text-slate-400">
+              <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-white border border-slate-300"></span><span>Задач нет</span></div>
+              <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-sky-500 border border-sky-400"></span><span>Есть задача</span></div>
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Сегодня</span></div>
+            </div>
+          </section>
+          <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm lg:sticky lg:top-24">
+            <div class="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 id="calendar-selected-title" class="font-semibold text-lg">Выберите дату</h2>
+                <p class="text-xs text-slate-500 mt-1">Информация о работах на выбранный день</p>
+              </div>
+              <span id="calendar-selected-count" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">0</span>
+            </div>
+            <div id="calendar-task-list" class="space-y-3"></div>
+            <div id="calendar-empty" class="text-center py-10 px-4 text-slate-500 text-sm">На выбранную дату задач нет</div>
+          </section>
+        </div>
+      </div>
+
+'''
+          if 'id="page-calendar"' not in s:
+              if page_marker not in s:
+                  raise SystemExit('dashboard marker not found')
+              s = s.replace(page_marker, page + page_marker, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Add calendar directly to app UI"
+          git push
