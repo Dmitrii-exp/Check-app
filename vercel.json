@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": false,
+  "buildCommand": "npm run build:css && npm run prepare:production",
   "headers": [
     {
       "source": "/js/(.*)",
