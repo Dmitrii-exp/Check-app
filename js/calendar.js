@@ -120,18 +120,44 @@
 // Auth hotfix: Supabase's current JavaScript API verifies email signup OTPs with type:'email'.
 (function () {
   'use strict';
+  const PUBLIC_AUTH_URL = 'https://www.app-check.ru/';
+
   function installOtpFix() {
     try {
       if (typeof supabaseClient === 'undefined' || !supabaseClient?.auth) return;
       const auth = supabaseClient.auth;
       if (auth.__checkAppOtpFixInstalled) return;
       const originalVerifyOtp = auth.verifyOtp.bind(auth);
+      const originalSignUp = auth.signUp.bind(auth);
+      const originalResend = auth.resend.bind(auth);
+      const originalResetPasswordForEmail = auth.resetPasswordForEmail.bind(auth);
+
       auth.verifyOtp = function (params) {
         if (params && params.type === 'signup' && params.email && params.token) return originalVerifyOtp({ ...params, type: 'email' });
         return originalVerifyOtp(params);
       };
+
+      // Always send production auth links to the real Check App domain.
+      // This prevents local development URLs such as http://localhost:3000/
+      // from being embedded into confirmation/recovery emails.
+      auth.signUp = function (credentials) {
+        const next = { ...(credentials || {}), options: { ...((credentials || {}).options || {}), emailRedirectTo: PUBLIC_AUTH_URL } };
+        return originalSignUp(next);
+      };
+
+      auth.resend = function (credentials) {
+        if (credentials?.type === 'signup') {
+          return originalResend({ ...credentials, options: { ...(credentials.options || {}), emailRedirectTo: PUBLIC_AUTH_URL } });
+        }
+        return originalResend(credentials);
+      };
+
+      auth.resetPasswordForEmail = function (email, options) {
+        return originalResetPasswordForEmail(email, { ...(options || {}), redirectTo: PUBLIC_AUTH_URL });
+      };
+
       auth.__checkAppOtpFixInstalled = true;
-    } catch (e) { console.error('[Check App] OTP compatibility fix failed', e); }
+    } catch (e) { console.error('[Check App] Auth compatibility fix failed', e); }
   }
   installOtpFix(); setTimeout(installOtpFix,100); setTimeout(installOtpFix,500);
 })();
@@ -140,6 +166,8 @@
 (function () {
   'use strict';
   let recoveryMode = false;
+  let resetCooldownUntil = 0;
+  let signupResendCooldownUntil = 0;
   function ensureButton() {
     const form = document.getElementById('form-login');
     if (!form || document.getElementById('forgot-password-btn')) return;
@@ -149,12 +177,26 @@
     b.onclick = openResetModal;
     form.appendChild(b);
   }
+  function ensureSignupResendButtons() {
+    const configs = [
+      { formId:'form-register', buttonId:'resend-signup-email-btn', inputId:'reg-email', mode:'register' },
+      { formId:'form-invite', buttonId:'resend-invite-email-btn', inputId:'invite-email', mode:'invite' }
+    ];
+    configs.forEach(({formId,buttonId,inputId,mode})=>{
+      const form=document.getElementById(formId); if(!form || document.getElementById(buttonId)) return;
+      const b=document.createElement('button'); b.id=buttonId; b.type='button'; b.textContent='Не получили письмо? Отправить ещё раз';
+      b.className='w-full py-2 text-sm text-primary-400 hover:text-primary-300 transition';
+      b.onclick=()=>resendSignupConfirmation(mode,inputId,b);
+      form.appendChild(b);
+    });
+  }
   function ensureModal() {
     if (document.getElementById('password-reset-modal')) return;
     const d = document.createElement('div');
     d.id='password-reset-modal'; d.className='fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-[200] hidden items-center justify-center p-4';
-    d.innerHTML=`<div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl"><div class="text-center"><div id="password-reset-title" class="text-xl font-bold text-white">Восстановление пароля</div><p id="password-reset-message" class="text-slate-400 text-sm mt-2">Введите email, на который отправить ссылку для восстановления.</p></div><div id="password-reset-email-wrap" class="mt-6"><label class="block text-xs font-medium text-slate-400 mb-1.5">Email</label><input id="password-reset-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div id="password-reset-password-wrap" class="hidden mt-6 space-y-3"><div><label class="block text-xs font-medium text-slate-400 mb-1.5">Новый пароль</label><input id="password-reset-password" type="password" placeholder="минимум 8 символов" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div><label class="block text-xs font-medium text-slate-400 mb-1.5">Повторите пароль</label><input id="password-reset-password2" type="password" placeholder="повторите пароль" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div></div><p id="password-reset-status" class="text-sm text-center mt-4 min-h-[20px]"></p><div class="grid grid-cols-2 gap-3 mt-5"><button type="button" onclick="closePasswordResetModal()" class="py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition">Отмена</button><button id="password-reset-submit" type="button" onclick="submitPasswordReset()" class="py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold transition">Отправить</button></div></div>`;
+    d.innerHTML=`<div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl"><div class="text-center"><div id="password-reset-title" class="text-xl font-bold text-white">Восстановление пароля</div><p id="password-reset-message" class="text-slate-400 text-sm mt-2">Введите email, на который отправить ссылку для восстановления.</p></div><div id="password-reset-email-wrap" class="mt-6"><label class="block text-xs font-medium text-slate-400 mb-1.5">Email</label><input id="password-reset-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div id="password-reset-password-wrap" class="hidden mt-6 space-y-3"><div><label class="block text-xs font-medium text-slate-400 mb-1.5">Новый пароль</label><input id="password-reset-password" type="password" placeholder="минимум 8 символов" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div><label class="block text-xs font-medium text-slate-400 mb-1.5">Повторите пароль</label><input id="password-reset-password2" type="password" placeholder="повторите пароль" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div></div><p id="password-reset-status" class="text-sm text-center mt-4 min-h-[20px]"></p><div class="grid grid-cols-2 gap-3 mt-5"><button type="button" onclick="closePasswordResetModal()" class="py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition">Отмена</button><button id="password-reset-submit" type="button" onclick="submitPasswordReset()" class="py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold transition">Отправить</button></div><button id="password-reset-resend" type="button" class="w-full mt-3 py-2 text-sm text-primary-400 hover:text-primary-300 transition">Отправить ссылку ещё раз</button></div>`;
     document.body.appendChild(d);
+    document.getElementById('password-reset-resend').onclick=()=>resendPasswordReset();
   }
   function openResetModal() {
     ensureModal(); recoveryMode=false;
@@ -163,11 +205,37 @@
     document.getElementById('password-reset-email-wrap').classList.remove('hidden');
     document.getElementById('password-reset-password-wrap').classList.add('hidden');
     document.getElementById('password-reset-submit').textContent='Отправить';
+    document.getElementById('password-reset-resend').classList.add('hidden');
     document.getElementById('password-reset-status').textContent='';
     const loginEmail=document.getElementById('login-email'); if(loginEmail?.value) document.getElementById('password-reset-email').value=loginEmail.value.trim().toLowerCase();
     const d=document.getElementById('password-reset-modal'); d.classList.remove('hidden'); d.classList.add('flex');
   }
   window.closePasswordResetModal=function(){ const d=document.getElementById('password-reset-modal'); if(d)d.classList.add('hidden'); };
+  async function sendPasswordReset(email,status){
+    try {
+      const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:'https://www.app-check.ru/'});
+      if(error) throw error;
+      resetCooldownUntil=Date.now()+60000;
+      status.className='text-sm text-center mt-4 min-h-[20px] text-emerald-400'; status.textContent='Письмо отправлено. Проверьте почту и Спам. Новую ссылку можно запросить через 60 секунд.';
+      const resend=document.getElementById('password-reset-resend');
+      if(resend){resend.classList.remove('hidden'); startCooldown(resend,()=>resetCooldownUntil);}
+      return true;
+    } catch(error){
+      console.error('[Check App] Password reset request failed:',error);
+      status.className='text-sm text-center mt-4 min-h-[20px] text-red-400'; status.textContent=error?.message||'Не удалось отправить письмо.';
+      return false;
+    }
+  }
+  function startCooldown(button,getUntil){
+    if(!button || button.dataset.cooldown==='1') return;
+    button.dataset.cooldown='1';
+    const tick=()=>{
+      const left=Math.max(0,Math.ceil((getUntil()-Date.now())/1000));
+      if(left>0){button.disabled=true;button.textContent=`Повторить через ${left} сек.`;setTimeout(tick,1000);}
+      else{button.disabled=false;button.textContent='Отправить ссылку ещё раз';button.dataset.cooldown='0';}
+    };
+    tick();
+  }
   window.submitPasswordReset=async function(){
     ensureModal(); const status=document.getElementById('password-reset-status');
     if(recoveryMode){
@@ -182,16 +250,46 @@
     const email=document.getElementById('password-reset-email').value.trim().toLowerCase();
     if(!email){status.textContent='Введите email.';return;}
     status.textContent='Отправляем письмо…';
-    try {
-      const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
-      if(error) throw error;
-      status.className='text-sm text-center mt-4 min-h-[20px] text-emerald-400'; status.textContent='Если такой аккаунт существует, письмо отправлено. Проверьте почту и Спам.';
-    } catch (error) {
-      console.error('[Check App] Password reset request failed:', error);
-      status.className='text-sm text-center mt-4 min-h-[20px] text-red-400';
-      status.textContent=error?.message||'Не удалось отправить письмо.';
-    }
+    await sendPasswordReset(email,status);
   };
+  async function resendPasswordReset(){
+    ensureModal();
+    const status=document.getElementById('password-reset-status');
+    const email=document.getElementById('password-reset-email').value.trim().toLowerCase();
+    if(!email){status.textContent='Введите email.';return;}
+    if(Date.now()<resetCooldownUntil){startCooldown(document.getElementById('password-reset-resend'),()=>resetCooldownUntil);return;}
+    status.textContent='Отправляем новую ссылку…';
+    await sendPasswordReset(email,status);
+  }
+  async function resendSignupConfirmation(mode,inputId,button){
+    const email=document.getElementById(inputId)?.value?.trim().toLowerCase();
+    if(!email){showError('Сначала укажите Email.');return;}
+    if(Date.now()<signupResendCooldownUntil){startSignupCooldown(button);return;}
+    button.disabled=true; button.textContent='Отправляем…';
+    try{
+      const {error}=await supabaseClient.auth.resend({type:'signup',email,options:{emailRedirectTo:'https://www.app-check.ru/'}});
+      if(error) throw error;
+      signupResendCooldownUntil=Date.now()+60000;
+      const company=document.getElementById('reg-company')?.value?.trim()||'';
+      const name=document.getElementById('reg-name')?.value?.trim()||document.getElementById('invite-name')?.value?.trim()||'';
+      const code=mode==='register' ? (pendingEmail?.code || '') : (document.getElementById('invite-code')?.value?.trim()||pendingEmail?.code||'');
+      pendingEmail={mode,email,name,company,code};
+      openEmailConfirmationModal(email);
+      const status=document.getElementById('otp-status');
+      if(status){status.textContent='Новое письмо отправлено. Используйте только последнюю ссылку/код.';status.className='text-sm text-center mt-4 min-h-[20px] text-emerald-400';}
+      startSignupCooldown(button);
+    }catch(e){
+      console.error('[Check App] signup resend failed:',e);
+      button.disabled=false;button.textContent='Не получили письмо? Отправить ещё раз';
+      showError(e?.message||'Не удалось отправить письмо повторно.');
+    }
+  }
+  function startSignupCooldown(button){
+    if(!button)return;
+    button.disabled=true;
+    const tick=()=>{const left=Math.max(0,Math.ceil((signupResendCooldownUntil-Date.now())/1000));if(left>0){button.textContent=`Повторить через ${left} сек.`;setTimeout(tick,1000);}else{button.disabled=false;button.textContent='Не получили письмо? Отправить ещё раз';}};
+    tick();
+  }
   function openRecovery(){
     ensureModal(); recoveryMode=true;
     document.getElementById('password-reset-title').textContent='Новый пароль';
@@ -199,6 +297,7 @@
     document.getElementById('password-reset-email-wrap').classList.add('hidden');
     document.getElementById('password-reset-password-wrap').classList.remove('hidden');
     document.getElementById('password-reset-submit').textContent='Изменить пароль';
+    document.getElementById('password-reset-resend').classList.add('hidden');
     document.getElementById('password-reset-status').textContent='';
     const d=document.getElementById('password-reset-modal'); d.classList.remove('hidden'); d.classList.add('flex');
   }
@@ -215,6 +314,6 @@
       console.error('[Check App] Recovery listener failed:', e);
     }
   }
-  document.addEventListener('DOMContentLoaded',()=>{ensureButton();ensureModal();installRecoveryListener();checkRecovery();setTimeout(()=>{ensureButton();installRecoveryListener();checkRecovery();},300);setTimeout(()=>{installRecoveryListener();checkRecovery();},1200);});
-  setTimeout(ensureButton,100); setTimeout(ensureButton,500); setTimeout(installRecoveryListener,100); setTimeout(installRecoveryListener,500);
+  document.addEventListener('DOMContentLoaded',()=>{ensureButton();ensureSignupResendButtons();ensureModal();installRecoveryListener();checkRecovery();setTimeout(()=>{ensureButton();ensureSignupResendButtons();installRecoveryListener();checkRecovery();},300);setTimeout(()=>{installRecoveryListener();checkRecovery();},1200);});
+  setTimeout(ensureButton,100); setTimeout(ensureButton,500); setTimeout(ensureSignupResendButtons,100); setTimeout(ensureSignupResendButtons,500); setTimeout(installRecoveryListener,100); setTimeout(installRecoveryListener,500);
 })();
