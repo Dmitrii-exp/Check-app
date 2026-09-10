@@ -6,6 +6,7 @@
   const INVITE_PARAM = 'invite';
   let signupResendUntil = 0;
   let recoveryResendUntil = 0;
+  let inviteClickBound = false;
 
   function inviteCodeFromUrl() {
     try {
@@ -19,6 +20,57 @@
     document.getElementById('tab-invite')?.remove();
     const form = document.getElementById('form-invite');
     if (form) form.classList.add('hidden');
+  }
+
+  function submitInviteRegistration() {
+    const code = inviteCodeFromUrl();
+    if (!code) return false;
+
+    const name = document.getElementById('reg-name')?.value.trim() || '';
+    const email = document.getElementById('reg-email')?.value.trim().toLowerCase() || '';
+    const password = document.getElementById('reg-password')?.value || '';
+
+    if (!name || !email || password.length < 8) {
+      showError('Укажите имя, Email и пароль минимум из 8 символов.');
+      return true;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showError('Введите корректный Email.');
+      return true;
+    }
+
+    const codeInput = document.getElementById('invite-code');
+    const inviteName = document.getElementById('invite-name');
+    const inviteEmail = document.getElementById('invite-email');
+    const invitePassword = document.getElementById('invite-password');
+
+    if (!codeInput || !inviteName || !inviteEmail || !invitePassword || typeof window.doJoinByInvite !== 'function') {
+      showError('Не удалось подготовить регистрацию по приглашению. Обновите страницу и попробуйте снова.');
+      return true;
+    }
+
+    codeInput.value = code;
+    inviteName.value = name;
+    inviteEmail.value = email;
+    invitePassword.value = password;
+    window.doJoinByInvite();
+    return true;
+  }
+
+  function bindInviteRegisterButton() {
+    if (!hasInvite() || inviteClickBound) return;
+    inviteClickBound = true;
+
+    // Do not rely on replacing the global doRegister(). Inline onclick handlers
+    // can resolve the original function binding. Capture the click and stop it
+    // before the legacy company-registration handler receives it.
+    document.addEventListener('click', function (event) {
+      const target = event.target?.closest?.('#form-register button[onclick="doRegister()"]');
+      if (!target) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      submitInviteRegistration();
+    }, true);
   }
 
   function setupInviteRegistration() {
@@ -51,34 +103,7 @@
       }
     }
 
-    const originalRegister = window.doRegister;
-    if (typeof originalRegister === 'function' && !originalRegister.__checkAppInviteWrapped) {
-      const wrappedRegister = async function () {
-        const code = inviteCodeFromUrl();
-        if (!code) return originalRegister();
-        const name = document.getElementById('reg-name')?.value.trim() || '';
-        const email = document.getElementById('reg-email')?.value.trim().toLowerCase() || '';
-        const password = document.getElementById('reg-password')?.value || '';
-        if (!name || !email || password.length < 8) return showError('Укажите имя, Email и пароль минимум из 8 символов.');
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('Введите корректный Email.');
-
-        // Reuse the existing tested invite pipeline. The employee never sees or enters the code.
-        const codeInput = document.getElementById('invite-code');
-        const inviteName = document.getElementById('invite-name');
-        const inviteEmail = document.getElementById('invite-email');
-        const invitePassword = document.getElementById('invite-password');
-        if (!codeInput || !inviteName || !inviteEmail || !invitePassword || typeof window.doJoinByInvite !== 'function') {
-          return showError('Не удалось подготовить регистрацию по приглашению.');
-        }
-        codeInput.value = code;
-        inviteName.value = name;
-        inviteEmail.value = email;
-        invitePassword.value = password;
-        return window.doJoinByInvite();
-      };
-      wrappedRegister.__checkAppInviteWrapped = true;
-      window.doRegister = wrappedRegister;
-    }
+    bindInviteRegisterButton();
 
     const originalSwitch = window.switchAuthTab;
     if (typeof originalSwitch === 'function' && !originalSwitch.__checkAppInviteWrapped) {
