@@ -182,9 +182,15 @@
     const email=document.getElementById('password-reset-email').value.trim().toLowerCase();
     if(!email){status.textContent='Введите email.';return;}
     status.textContent='Отправляем письмо…';
-    const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
-    if(error){status.textContent=error.message||'Не удалось отправить письмо.';return;}
-    status.className='text-sm text-center mt-4 min-h-[20px] text-emerald-400'; status.textContent='Если такой аккаунт существует, письмо отправлено. Проверьте почту и Спам.';
+    try {
+      const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+      if(error) throw error;
+      status.className='text-sm text-center mt-4 min-h-[20px] text-emerald-400'; status.textContent='Если такой аккаунт существует, письмо отправлено. Проверьте почту и Спам.';
+    } catch (error) {
+      console.error('[Check App] Password reset request failed:', error);
+      status.className='text-sm text-center mt-4 min-h-[20px] text-red-400';
+      status.textContent=error?.message||'Не удалось отправить письмо.';
+    }
   };
   function openRecovery(){
     ensureModal(); recoveryMode=true;
@@ -197,6 +203,18 @@
     const d=document.getElementById('password-reset-modal'); d.classList.remove('hidden'); d.classList.add('flex');
   }
   function checkRecovery(){ const hash=window.location.hash||'', search=window.location.search||''; if(/type=recovery/.test(hash)||/type=recovery/.test(search)) openRecovery(); }
-  document.addEventListener('DOMContentLoaded',()=>{ensureButton();ensureModal();checkRecovery();setTimeout(()=>{ensureButton();checkRecovery();},300);setTimeout(checkRecovery,1200);});
-  setTimeout(ensureButton,100); setTimeout(ensureButton,500);
+  function installRecoveryListener(){
+    try {
+      if (typeof supabaseClient === 'undefined' || !supabaseClient?.auth || supabaseClient.auth.__checkAppRecoveryListenerInstalled) return;
+      const { data } = supabaseClient.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') openRecovery();
+      });
+      supabaseClient.auth.__checkAppRecoveryListenerInstalled = true;
+      supabaseClient.auth.__checkAppRecoveryListenerSubscription = data?.subscription || null;
+    } catch (e) {
+      console.error('[Check App] Recovery listener failed:', e);
+    }
+  }
+  document.addEventListener('DOMContentLoaded',()=>{ensureButton();ensureModal();installRecoveryListener();checkRecovery();setTimeout(()=>{ensureButton();installRecoveryListener();checkRecovery();},300);setTimeout(()=>{installRecoveryListener();checkRecovery();},1200);});
+  setTimeout(ensureButton,100); setTimeout(ensureButton,500); setTimeout(installRecoveryListener,100); setTimeout(installRecoveryListener,500);
 })();
