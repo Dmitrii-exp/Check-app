@@ -118,9 +118,6 @@
 })();
 
 // Auth hotfix: Supabase's current JavaScript API verifies email signup OTPs with type:'email'.
-// The app previously sent the correct signup confirmation email but attempted verification with
-// type:'signup', which can produce an OTP error. Keep the existing auth flow intact and translate
-// only that legacy verification type at the Supabase client boundary.
 (function () {
   'use strict';
   function installOtpFix() {
@@ -130,18 +127,76 @@
       if (auth.__checkAppOtpFixInstalled) return;
       const originalVerifyOtp = auth.verifyOtp.bind(auth);
       auth.verifyOtp = function (params) {
-        if (params && params.type === 'signup' && params.email && params.token) {
-          return originalVerifyOtp({ ...params, type: 'email' });
-        }
+        if (params && params.type === 'signup' && params.email && params.token) return originalVerifyOtp({ ...params, type: 'email' });
         return originalVerifyOtp(params);
       };
       auth.__checkAppOtpFixInstalled = true;
-      console.log('[Check App] Email OTP verification compatibility fix installed');
-    } catch (e) {
-      console.error('[Check App] OTP compatibility fix failed', e);
-    }
+    } catch (e) { console.error('[Check App] OTP compatibility fix failed', e); }
   }
-  installOtpFix();
-  setTimeout(installOtpFix, 100);
-  setTimeout(installOtpFix, 500);
+  installOtpFix(); setTimeout(installOtpFix,100); setTimeout(installOtpFix,500);
+})();
+
+// Password recovery UI and Supabase password reset flow.
+(function () {
+  'use strict';
+  let recoveryMode = false;
+  function ensureButton() {
+    const form = document.getElementById('form-login');
+    if (!form || document.getElementById('forgot-password-btn')) return;
+    const b = document.createElement('button');
+    b.id = 'forgot-password-btn'; b.type = 'button'; b.textContent = 'Забыли пароль?';
+    b.className = 'w-full mt-1 py-2 text-sm text-primary-400 hover:text-primary-300 transition';
+    b.onclick = openResetModal;
+    form.appendChild(b);
+  }
+  function ensureModal() {
+    if (document.getElementById('password-reset-modal')) return;
+    const d = document.createElement('div');
+    d.id='password-reset-modal'; d.className='fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-[200] hidden items-center justify-center p-4';
+    d.innerHTML=`<div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl"><div class="text-center"><div id="password-reset-title" class="text-xl font-bold text-white">Восстановление пароля</div><p id="password-reset-message" class="text-slate-400 text-sm mt-2">Введите email, на который отправить ссылку для восстановления.</p></div><div id="password-reset-email-wrap" class="mt-6"><label class="block text-xs font-medium text-slate-400 mb-1.5">Email</label><input id="password-reset-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div id="password-reset-password-wrap" class="hidden mt-6 space-y-3"><div><label class="block text-xs font-medium text-slate-400 mb-1.5">Новый пароль</label><input id="password-reset-password" type="password" placeholder="минимум 8 символов" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div><label class="block text-xs font-medium text-slate-400 mb-1.5">Повторите пароль</label><input id="password-reset-password2" type="password" placeholder="повторите пароль" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div></div><p id="password-reset-status" class="text-sm text-center mt-4 min-h-[20px]"></p><div class="grid grid-cols-2 gap-3 mt-5"><button type="button" onclick="closePasswordResetModal()" class="py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition">Отмена</button><button id="password-reset-submit" type="button" onclick="submitPasswordReset()" class="py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold transition">Отправить</button></div></div>`;
+    document.body.appendChild(d);
+  }
+  function openResetModal() {
+    ensureModal(); recoveryMode=false;
+    document.getElementById('password-reset-title').textContent='Восстановление пароля';
+    document.getElementById('password-reset-message').textContent='Введите email, на который отправить ссылку для восстановления.';
+    document.getElementById('password-reset-email-wrap').classList.remove('hidden');
+    document.getElementById('password-reset-password-wrap').classList.add('hidden');
+    document.getElementById('password-reset-submit').textContent='Отправить';
+    document.getElementById('password-reset-status').textContent='';
+    const loginEmail=document.getElementById('login-email'); if(loginEmail?.value) document.getElementById('password-reset-email').value=loginEmail.value.trim().toLowerCase();
+    const d=document.getElementById('password-reset-modal'); d.classList.remove('hidden'); d.classList.add('flex');
+  }
+  window.closePasswordResetModal=function(){ const d=document.getElementById('password-reset-modal'); if(d)d.classList.add('hidden'); };
+  window.submitPasswordReset=async function(){
+    ensureModal(); const status=document.getElementById('password-reset-status');
+    if(recoveryMode){
+      const p=document.getElementById('password-reset-password').value, p2=document.getElementById('password-reset-password2').value;
+      if(p.length<8){status.textContent='Пароль должен содержать минимум 8 символов.';return;}
+      if(p!==p2){status.textContent='Пароли не совпадают.';return;}
+      const {error}=await supabaseClient.auth.updateUser({password:p});
+      if(error){status.textContent=error.message||'Не удалось изменить пароль.';return;}
+      status.className='text-sm text-center mt-4 min-h-[20px] text-emerald-400'; status.textContent='Пароль изменён. Теперь можно войти.';
+      setTimeout(()=>{window.closePasswordResetModal();window.location.hash='';window.location.reload();},1200); return;
+    }
+    const email=document.getElementById('password-reset-email').value.trim().toLowerCase();
+    if(!email){status.textContent='Введите email.';return;}
+    status.textContent='Отправляем письмо…';
+    const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+    if(error){status.textContent=error.message||'Не удалось отправить письмо.';return;}
+    status.className='text-sm text-center mt-4 min-h-[20px] text-emerald-400'; status.textContent='Если такой аккаунт существует, письмо отправлено. Проверьте почту и Спам.';
+  };
+  function openRecovery(){
+    ensureModal(); recoveryMode=true;
+    document.getElementById('password-reset-title').textContent='Новый пароль';
+    document.getElementById('password-reset-message').textContent='Введите новый пароль для аккаунта.';
+    document.getElementById('password-reset-email-wrap').classList.add('hidden');
+    document.getElementById('password-reset-password-wrap').classList.remove('hidden');
+    document.getElementById('password-reset-submit').textContent='Изменить пароль';
+    document.getElementById('password-reset-status').textContent='';
+    const d=document.getElementById('password-reset-modal'); d.classList.remove('hidden'); d.classList.add('flex');
+  }
+  function checkRecovery(){ const hash=window.location.hash||'', search=window.location.search||''; if(/type=recovery/.test(hash)||/type=recovery/.test(search)) openRecovery(); }
+  document.addEventListener('DOMContentLoaded',()=>{ensureButton();ensureModal();checkRecovery();setTimeout(()=>{ensureButton();checkRecovery();},300);setTimeout(checkRecovery,1200);});
+  setTimeout(ensureButton,100); setTimeout(ensureButton,500);
 })();
