@@ -10,7 +10,9 @@ for (const match of js.matchAll(/(?:^|\n)\s*(?:const|let|var)\s+([A-Za-z_$][\w$]
 const referenced = new Set();
 for (const match of html.matchAll(/(?:onclick|onchange|oninput|onkeydown|onkeyup|onsubmit)\s*=\s*["']([^"']+)["']/gi)) {
   const expr = match[1];
-  for (const fn of expr.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)) referenced.add(fn[1]);
+  // Only collect standalone function calls. DOM/member calls such as
+  // document.getElementById(...) are not inline handler functions.
+  for (const fn of expr.matchAll(/(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(/g)) referenced.add(fn[1]);
 }
 
 const ignored = new Set(['if', 'for', 'while', 'switch', 'catch', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval']);
