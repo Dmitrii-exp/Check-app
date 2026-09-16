@@ -1,4 +1,4 @@
-// Check App — calendar loader + authentication/registration flow
+// Check App — calendar loader + authentication helpers
 (function () {
   'use strict';
 
@@ -11,11 +11,11 @@
     document.head.appendChild(s);
   }
 
-  // Keep the existing calendar code untouched. Load the authentication flow
-  // afterwards so it can safely use the existing Supabase/auth functions.
+  // app.js owns registration/login. These small helpers only handle
+  // invitation UI/redirects and finalisation after email-link confirmation.
   loadScript('js/calendar-core.js', function () {
-    loadScript('js/auth-registration.js', function () {
-      loadScript('js/invite-registration.js');
+    loadScript('js/invite-registration.js', function () {
+      loadScript('js/auth-finalize.js');
     });
   });
 })();
