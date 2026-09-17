@@ -6,7 +6,8 @@
   const INVITE_PARAM = 'invite';
   let signupResendUntil = 0;
   let recoveryResendUntil = 0;
-  let inviteClickBound = false;
+  let registrationBusy = false;
+  let registrationClickBound = false;
 
   function inviteCodeFromUrl() {
     try {
@@ -21,16 +22,69 @@
     document.getElementById('form-invite')?.classList.add('hidden');
   }
 
-  function submitInviteRegistration() {
-    const code = inviteCodeFromUrl();
-    if (!code) return false;
+  function savePendingRegistration(meta) {
+    if (typeof pendingEmail !== 'undefined') pendingEmail = meta;
+    try {
+      sessionStorage.setItem('checkapp_pending_registration', JSON.stringify(meta));
+    } catch (_) {}
+  }
 
+  function showLoginForExistingAccount(email) {
+    try {
+      document.getElementById('login-email').value = email;
+      if (typeof switchAuthTab === 'function') switchAuthTab('login');
+      else {
+        document.getElementById('form-register')?.classList.add('hidden');
+        document.getElementById('form-login')?.classList.remove('hidden');
+      }
+    } catch (_) {}
+    document.getElementById('auth-error')?.classList.add('hidden');
+    toast('Этот Email уже подтверждён. Войдите в аккаунт — повторная регистрация не нужна.');
+  }
+
+  async function finalizeRegistration(session, meta) {
+    if (!session?.user) return false;
+    let rpcError = null;
+
+    if (meta.mode === 'invite' && meta.code && meta.name) {
+      ({ error: rpcError } = await supabaseClient.rpc('join_company_by_invite', {
+        p_invite_code: String(meta.code).trim().toUpperCase(),
+        p_name: String(meta.name).trim(),
+        p_phone: null
+      }));
+    } else if (meta.mode === 'register' && meta.company && meta.name) {
+      ({ error: rpcError } = await supabaseClient.rpc('bootstrap_company', {
+        p_company_name: String(meta.company).trim(),
+        p_department_name: 'Основное',
+        p_invite_code: meta.code || (typeof generateCode === 'function' ? generateCode() : ''),
+        p_name: String(meta.name).trim(),
+        p_phone: null
+      }));
+    }
+
+    if (rpcError) throw rpcError;
+    const ok = typeof hydrateCurrentUser === 'function' && await hydrateCurrentUser();
+    if (!ok || !db?.currentUser) return false;
+    try { sessionStorage.removeItem('checkapp_pending_registration'); } catch (_) {}
+    if (typeof closeOtpModal === 'function') closeOtpModal();
+    if (typeof enterApp === 'function') enterApp();
+    return true;
+  }
+
+  async function submitRegistration() {
+    if (registrationBusy) return true;
+    if (typeof ensureSupabase !== 'function' || !ensureSupabase()) return true;
+
+    const inviteCode = inviteCodeFromUrl();
     const name = document.getElementById('reg-name')?.value.trim() || '';
+    const company = document.getElementById('reg-company')?.value.trim() || '';
     const email = document.getElementById('reg-email')?.value.trim().toLowerCase() || '';
     const password = document.getElementById('reg-password')?.value || '';
 
-    if (!name || !email || password.length < 8) {
-      showError('Укажите имя, Email и пароль минимум из 8 символов.');
+    if (!name || !email || password.length < 8 || (!inviteCode && !company)) {
+      showError(inviteCode
+        ? 'Укажите имя, Email и пароль минимум из 8 символов.'
+        : 'Заполните название компании, имя, Email и пароль минимум из 8 символов.');
       return true;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -38,53 +92,85 @@
       return true;
     }
 
-    const codeInput = document.getElementById('invite-code');
-    const inviteName = document.getElementById('invite-name');
-    const inviteEmail = document.getElementById('invite-email');
-    const invitePassword = document.getElementById('invite-password');
-
-    if (!codeInput || !inviteName || !inviteEmail || !invitePassword || typeof window.doJoinByInvite !== 'function') {
-      showError('Не удалось подготовить регистрацию по приглашению. Обновите страницу и попробуйте снова.');
-      console.error('[Check App] Employee registration handler is unavailable.');
-      return true;
-    }
-
-    codeInput.value = code;
-    inviteName.value = name;
-    inviteEmail.value = email;
-    invitePassword.value = password;
+    const meta = {
+      mode: inviteCode ? 'invite' : 'register',
+      email,
+      name,
+      company,
+      code: inviteCode
+    };
+    savePendingRegistration(meta);
+    registrationBusy = true;
 
     try {
-      const result = window.doJoinByInvite();
-      if (result && typeof result.catch === 'function') {
-        result.catch((error) => {
-          console.error('[Check App] Employee registration failed:', error);
-          showError(error?.message || 'Не удалось создать аккаунт.');
-        });
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: PUBLIC_URL,
+          data: {
+            name,
+            company_name: company,
+            signup_mode: meta.mode,
+            invite_code: inviteCode
+          }
+        }
+      });
+
+      if (error) {
+        const message = String(error.message || '').toLowerCase();
+        if (message.includes('already registered') || message.includes('already exists')) {
+          showLoginForExistingAccount(email);
+          return true;
+        }
+        throw error;
       }
-    } catch (error) {
-      console.error('[Check App] Employee registration failed:', error);
-      showError(error?.message || 'Не удалось создать аккаунт.');
+
+      const user = data?.user;
+      const session = data?.session;
+
+      if (session) {
+        await finalizeRegistration(session, meta);
+        return true;
+      }
+
+      // Supabase deliberately returns an obfuscated user with no identities
+      // when signUp() is called for an already-confirmed account.
+      if (user && Array.isArray(user.identities) && user.identities.length === 0) {
+        showLoginForExistingAccount(email);
+        return true;
+      }
+
+      // New account OR existing unconfirmed account: keep the same Email,
+      // wait for confirmation, and allow unlimited user retries subject only
+      // to Supabase's server-side email rate limits.
+      savePendingRegistration({ ...meta, userId: user?.id || null });
+      if (typeof openEmailConfirmationModal === 'function') openEmailConfirmationModal(email);
+      toast('Письмо подтверждения отправлено. Если не пришло — используйте «Отправить ещё раз».');
+      return true;
+    } catch (e) {
+      console.error('[Check App] registration failed:', e);
+      showError(e?.message || 'Не удалось создать аккаунт.');
+      return true;
+    } finally {
+      registrationBusy = false;
     }
-    return true;
   }
 
-  function bindInviteRegisterButton() {
-    if (!hasInvite()) return;
+  function bindRegistrationButton() {
     const registerButton = document.querySelector('#form-register button[onclick="doRegister()"]');
     if (!registerButton) return;
+    if (registrationClickBound && registerButton.dataset.checkappBound === '1') return;
 
+    registerButton.dataset.checkappBound = '1';
     registerButton.onclick = function (event) {
       event.preventDefault();
       event.stopPropagation();
-      submitInviteRegistration();
+      submitRegistration();
       return false;
     };
-
-    if (!inviteClickBound) {
-      inviteClickBound = true;
-      console.info('[Check App] Employee registration button bound.');
-    }
+    registrationClickBound = true;
+    console.info('[Check App] Registration button bound to same-email registration flow.');
   }
 
   function setupInviteRegistration() {
@@ -117,7 +203,7 @@
       }
     }
 
-    bindInviteRegisterButton();
+    bindRegistrationButton();
 
     const originalSwitch = window.switchAuthTab;
     if (typeof originalSwitch === 'function' && !originalSwitch.__checkAppInviteWrapped) {
@@ -145,7 +231,7 @@
       b.disabled = true;
       b.textContent = 'Отправляем…';
       try {
-        const { data, error } = await supabaseClient.auth.resend({
+        const { error } = await supabaseClient.auth.resend({
           type: 'signup',
           email,
           options: { emailRedirectTo: PUBLIC_URL }
@@ -153,15 +239,14 @@
         if (error) throw error;
         signupResendUntil = Date.now() + 60000;
         b.textContent = 'Повторить через 60 сек.';
-        if (typeof pendingEmail !== 'undefined') {
-          pendingEmail = {
-            mode: hasInvite() ? 'invite' : 'register',
-            email,
-            name: document.getElementById('reg-name')?.value.trim() || '',
-            company: '',
-            code: inviteCodeFromUrl()
-          };
-        }
+        const meta = {
+          mode: hasInvite() ? 'invite' : 'register',
+          email,
+          name: document.getElementById('reg-name')?.value.trim() || '',
+          company: document.getElementById('reg-company')?.value.trim() || '',
+          code: inviteCodeFromUrl()
+        };
+        savePendingRegistration(meta);
         if (typeof openEmailConfirmationModal === 'function') openEmailConfirmationModal(email);
         toast('Новое письмо отправлено. Используйте последнюю ссылку/код.');
         setTimeout(() => {
@@ -259,7 +344,7 @@
 
   function boot() {
     hideLegacyInviteUI();
-    if (hasInvite()) setupInviteRegistration();
+    setupInviteRegistration();
     installSignupResend();
     installRecoveryResend();
     installManagerInviteLink();
