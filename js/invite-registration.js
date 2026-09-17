@@ -1,4 +1,4 @@
-// Check App — employee invitation registration flow + auth hardening
+// Check App — employee invitation registration flow
 (function () {
   'use strict';
 
@@ -18,8 +18,7 @@
 
   function hideLegacyInviteUI() {
     document.getElementById('tab-invite')?.remove();
-    const form = document.getElementById('form-invite');
-    if (form) form.classList.add('hidden');
+    document.getElementById('form-invite')?.classList.add('hidden');
   }
 
   function submitInviteRegistration() {
@@ -60,10 +59,6 @@
   function bindInviteRegisterButton() {
     if (!hasInvite() || inviteClickBound) return;
     inviteClickBound = true;
-
-    // Do not rely on replacing the global doRegister(). Inline onclick handlers
-    // can resolve the original function binding. Capture the click and stop it
-    // before the legacy company-registration handler receives it.
     document.addEventListener('click', function (event) {
       const target = event.target?.closest?.('#form-register button[onclick="doRegister()"]');
       if (!target) return;
@@ -86,7 +81,7 @@
       tabRegister.textContent = 'Регистрация сотрудника';
       tabRegister.classList.remove('text-slate-400');
       tabRegister.classList.add('bg-primary-600', 'text-white');
-      if (companyWrap) companyWrap.classList.add('hidden');
+      companyWrap?.classList.add('hidden');
       const nameLabel = nameInput?.previousElementSibling;
       if (nameLabel) nameLabel.textContent = 'Ваше имя';
       if (nameInput) nameInput.placeholder = 'Пётр Петров';
@@ -116,33 +111,6 @@
     }
   }
 
-  function installAuthRedirectFix() {
-    try {
-      if (typeof supabaseClient === 'undefined' || !supabaseClient?.auth || supabaseClient.auth.__checkAppInviteAuthFixInstalled) return;
-      const auth = supabaseClient.auth;
-      const originalVerifyOtp = auth.verifyOtp.bind(auth);
-      const originalSignUp = auth.signUp.bind(auth);
-      const originalResend = auth.resend.bind(auth);
-      const originalReset = auth.resetPasswordForEmail.bind(auth);
-
-      auth.verifyOtp = function (params) {
-        if (params?.type === 'signup' && params.email && params.token) return originalVerifyOtp({ ...params, type: 'email' });
-        return originalVerifyOtp(params);
-      };
-      auth.signUp = function (credentials) {
-        return originalSignUp({ ...(credentials || {}), options: { ...((credentials || {}).options || {}), emailRedirectTo: PUBLIC_URL } });
-      };
-      auth.resend = function (credentials) {
-        if (credentials?.type === 'signup') return originalResend({ ...credentials, options: { ...(credentials.options || {}), emailRedirectTo: PUBLIC_URL } });
-        return originalResend(credentials);
-      };
-      auth.resetPasswordForEmail = function (email, options) {
-        return originalReset(email, { ...(options || {}), redirectTo: PUBLIC_URL });
-      };
-      auth.__checkAppInviteAuthFixInstalled = true;
-    } catch (e) { console.error('[Check App] Auth redirect fix failed', e); }
-  }
-
   function installSignupResend() {
     const form = document.getElementById('form-register');
     if (!form || document.getElementById('invite-signup-resend')) return;
@@ -155,18 +123,35 @@
       const email = document.getElementById('reg-email')?.value.trim().toLowerCase() || '';
       if (!email) return showError('Сначала укажите Email.');
       if (Date.now() < signupResendUntil) return;
-      b.disabled = true; b.textContent = 'Отправляем…';
+      b.disabled = true;
+      b.textContent = 'Отправляем…';
       try {
-        const { error } = await supabaseClient.auth.resend({ type: 'signup', email, options: { emailRedirectTo: PUBLIC_URL } });
+        const { data, error } = await supabaseClient.auth.resend({
+          type: 'signup',
+          email,
+          options: { emailRedirectTo: PUBLIC_URL }
+        });
         if (error) throw error;
         signupResendUntil = Date.now() + 60000;
         b.textContent = 'Повторить через 60 сек.';
-        if (typeof pendingEmail !== 'undefined') pendingEmail = pendingEmail || { mode: hasInvite() ? 'invite' : 'register', email, name: document.getElementById('reg-name')?.value.trim() || '', company: '', code: inviteCodeFromUrl() };
-        setTimeout(() => { b.disabled = false; b.textContent = 'Не получили письмо? Отправить ещё раз'; }, 60000);
+        if (typeof pendingEmail !== 'undefined') {
+          pendingEmail = {
+            mode: hasInvite() ? 'invite' : 'register',
+            email,
+            name: document.getElementById('reg-name')?.value.trim() || '',
+            company: '',
+            code: inviteCodeFromUrl()
+          };
+        }
         if (typeof openEmailConfirmationModal === 'function') openEmailConfirmationModal(email);
         toast('Новое письмо отправлено. Используйте последнюю ссылку/код.');
+        setTimeout(() => {
+          b.disabled = false;
+          b.textContent = 'Не получили письмо? Отправить ещё раз';
+        }, 60000);
       } catch (e) {
-        b.disabled = false; b.textContent = 'Не получили письмо? Отправить ещё раз';
+        b.disabled = false;
+        b.textContent = 'Не получили письмо? Отправить ещё раз';
         showError(e?.message || 'Не удалось отправить письмо повторно.');
       }
     };
@@ -179,23 +164,29 @@
     const submit = document.getElementById('password-reset-submit');
     if (!submit) return;
     const b = document.createElement('button');
-    b.id = 'checkapp-recovery-resend'; b.type = 'button';
+    b.id = 'checkapp-recovery-resend';
+    b.type = 'button';
     b.className = 'w-full mt-3 py-2 text-sm text-primary-400 hover:text-primary-300 transition';
     b.textContent = 'Отправить ссылку ещё раз';
     b.onclick = async function () {
       const email = document.getElementById('password-reset-email')?.value.trim().toLowerCase() || '';
       if (!email) return showError('Введите Email.');
       if (Date.now() < recoveryResendUntil) return;
-      b.disabled = true; b.textContent = 'Отправляем…';
+      b.disabled = true;
+      b.textContent = 'Отправляем…';
       try {
         const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: PUBLIC_URL });
         if (error) throw error;
         recoveryResendUntil = Date.now() + 60000;
         b.textContent = 'Повторить через 60 сек.';
         toast('Новая ссылка отправлена. Используйте последнюю ссылку.');
-        setTimeout(() => { b.disabled = false; b.textContent = 'Отправить ссылку ещё раз'; }, 60000);
+        setTimeout(() => {
+          b.disabled = false;
+          b.textContent = 'Отправить ссылку ещё раз';
+        }, 60000);
       } catch (e) {
-        b.disabled = false; b.textContent = 'Отправить ссылку ещё раз';
+        b.disabled = false;
+        b.textContent = 'Отправить ссылку ещё раз';
         showError(e?.message || 'Не удалось отправить ссылку повторно.');
       }
     };
@@ -234,7 +225,13 @@
       const link = document.getElementById('invite-code-display')?.textContent?.trim() || '';
       if (!link || !link.startsWith(PUBLIC_URL)) return showError('Не удалось сформировать ссылку приглашения.');
       navigator.clipboard?.writeText(link).then(() => toast('Ссылка-приглашение скопирована')).catch(() => {
-        const ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Ссылка-приглашение скопирована');
+        const ta = document.createElement('textarea');
+        ta.value = link;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        toast('Ссылка-приглашение скопирована');
       });
     };
     setTimeout(setupManagerInviteLink, 300);
@@ -242,7 +239,6 @@
   }
 
   function boot() {
-    installAuthRedirectFix();
     hideLegacyInviteUI();
     if (hasInvite()) setupInviteRegistration();
     installSignupResend();
