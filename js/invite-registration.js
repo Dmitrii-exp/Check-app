@@ -54,8 +54,33 @@
     inviteEmail.value = email;
     invitePassword.value = password;
 
+    // The old signup call did not explicitly set the production redirect, so
+    // Supabase could use its old Site URL (localhost:3000). Inject the redirect
+    // only for this single employee-signup call, then immediately restore auth.
+    let restoreSignup = null;
     try {
+      const auth = typeof supabaseClient !== 'undefined' ? supabaseClient.auth : null;
+      const originalSignUp = auth?.signUp;
+      if (auth && typeof originalSignUp === 'function') {
+        auth.signUp = function (credentials) {
+          const safe = credentials || {};
+          return originalSignUp.call(auth, {
+            ...safe,
+            options: {
+              ...(safe.options || {}),
+              emailRedirectTo: PUBLIC_URL
+            }
+          });
+        };
+        restoreSignup = () => { auth.signUp = originalSignUp; };
+      }
+
       const result = window.doJoinByInvite();
+      if (result && typeof result.finally === 'function') {
+        result.finally(() => restoreSignup?.());
+      } else {
+        restoreSignup?.();
+      }
       if (result && typeof result.catch === 'function') {
         result.catch((error) => {
           console.error('[Check App] Employee registration failed:', error);
@@ -63,6 +88,7 @@
         });
       }
     } catch (error) {
+      restoreSignup?.();
       console.error('[Check App] Employee registration failed:', error);
       showError(error?.message || 'Не удалось создать аккаунт.');
     }
