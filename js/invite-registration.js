@@ -45,6 +45,7 @@
 
     if (!codeInput || !inviteName || !inviteEmail || !invitePassword || typeof window.doJoinByInvite !== 'function') {
       showError('Не удалось подготовить регистрацию по приглашению. Обновите страницу и попробуйте снова.');
+      console.error('[Check App] Employee registration handler is unavailable.');
       return true;
     }
 
@@ -52,20 +53,40 @@
     inviteName.value = name;
     inviteEmail.value = email;
     invitePassword.value = password;
-    window.doJoinByInvite();
+
+    try {
+      const result = window.doJoinByInvite();
+      if (result && typeof result.catch === 'function') {
+        result.catch((error) => {
+          console.error('[Check App] Employee registration failed:', error);
+          showError(error?.message || 'Не удалось создать аккаунт.');
+        });
+      }
+    } catch (error) {
+      console.error('[Check App] Employee registration failed:', error);
+      showError(error?.message || 'Не удалось создать аккаунт.');
+    }
     return true;
   }
 
   function bindInviteRegisterButton() {
-    if (!hasInvite() || inviteClickBound) return;
-    inviteClickBound = true;
-    document.addEventListener('click', function (event) {
-      const target = event.target?.closest?.('#form-register button[onclick="doRegister()"]');
-      if (!target) return;
+    if (!hasInvite()) return;
+    const registerButton = document.querySelector('#form-register button[onclick="doRegister()"]');
+    if (!registerButton) return;
+
+    // Bind directly to the actual button. This is more reliable than relying only
+    // on a document-level delegated click handler when the auth form is rebuilt.
+    registerButton.onclick = function (event) {
       event.preventDefault();
-      event.stopImmediatePropagation();
+      event.stopPropagation();
       submitInviteRegistration();
-    }, true);
+      return false;
+    };
+
+    if (!inviteClickBound) {
+      inviteClickBound = true;
+      console.info('[Check App] Employee registration button bound.');
+    }
   }
 
   function setupInviteRegistration() {
