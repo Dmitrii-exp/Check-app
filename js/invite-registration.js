@@ -74,8 +74,6 @@
     const registerButton = document.querySelector('#form-register button[onclick="doRegister()"]');
     if (!registerButton) return;
 
-    // Bind directly to the actual button. This is more reliable than relying only
-    // on a document-level delegated click handler when the auth form is rebuilt.
     registerButton.onclick = function (event) {
       event.preventDefault();
       event.stopPropagation();
