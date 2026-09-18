@@ -117,25 +117,6 @@
   window.openCalendar=open;
 })();
 
-// Auth hotfix: Supabase's current JavaScript API verifies email signup OTPs with type:'email'.
-(function () {
-  'use strict';
-  function installOtpFix() {
-    try {
-      if (typeof supabaseClient === 'undefined' || !supabaseClient?.auth) return;
-      const auth = supabaseClient.auth;
-      if (auth.__checkAppOtpFixInstalled) return;
-      const originalVerifyOtp = auth.verifyOtp.bind(auth);
-      auth.verifyOtp = function (params) {
-        if (params && params.type === 'signup' && params.email && params.token) return originalVerifyOtp({ ...params, type: 'email' });
-        return originalVerifyOtp(params);
-      };
-      auth.__checkAppOtpFixInstalled = true;
-    } catch (e) { console.error('[Check App] OTP compatibility fix failed', e); }
-  }
-  installOtpFix(); setTimeout(installOtpFix,100); setTimeout(installOtpFix,500);
-})();
-
 // Password recovery UI and Supabase password reset flow.
 (function () {
   'use strict';
