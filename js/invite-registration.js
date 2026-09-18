@@ -17,26 +17,23 @@
     const tabRegister = document.getElementById('tab-register');
     const companyInput = document.getElementById('reg-company');
     const nameInput = document.getElementById('reg-name');
-    const button = form?.querySelector('button[onclick="doRegister()"]');
+    const button = form?.querySelector('button[onclick="doJoinByInvite()"]');
 
     if (!form || !tabRegister) return;
 
     if (!inviteCode) return;
 
-    tabRegister.textContent = 'Регистрация сотрудника';
-    tabRegister.classList.remove('text-slate-400');
-    tabRegister.classList.add('bg-primary-600', 'text-white');
+    // Ссылка руководителя открывает именно единую форму приглашения.
+    // Бизнес-логика при этом остаётся в doRegister() из app.js.
+    switchAuthTab('invite');
 
-    companyInput?.closest('div')?.classList.add('hidden');
+    const inviteInput = document.getElementById('invite-code');
+    if (inviteInput) inviteInput.value = inviteCode;
 
-    const nameLabel = nameInput?.previousElementSibling;
+    const nameLabel = document.querySelector('#form-invite label[for="invite-name"]') ||
+      document.getElementById('invite-name')?.previousElementSibling;
     if (nameLabel) nameLabel.textContent = 'Ваше имя';
-    if (nameInput) nameInput.placeholder = 'Пётр Петров';
 
-    if (button) button.textContent = 'Создать аккаунт';
-
-    form.classList.remove('hidden');
-    document.getElementById('form-login')?.classList.add('hidden');
     document.getElementById('auth-error')?.classList.add('hidden');
 
     if (!document.getElementById('invite-registration-note')) {
