@@ -56,18 +56,6 @@
     if(b && !b.dataset.bound){ b.dataset.bound='1'; b.addEventListener('click',open); }
   }
 
-  function ensureFloatingAccess(){
-    let b=document.getElementById('calendar-floating-access');
-    if(!b){
-      b=document.createElement('button'); b.id='calendar-floating-access'; b.type='button'; b.textContent='📅 Календарь';
-      b.setAttribute('aria-label','Открыть календарь');
-      b.style.cssText='position:fixed;right:18px;bottom:18px;z-index:9999;padding:12px 18px;border-radius:14px;border:1px solid #38bdf8;background:#0ea5e9;color:#fff;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:pointer;display:none;';
-      b.onclick=open; document.body.appendChild(b);
-    }
-    const app=document.getElementById('app-screen');
-    b.style.display=app && !app.classList.contains('hidden') ? 'block' : 'none';
-  }
-
   function ensurePage(){
     const main=document.querySelector('#app-screen main'); if(!main) return;
     if(document.getElementById('page-calendar')) return;
@@ -100,7 +88,7 @@
   }
 
   function open(){
-    ensurePage(); ensureNav(); ensureFloatingAccess(); document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden')); document.getElementById('page-calendar')?.classList.remove('hidden'); render();
+    ensurePage(); ensureNav(); document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden')); document.getElementById('page-calendar')?.classList.remove('hidden'); render();
   }
 
   function boot(){
