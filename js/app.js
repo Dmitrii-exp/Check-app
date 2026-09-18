@@ -285,24 +285,127 @@
     let isUnlimitedCompany = false;
     let adminCompanies = [];
 
+    const AUTH_PUBLIC_URL = 'https://www.app-check.ru/';
+
+    function inviteCodeFromUrl() {
+      try {
+        return String(new URLSearchParams(window.location.search).get('invite') || '').trim().toUpperCase();
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function savePendingRegistration(meta) {
+      pendingEmail = meta;
+      try {
+        sessionStorage.setItem('checkapp_pending_registration', JSON.stringify(meta));
+      } catch (_) {}
+    }
+
+    function loadPendingRegistration(user) {
+      try {
+        const raw = sessionStorage.getItem('checkapp_pending_registration');
+        if (raw) {
+          const meta = JSON.parse(raw);
+          if (meta?.email) return meta;
+        }
+      } catch (_) {}
+
+      const meta = user?.user_metadata || {};
+      if (user?.email && meta?.signup_mode) {
+        return {
+          mode: meta.signup_mode,
+          email: String(user.email).toLowerCase(),
+          name: String(meta.name || ''),
+          company: String(meta.company_name || ''),
+          code: String(meta.invite_code || '')
+        };
+      }
+      return null;
+    }
+
     function openEmailConfirmationModal(email) {
-      document.getElementById('otp-message').textContent =
-        `Код подтверждения отправлен на ${email}. Введите код из письма ниже.`;
-      document.getElementById('otp-code').value = '';
+      const message = document.getElementById('otp-message');
+      if (message) {
+        message.textContent = `Код подтверждения отправлен на ${email}. Введите 6-значный код из письма.`;
+      }
+      const code = document.getElementById('otp-code');
+      if (code) code.value = '';
       const status = document.getElementById('otp-status');
-      if (status) status.textContent = '';
+      if (status) {
+        status.textContent = '';
+        status.className = 'text-sm text-center mt-4 min-h-[20px]';
+      }
       const modal = document.getElementById('otp-modal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      setTimeout(() => document.getElementById('otp-code')?.focus(), 100);
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+      setTimeout(() => code?.focus(), 100);
+    }
+
+    async function finalizePendingRegistration(session, metaOverride = null) {
+      const sessionUser = session?.user;
+      if (!sessionUser) throw new Error('Сессия подтверждения не получена.');
+
+      const meta = metaOverride || loadPendingRegistration(sessionUser);
+      if (!meta?.mode) throw new Error('Не найдены данные незавершённой регистрации.');
+
+      const { data: existingProfile, error: profileLookupError } = await supabaseClient
+        .from('profiles')
+        .select('id')
+        .eq('id', sessionUser.id)
+        .maybeSingle();
+
+      if (profileLookupError) throw profileLookupError;
+
+      // Если профиль уже существует, регистрацию второй раз не выполняем.
+      if (!existingProfile) {
+        let rpcError = null;
+
+        if (meta.mode === 'invite' && meta.code && meta.name) {
+          ({ error: rpcError } = await supabaseClient.rpc('join_company_by_invite', {
+            p_invite_code: String(meta.code).trim().toUpperCase(),
+            p_name: String(meta.name).trim(),
+            p_phone: null
+          }));
+        } else if (meta.mode === 'register' && meta.company && meta.name) {
+          ({ error: rpcError } = await supabaseClient.rpc('bootstrap_company', {
+            p_company_name: String(meta.company).trim(),
+            p_department_name: 'Основное',
+            p_invite_code: meta.code || generateCode(),
+            p_name: String(meta.name).trim(),
+            p_phone: null
+          }));
+        } else {
+          throw new Error('Данные регистрации неполные. Откройте ссылку приглашения заново.');
+        }
+
+        if (rpcError) throw rpcError;
+      }
+
+      const ok = await hydrateCurrentUser();
+      if (!ok || !db?.currentUser) {
+        throw new Error('Профиль создан, но приложение не смогло загрузить его. Повторите вход.');
+      }
+
+      try {
+        sessionStorage.removeItem('checkapp_pending_registration');
+      } catch (_) {}
+      pendingEmail = null;
+
+      closeOtpModal();
+      enterApp();
+      return true;
     }
 
     async function verifyEmailOtp() {
       if (!ensureSupabase()) return;
+
       const codeEl = document.getElementById('otp-code');
       const statusEl = document.getElementById('otp-status');
       const btn = document.getElementById('otp-submit');
-      const code = (codeEl?.value || '').trim().replace(/\s+/g, '');
+      const code = (codeEl?.value || '').trim().replace(/\\s+/g, '');
       const email = pendingEmail?.email;
 
       const setStatus = (text, ok = false) => {
@@ -311,12 +414,9 @@
         statusEl.className = 'text-sm text-center mt-4 min-h-[20px] ' + (ok ? 'text-emerald-400' : 'text-red-400');
       };
 
-      if (!email) {
-        setStatus('Не найден email. Начните регистрацию заново.');
-        return;
-      }
-      if (!/^\d{6,8}$/.test(code)) {
-        setStatus('Введите код из письма полностью.');
+      if (!email) return setStatus('Данные регистрации потеряны. Откройте ссылку приглашения заново.');
+      if (!/^\\d{6}$/.test(code)) {
+        setStatus('Введите 6-значный код из письма.');
         codeEl?.focus();
         return;
       }
@@ -326,65 +426,21 @@
       setStatus('Проверяем код…', true);
 
       try {
-        console.log('[Check App] verifyOtp', { email, codeLength: code.length });
-
-        // This code is generated by signUp()/resend({ type: 'signup' }),
-        // so verify it as a SIGNUP confirmation OTP.
-        // Using type:'email' is for email OTP/passwordless sign-in flows;
-        // the signup confirmation flow should use type:'signup'.
-        let data, error;
-        ({ data, error } = await supabaseClient.auth.verifyOtp({
+        const { data, error } = await supabaseClient.auth.verifyOtp({
           email,
           token: code,
-          type: 'signup'
-        }));
-
-        console.log('[Check App] verifyOtp(signup) result', {
-          hasUser: !!data?.user,
-          hasSession: !!data?.session,
-          error
+          type: 'email'
         });
 
         if (error) throw error;
-        if (!data?.session) {
-          // In case the SDK confirms the email but does not return a session,
-          // check the current Auth session before declaring failure.
-          const { data: sessionData } = await supabaseClient.auth.getSession();
-          if (!sessionData?.session) {
-            throw new Error('Email подтверждён, но Supabase не создал сессию. Попробуйте войти по email и паролю.');
-          }
+
+        const session = data?.session || (await supabaseClient.auth.getSession()).data?.session;
+        if (!session?.user) {
+          throw new Error('Код принят, но сессия не создана. Повторите вход.');
         }
 
-        setStatus('Email подтверждён. Создаём ваш аккаунт…', true);
-
-        const p = pendingEmail || {};
-        if (p.mode === 'register') {
-          const { error: bootstrapError } = await supabaseClient.rpc('bootstrap_company', {
-            p_company_name: p.company,
-            p_department_name: 'Основное',
-            p_invite_code: p.code || generateCode(),
-            p_name: p.name,
-            p_phone: null
-          });
-          if (bootstrapError) throw bootstrapError;
-        } else if (p.mode === 'invite') {
-          const { error: joinError } = await supabaseClient.rpc('join_company_by_invite', {
-            p_invite_code: p.code,
-            p_name: p.name,
-            p_phone: null
-          });
-          if (joinError) throw joinError;
-        }
-
-        const ok = await hydrateCurrentUser();
-        if (!ok || !db.currentUser) {
-          throw new Error('Email подтверждён, но профиль пользователя ещё не создан. Попробуйте войти через форму «Войти».');
-        }
-
-        setStatus('Готово! Входим в Check App…', true);
-        await new Promise(resolve => setTimeout(resolve, 350));
-        closeOtpModal();
-        enterApp();
+        setStatus('Email подтверждён. Подключаем вас к компании…', true);
+        await finalizePendingRegistration(session, pendingEmail);
       } catch (e) {
         console.error('[Check App] verifyEmailOtp error:', e);
         setStatus(e?.message || 'Код неверный или просрочен.');
@@ -396,21 +452,36 @@
 
     async function resendEmailOtp() {
       if (!ensureSupabase()) return;
+
       const email = pendingEmail?.email;
-      if (!email) return showError('Не найден email для повторной отправки.');
+      if (!email) return showError('Не найден Email регистрации.');
+
       const btn = document.getElementById('otp-resend');
       btn.disabled = true;
       btn.textContent = 'Отправляем...';
+
       try {
-        const { error } = await supabaseClient.auth.resend({ type: 'signup', email });
+        const { error } = await supabaseClient.auth.resend({
+          type: 'signup',
+          email,
+          options: { emailRedirectTo: AUTH_PUBLIC_URL }
+        });
         if (error) throw error;
-        document.getElementById('otp-code').value = '';
-        document.getElementById('otp-message').textContent = `Новый код отправлен на ${email}. Используйте только самый последний код.`;
+
+        const code = document.getElementById('otp-code');
+        if (code) code.value = '';
+
+        const message = document.getElementById('otp-message');
+        if (message) message.textContent = `Новый код отправлен на ${email}. Используйте последний полученный код.`;
+
         const status = document.getElementById('otp-status');
-        if (status) { status.textContent = 'Новый код отправлен.'; status.className = 'text-sm text-center mt-4 min-h-[20px] text-emerald-400'; }
+        if (status) {
+          status.textContent = 'Новый код отправлен.';
+          status.className = 'text-sm text-center mt-4 min-h-[20px] text-emerald-400';
+        }
       } catch (e) {
-        console.error(e);
-        showError(e.message || 'Не удалось отправить новый код.');
+        console.error('[Check App] resendEmailOtp error:', e);
+        showError(e?.message || 'Не удалось отправить новый код.');
       } finally {
         btn.disabled = false;
         btn.textContent = 'Отправить код ещё раз';
@@ -418,67 +489,112 @@
     }
 
     function closeOtpModal() {
-      pendingEmail = null;
       const modal = document.getElementById('otp-modal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-      document.getElementById('otp-code').value = '';
+      modal?.classList.add('hidden');
+      modal?.classList.remove('flex');
+      const code = document.getElementById('otp-code');
+      if (code) code.value = '';
     }
 
     function goToLoginAfterEmail() {
+      const email = pendingEmail?.email ||
+        document.getElementById('reg-email')?.value?.trim().toLowerCase() ||
+        document.getElementById('invite-email')?.value?.trim().toLowerCase() || '';
+
       closeOtpModal();
       switchAuthTab('login');
-      const email = document.getElementById('reg-email')?.value?.trim().toLowerCase() ||
-                    document.getElementById('invite-email')?.value?.trim().toLowerCase() || '';
       if (email) document.getElementById('login-email').value = email;
     }
 
     async function doRegister() {
       if (!ensureSupabase()) return;
-      const company = document.getElementById('reg-company').value.trim();
-      const name = document.getElementById('reg-name').value.trim();
-      const email = document.getElementById('reg-email').value.trim().toLowerCase();
-      const password = document.getElementById('reg-password').value;
-      if (!company || !name || !email || password.length < 8) return showError('Заполните все поля. Пароль минимум 8 символов.');
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('Введите корректный Email.');
+
+      const inviteCode = inviteCodeFromUrl();
+      const company = document.getElementById('reg-company')?.value.trim() || '';
+      const name = document.getElementById('reg-name')?.value.trim() || '';
+      const email = document.getElementById('reg-email')?.value.trim().toLowerCase() || '';
+      const password = document.getElementById('reg-password')?.value || '';
+
+      if (!name || !email || password.length < 8 || (!inviteCode && !company)) {
+        return showError(inviteCode
+          ? 'Укажите имя, Email и пароль минимум из 8 символов.'
+          : 'Заполните название компании, имя, Email и пароль минимум из 8 символов.');
+      }
+
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+        return showError('Введите корректный Email.');
+      }
+
+      const meta = {
+        mode: inviteCode ? 'invite' : 'register',
+        email,
+        name,
+        company,
+        code: inviteCode || generateCode()
+      };
+
+      savePendingRegistration(meta);
 
       try {
-        const inviteCode = generateCode();
+        // Единственная точка создания/возобновления регистрации.
         const { data, error } = await supabaseClient.auth.signUp({
           email,
           password,
           options: {
+            emailRedirectTo: AUTH_PUBLIC_URL,
             data: {
               name,
               company_name: company,
-              signup_mode: 'register',
-              invite_code: inviteCode
+              signup_mode: meta.mode,
+              invite_code: meta.code
             }
           }
         });
-        if (error) throw error;
-        if (!data.user) throw new Error('Supabase не вернул пользователя.');
 
-        if (!data.session) {
-          pendingEmail = { mode:'register', email, name, company, code:inviteCode };
-          openEmailConfirmationModal(email);
+        // Если Supabase явно говорит, что пользователь уже существует,
+        // сначала пробуем отправить ему новое письмо подтверждения.
+        if (error) {
+          const resend = await supabaseClient.auth.resend({
+            type: 'signup',
+            email,
+            options: { emailRedirectTo: AUTH_PUBLIC_URL }
+          });
+
+          if (!resend.error) {
+            openEmailConfirmationModal(email);
+            toast('Код подтверждения повторно отправлен на Email.');
+            return;
+          }
+
+          // Возможно, Email уже подтверждён. Тогда пробуем продолжить
+          // незавершённую регистрацию по введённому паролю.
+          const login = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (!login.error && login.data?.session?.user) {
+            await finalizePendingRegistration(login.data.session, meta);
+            return;
+          }
+
+          throw error;
+        }
+
+        const user = data?.user;
+        const session = data?.session;
+
+        if (!user) throw new Error('Supabase не вернул пользователя.');
+
+        // Автоконфигурация без подтверждения — редкий случай.
+        if (session) {
+          await finalizePendingRegistration(session, meta);
           return;
         }
 
-        const { error: bootstrapError } = await supabaseClient.rpc('bootstrap_company', {
-          p_company_name: company,
-          p_department_name: 'Основное',
-          p_invite_code: inviteCode,
-          p_name: name,
-          p_phone: null
-        });
-        if (bootstrapError) throw bootstrapError;
-
-        await hydrateCurrentUser();
-        enterApp();
+        // Подтверждение обязательно: сохраняем состояние и показываем OTP.
+        savePendingRegistration({ ...meta, userId: user.id || null });
+        openEmailConfirmationModal(email);
+        toast('Код подтверждения отправлен на Email.');
       } catch (e) {
-        console.error(e);
-        showError(e.message || 'Ошибка регистрации.');
+        console.error('[Check App] registration failed:', e);
+        showError(e?.message || 'Не удалось продолжить регистрацию.');
       }
     }
 
@@ -543,49 +659,9 @@
       }
     }
 
+    // Legacy handler: приглашение теперь проходит через единую регистрацию doRegister().
     async function doJoinByInvite() {
-      if (!ensureSupabase()) return;
-      const code = document.getElementById('invite-code').value.trim().toUpperCase();
-      const name = document.getElementById('invite-name').value.trim();
-      const email = document.getElementById('invite-email').value.trim().toLowerCase();
-      const password = document.getElementById('invite-password').value;
-      if (!code || !name || !email || password.length < 8) return showError('Заполните все поля.');
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('Введите корректный Email.');
-
-      try {
-        const { data, error } = await supabaseClient.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              name,
-              signup_mode: 'invite',
-              invite_code: code
-            }
-          }
-        });
-        if (error) throw error;
-        if (!data.user) throw new Error('Supabase не вернул пользователя.');
-
-        if (!data.session) {
-          pendingEmail = { mode:'invite', email, name, company:null, code };
-          openEmailConfirmationModal(email);
-          return;
-        }
-
-        const { error: joinError } = await supabaseClient.rpc('join_company_by_invite', {
-          p_invite_code: code,
-          p_name: name,
-          p_phone: null
-        });
-        if (joinError) throw joinError;
-
-        await hydrateCurrentUser();
-        enterApp();
-      } catch (e) {
-        console.error(e);
-        showError(e.message || 'Ошибка присоединения.');
-      }
+      return doRegister();
     }
 
     async function doLogout() {
