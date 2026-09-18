@@ -518,9 +518,9 @@
       const inviteCode = inviteCodeFromUrl();
       const inviteMode = !document.getElementById('form-invite')?.classList.contains('hidden');
       const company = document.getElementById('reg-company')?.value.trim() || '';
-      const name = (inviteMode
-        ? document.getElementById('invite-name')?.value
-        : document.getElementById('reg-name')?.value)?.trim() || '';
+      const name = inviteMode
+        ? (document.getElementById('invite-name')?.value || '').trim()
+        : 'Руководитель';
       const email = (inviteMode
         ? document.getElementById('invite-email')?.value
         : document.getElementById('reg-email')?.value)?.trim().toLowerCase() || '';
@@ -528,10 +528,10 @@
         ? document.getElementById('invite-password')?.value
         : document.getElementById('reg-password')?.value) || '';
 
-      if (!name || !email || password.length < 8 || (inviteMode && !inviteCode) || (!inviteMode && !inviteCode && !company)) {
+      if (!email || password.length < 8 || (inviteMode && (!inviteCode || !name)) || (!inviteMode && !company)) {
         return showError(inviteMode
           ? 'Укажите код приглашения, имя, Email и пароль минимум из 8 символов.'
-          : 'Заполните название компании, имя, Email и пароль минимум из 8 символов.');
+          : 'Укажите название компании, Email и пароль минимум из 8 символов.');
       }
 
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -649,10 +649,9 @@
 
     async function doLogin() {
       if (!ensureSupabase()) return;
-      const companyName = document.getElementById('login-company').value.trim();
       const email = document.getElementById('login-email').value.trim().toLowerCase();
       const password = document.getElementById('login-password').value;
-      if (!companyName || !email || !password) return showError('Заполните все поля.');
+      if (!email || !password) return showError('Введите Email и пароль.');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('Введите корректный Email.');
 
       try {
@@ -695,12 +694,7 @@
           throw new Error('Профиль пользователя не найден.');
         }
 
-        const c = getCompany();
-        if (c.name.toLowerCase() !== companyName.toLowerCase()) {
-          await supabaseClient.auth.signOut();
-          db = loadDB();
-          throw new Error('Пользователь не относится к указанной компании.');
-        }
+        // Компания определяется по профилю пользователя в Supabase.
         enterApp();
       } catch (e) {
         console.error(e);
