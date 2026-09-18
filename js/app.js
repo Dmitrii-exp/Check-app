@@ -411,7 +411,7 @@
       const codeEl = document.getElementById('otp-code');
       const statusEl = document.getElementById('otp-status');
       const btn = document.getElementById('otp-submit');
-      const code = (codeEl?.value || '').trim().replace(/\\s+/g, '');
+      const code = (codeEl?.value || '').trim().replace(/\s+/g, '');
       const email = pendingEmail?.email;
 
       const setStatus = (text, ok = false) => {
@@ -421,7 +421,7 @@
       };
 
       if (!email) return setStatus('Данные регистрации потеряны. Откройте ссылку приглашения заново.');
-      if (!/^\\d{6}$/.test(code)) {
+      if (!/^\d{6}$/.test(code)) {
         setStatus('Введите 6-значный код из письма.');
         codeEl?.focus();
         return;
@@ -534,7 +534,7 @@
           : 'Заполните название компании, имя, Email и пароль минимум из 8 символов.');
       }
 
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return showError('Введите корректный Email.');
       }
 
