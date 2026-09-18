@@ -289,9 +289,15 @@
 
     function inviteCodeFromUrl() {
       try {
-        return String(new URLSearchParams(window.location.search).get('invite') || '').trim().toUpperCase();
+        const params = new URLSearchParams(window.location.search);
+        return String(
+          params.get('invite') ||
+          params.get('code') ||
+          document.getElementById('invite-code')?.value ||
+          ''
+        ).trim().toUpperCase();
       } catch (_) {
-        return '';
+        return String(document.getElementById('invite-code')?.value || '').trim().toUpperCase();
       }
     }
 
@@ -510,14 +516,21 @@
       if (!ensureSupabase()) return;
 
       const inviteCode = inviteCodeFromUrl();
+      const inviteMode = !document.getElementById('form-invite')?.classList.contains('hidden');
       const company = document.getElementById('reg-company')?.value.trim() || '';
-      const name = document.getElementById('reg-name')?.value.trim() || '';
-      const email = document.getElementById('reg-email')?.value.trim().toLowerCase() || '';
-      const password = document.getElementById('reg-password')?.value || '';
+      const name = (inviteMode
+        ? document.getElementById('invite-name')?.value
+        : document.getElementById('reg-name')?.value)?.trim() || '';
+      const email = (inviteMode
+        ? document.getElementById('invite-email')?.value
+        : document.getElementById('reg-email')?.value)?.trim().toLowerCase() || '';
+      const password = (inviteMode
+        ? document.getElementById('invite-password')?.value
+        : document.getElementById('reg-password')?.value) || '';
 
-      if (!name || !email || password.length < 8 || (!inviteCode && !company)) {
-        return showError(inviteCode
-          ? 'Укажите имя, Email и пароль минимум из 8 символов.'
+      if (!name || !email || password.length < 8 || (inviteMode && !inviteCode) || (!inviteMode && !inviteCode && !company)) {
+        return showError(inviteMode
+          ? 'Укажите код приглашения, имя, Email и пароль минимум из 8 символов.'
           : 'Заполните название компании, имя, Email и пароль минимум из 8 символов.');
       }
 
@@ -693,11 +706,6 @@
         console.error(e);
         showError(e.message || 'Ошибка входа.');
       }
-    }
-
-    // Legacy handler: приглашение теперь проходит через единую регистрацию doRegister().
-    async function doJoinByInvite() {
-      return doRegister();
     }
 
     async function doLogout() {
