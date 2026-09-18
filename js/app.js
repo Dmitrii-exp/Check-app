@@ -607,10 +607,25 @@
           return;
         }
 
-        // Новый аккаунт или ранее начатая, но не завершённая регистрация:
-        // сохраняем состояние и ждём код. Для существующего signup ниже
-        // resend даёт пользователю новый код на тот же Email.
+        // Новый аккаунт или ранее начатая, но не завершённая регистрация.
+        // signUp отправляет confirmation сам. Если Auth user создан раньше,
+        // дополнительно запрашиваем новый код; сервер сам соблюдает rate limit.
         savePendingRegistration({ ...meta, userId: user.id || null });
+
+        const createdAt = user.created_at ? Date.parse(user.created_at) : Date.now();
+        const isPreviouslyCreated = Number.isFinite(createdAt) && (Date.now() - createdAt > 65000);
+
+        if (isPreviouslyCreated) {
+          const resend = await supabaseClient.auth.resend({
+            type: 'signup',
+            email,
+            options: { emailRedirectTo: AUTH_PUBLIC_URL }
+          });
+          if (resend.error) {
+            console.warn('[Check App] resend after previous signup:', resend.error);
+          }
+        }
+
         openEmailConfirmationModal(email);
         toast('Код подтверждения отправлен на Email.');
       } catch (e) {
