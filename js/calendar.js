@@ -13,7 +13,7 @@
 
   // app.js owns registration/login. These small helpers only handle
   // invitation UI/redirects and finalisation after email-link confirmation.
-  loadScript('js/calendar-core.js', function () {
+  loadScript('js/calendar-core.js?v=20260918-03', function () {
     loadScript('js/invite-registration.js', function () {
       loadScript('js/auth-finalize.js');
     });
