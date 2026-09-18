@@ -588,7 +588,28 @@
           return;
         }
 
-        // Подтверждение обязательно: сохраняем состояние и показываем OTP.
+        // Supabase маскирует уже подтверждённый аккаунт пустым identities.
+        // В этом случае не создаём новую регистрацию: пробуем продолжить
+        // незавершённую регистрацию по введённому паролю.
+        if (Array.isArray(user.identities) && user.identities.length === 0) {
+          const login = await supabaseClient.auth.signInWithPassword({ email, password });
+
+          if (!login.error && login.data?.session?.user) {
+            await finalizePendingRegistration(login.data.session, meta);
+            return;
+          }
+
+          try { sessionStorage.removeItem('checkapp_pending_registration'); } catch (_) {}
+          pendingEmail = null;
+          document.getElementById('login-email').value = email;
+          switchAuthTab('login');
+          showError('Этот Email уже зарегистрирован. Введите пароль от существующего аккаунта.');
+          return;
+        }
+
+        // Новый аккаунт или ранее начатая, но не завершённая регистрация:
+        // сохраняем состояние и ждём код. Для существующего signup ниже
+        // resend даёт пользователю новый код на тот же Email.
         savePendingRegistration({ ...meta, userId: user.id || null });
         openEmailConfirmationModal(email);
         toast('Код подтверждения отправлен на Email.');
