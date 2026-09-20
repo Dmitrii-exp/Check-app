@@ -1393,24 +1393,24 @@
       pendingPlanId = null;
       document.getElementById('pay-confirm').classList.add('hidden');
     }
-    function confirmPay() {
+    async function confirmPay() {
       if (getUser().role !== 'manager') return;
       if (!pendingPlanId) return;
-      const p = PLANS[pendingPlanId];
-      const c = getCompany();
-      const now = new Date();
-      const expires = new Date(now.getTime() + p.days * 24 * 60 * 60 * 1000);
-      c.subscription = {
-        planId: p.id,
-        startedAt: now.toISOString(),
-        expiresAt: expires.toISOString()
-      };
-      saveDB();
-      pendingPlanId = null;
-      document.getElementById('pay-confirm').classList.add('hidden');
-      generateTodayTasks();
-      renderCabinet();
-      toast('Подписка «' + p.name + '» активирована на 30 дней');
+      const planId = pendingPlanId;
+      const btn = document.getElementById('pay-confirm-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Создаём счёт…'; }
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('create-robokassa-invoice', { body: { planId } });
+        if (error) throw error;
+        if (!data?.payment_url) throw new Error(data?.error || 'Не удалось создать счёт.');
+        pendingPlanId = null;
+        document.getElementById('pay-confirm').classList.add('hidden');
+        window.location.href = data.payment_url;
+      } catch (e) {
+        console.error('Robokassa:', e);
+        toast(e?.message || 'Не удалось создать платёж.');
+        if (btn) { btn.disabled = false; btn.textContent = 'Перейти к оплате'; }
+      }
     }
     function renewCurrentPlan() {
       const c = getCompany();
@@ -1481,12 +1481,39 @@
     }
     function closePhotoModal() { document.getElementById('modal-photo').classList.add('hidden'); }
 
+    async function handlePaymentReturn() {
+      const params = new URLSearchParams(window.location.search);
+      const payment = params.get('payment');
+      if (!payment) return;
+      window.history.replaceState({}, document.title, window.location.pathname);
+      if (payment === 'success') {
+        toast('Платёж принят. Проверяем активацию подписки…');
+        for (let i = 0; i < 5; i++) {
+          await new Promise(r => setTimeout(r, 1200));
+          try {
+            const ok = await hydrateCurrentUser();
+            if (ok) {
+              renderCabinet();
+              const sub = getCompany()?.subscription;
+              if (sub?.expiresAt && new Date(sub.expiresAt) > new Date()) {
+                toast('Подписка активирована');
+                return;
+              }
+            }
+          } catch (_) {}
+        }
+        toast('Оплата прошла. Подписка активируется автоматически в течение нескольких секунд.');
+      } else if (payment === 'fail') {
+        toast('Оплата не завершена.');
+      }
+    }
+
     (async function initCloudApp() {
       try {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) return;
         const ok = await hydrateCurrentUser();
-        if (ok) enterApp();
+        if (ok) { enterApp(); await handlePaymentReturn(); }
       } catch (e) {
         console.error('Check App initialization error:', e);
         showError('Не удалось загрузить данные из Supabase.');
