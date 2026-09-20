@@ -1374,7 +1374,7 @@
             ${isCurrent ? '<span class="text-xs bg-primary-500/20 text-primary-400 px-2 py-1 rounded-full">текущий</span>' : ''}
           </div>
           <div class="text-2xl font-bold mb-1">${p.price ? p.price + ' ₽' : '0 ₽'}<span class="text-sm font-normal text-slate-400">${p.price ? '/мес' : ''}</span></div>
-          <div class="text-sm text-slate-400 mb-4">до ${p.maxDepts} ${p.maxDepts === 1 ? 'подразделения' : (p.maxDepts >= 2 && p.maxDepts <= 4 ? 'подразделения' : 'подразделений')} · до ${p.maxEquip} единиц оборудования в каждом</div>
+          <div class="text-sm text-slate-400 mb-4">до ${p.maxDepts} ${p.maxDepts === 1 ? 'подразделения' : (p.maxDepts >= 2 && p.maxDepts <= 4 ? 'подразделения' : 'подразделений')}<br>до ${p.maxEquip} единиц оборудования в каждом</div>
           ${p.id === 'free' ? '' : `<button onclick="startPay('${p.id}')" class="w-full py-2.5 rounded-xl text-sm font-medium ${isCurrent ? 'bg-slate-800 text-slate-400' : 'bg-primary-600 hover:bg-primary-500 text-white'} transition">${isCurrent ? 'Продлить на 30 дней' : 'Выбрать'}</button>`}
         </div>`;
       }).join('');
