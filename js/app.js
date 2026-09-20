@@ -518,9 +518,9 @@
       const inviteCode = inviteCodeFromUrl();
       const inviteMode = !document.getElementById('form-invite')?.classList.contains('hidden');
       const company = document.getElementById('reg-company')?.value.trim() || '';
-      const name = inviteMode
-        ? (document.getElementById('invite-name')?.value || '').trim()
-        : 'Руководитель';
+      const name = (inviteMode
+        ? document.getElementById('invite-name')?.value
+        : document.getElementById('reg-name')?.value)?.trim() || '';
       const email = (inviteMode
         ? document.getElementById('invite-email')?.value
         : document.getElementById('reg-email')?.value)?.trim().toLowerCase() || '';
@@ -528,10 +528,10 @@
         ? document.getElementById('invite-password')?.value
         : document.getElementById('reg-password')?.value) || '';
 
-      if (!email || password.length < 8 || (inviteMode && (!inviteCode || !name)) || (!inviteMode && !company)) {
+      if (!name || !email || password.length < 8 || (inviteMode && !inviteCode) || (!inviteMode && !inviteCode && !company)) {
         return showError(inviteMode
           ? 'Укажите код приглашения, имя, Email и пароль минимум из 8 символов.'
-          : 'Укажите название компании, Email и пароль минимум из 8 символов.');
+          : 'Заполните название компании, имя, Email и пароль минимум из 8 символов.');
       }
 
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
