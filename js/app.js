@@ -832,6 +832,53 @@
       document.getElementById('auth-screen').classList.remove('hidden');
     }
 
+    // Native reminders belong only to the responsible employee for their department.
+    // They are re-created on login and whenever the app is opened.
+    const MAINTENANCE_NOTIFICATION_IDS_KEY = 'checkapp-maintenance-notification-ids';
+    function notificationId(taskId) {
+      let hash = 2166136261;
+      for (const ch of String(taskId)) {
+        hash ^= ch.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+      }
+      return (hash >>> 1) || 1;
+    }
+    async function refreshMaintenanceNotifications() {
+      const localNotifications = window.Capacitor?.Plugins?.LocalNotifications;
+      if (!window.Capacitor?.isNativePlatform?.() || !localNotifications) return;
+      const previous = JSON.parse(localStorage.getItem(MAINTENANCE_NOTIFICATION_IDS_KEY) || '[]');
+      if (previous.length) await localNotifications.cancel({ notifications: previous.map(id => ({ id })) });
+      localStorage.removeItem(MAINTENANCE_NOTIFICATION_IDS_KEY);
+      const user = getUser();
+      if (!user || user.role !== 'responsible') return;
+      const permissions = await localNotifications.checkPermissions();
+      if (permissions.display !== 'granted') {
+        const requested = await localNotifications.requestPermissions();
+        if (requested.display !== 'granted') return;
+      }
+      const now = new Date();
+      const tasks = getCompany().tasks.filter(task =>
+        task.departmentId === user.departmentId &&
+        task.status !== 'done' &&
+        isEquipmentActive(task.equipmentId)
+      );
+      const notifications = tasks.slice(0, 60).map(task => {
+        const due = new Date(task.date + 'T09:00:00');
+        const late = due.getTime() < now.getTime();
+        const when = late ? new Date(now.getTime() + 12000) : due;
+        return {
+          id: notificationId(task.id),
+          title: late ? 'Просрочено техническое обслуживание' : 'Необходимо выполнить ТО',
+          body: (task.equipName || 'Оборудование') + ' — ' + task.title,
+          schedule: { at: when, allowWhileIdle: true },
+          extra: { taskId: task.id, departmentId: task.departmentId }
+        };
+      });
+      if (!notifications.length) return;
+      await localNotifications.schedule({ notifications });
+      localStorage.setItem(MAINTENANCE_NOTIFICATION_IDS_KEY, JSON.stringify(notifications.map(n => n.id)));
+    }
+
     function enterApp() {
       document.getElementById('auth-screen').classList.add('hidden');
       document.getElementById('app-screen').classList.remove('hidden');
@@ -861,6 +908,7 @@
         if (!currentDeptId && c.departments.length) currentDeptId = c.departments[0].id;
       }
       generateTodayTasks();
+      void refreshMaintenanceNotifications().catch(e => console.error('[Check App] notifications:', e));
       if (isStaff) showPage('dashboard'); else showPage('today');
     }
 
