@@ -1089,7 +1089,7 @@
         const photo = document.getElementById('history-detail-photo');
         try {
           const { data, error } = await supabaseClient.storage.from('equipment-photos').createSignedUrl(item.photoPath, 3600);
-          if (!modal.classList.contains('hidden') || !photo?.isConnected) {
+          if (!modal.classList.contains('hidden') && photo?.isConnected) {
             if (error || !data?.signedUrl) { if (photo?.isConnected) photo.textContent = 'Не удалось загрузить фото'; }
             else if (photo?.isConnected) {
               const img = document.createElement('img');
