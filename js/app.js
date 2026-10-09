@@ -729,10 +729,8 @@
       document.getElementById('manager-nav').classList.toggle('hidden', !isStaff);
       document.getElementById('nav-super-admin')?.classList.toggle('hidden', !isSuperAdmin);
       document.getElementById('dept-bar').classList.toggle('hidden', !isManager);
-      // кабинет и команда — только руководитель компании
-      document.querySelectorAll('.nav-btn[data-page="cabinet"]').forEach(btn => {
-        btn.classList.toggle('hidden', !isManager);
-      });
+      // Личный кабинет доступен всем; подписки — только руководителю.
+      document.querySelectorAll('.nav-btn[data-page="cabinet"]').forEach(btn => btn.classList.remove('hidden'));
       document.querySelectorAll('.nav-btn[data-page="team"]').forEach(btn => {
         btn.classList.toggle('hidden', !isManager);
       });
@@ -785,10 +783,6 @@
 
     function showPage(page) {
       const user = getUser();
-      if (page === 'cabinet' && user.role !== 'manager') {
-        toast('Доступ только у руководителя компании');
-        page = 'dashboard';
-      }
       if (page === 'super-admin' && !isSuperAdmin) {
         toast('Доступ только у SUPER ADMIN');
         page = 'dashboard';
@@ -1503,7 +1497,12 @@
     let pendingPlanId = null;
 
     function renderCabinet() {
-      if (getUser().role !== 'manager') { showPage('dashboard'); return; }
+      const manager = getUser().role === 'manager';
+      document.getElementById('cab-subscription-details').classList.toggle('hidden', !manager);
+      document.getElementById('cab-choose-plan').classList.toggle('hidden', !manager);
+      document.getElementById('plans-section').classList.add('hidden');
+      document.getElementById('pay-confirm').classList.add('hidden');
+      if (!manager) return;
       const c = getCompany();
       const sub = c.subscription || { planId: 'free', expiresAt: null };
       const plan = getPlan();
