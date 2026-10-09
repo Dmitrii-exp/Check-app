@@ -1438,22 +1438,21 @@
       document.getElementById('modal-equip').classList.remove('hidden');
     }
     function closeEquipModal() { document.getElementById('modal-equip').classList.add('hidden'); }
-    function saveEquipment() {
+    async function saveEquipment() {
       const name = document.getElementById('equip-name').value.trim();
       if (!name) return toast('Укажите название');
-      const plan = getPlan();
-      const deptId = getActiveDeptId();
-      const count = getCompany().equipment.filter(e => e.departmentId === deptId).length;
-      if (count >= plan.maxEquip) {
-        return toast('Лимит оборудования по тарифу «' + plan.name + '»: ' + plan.maxEquip + ' на подразделение. Смените тариф в Кабинете.');
-      }
-      getCompany().equipment.push({
-        id: uid(), name,
-        code: document.getElementById('equip-code').value.trim(),
-        location: document.getElementById('equip-location').value.trim(),
-        departmentId: deptId
+      const plan = getPlan(), deptId = getActiveDeptId(), c = getCompany();
+      if (c.equipment.filter(e => e.departmentId === deptId).length >= plan.maxEquip)
+        return toast('Достигнут лимит оборудования по тарифу «' + plan.name + '»');
+      const equipment = { id:uid(), name, code:document.getElementById('equip-code').value.trim(),
+        location:document.getElementById('equip-location').value.trim(), departmentId:deptId };
+      const {error} = await supabaseClient.from('equipment').insert({
+        id:equipment.id, company_id:c.id, department_id:deptId, name,
+        code:equipment.code || null, location:equipment.location || null
       });
-      saveDB(); closeEquipModal(); renderEquipment(); toast('Добавлено');
+      if (error) return toast('Не удалось сохранить оборудование: ' + error.message);
+      c.equipment.push(equipment);
+      closeEquipModal(); renderEquipment(); toast('Оборудование сохранено');
     }
     async function deleteEquipment(id) {
       if (!confirm('Удалить оборудование и связанные регламенты?')) return;
@@ -1486,17 +1485,21 @@
       document.getElementById('modal-action').classList.remove('hidden');
     }
     function closeActionModal() { document.getElementById('modal-action').classList.add('hidden'); }
-    function saveAction() {
+    async function saveAction() {
       const name = document.getElementById('action-name').value.trim();
       if (!name) return toast('Укажите название');
-      getCompany().actions.push({
-        id: uid(),
-        equipmentId: document.getElementById('action-equip').value,
-        name, description: document.getElementById('action-desc').value.trim(),
-        frequency: parseInt(document.getElementById('action-freq').value, 10),
-        departmentId: getActiveDeptId()
+      const company = getCompany();
+      const action = {id:uid(), equipmentId:document.getElementById('action-equip').value,
+        name, description:document.getElementById('action-desc').value.trim(),
+        frequency:parseInt(document.getElementById('action-freq').value,10), departmentId:getActiveDeptId()};
+      const {error} = await supabaseClient.from('maintenance_actions').insert({
+        id:action.id, company_id:company.id, department_id:action.departmentId,
+        equipment_id:action.equipmentId, name:action.name, description:action.description || null,
+        frequency:action.frequency
       });
-      saveDB(); generateTodayTasks(); closeActionModal(); renderActions(); toast('Добавлено');
+      if (error) return toast('Не удалось сохранить ТО: ' + error.message);
+      company.actions.push(action);
+      generateTodayTasks(); closeActionModal(); renderActions(); toast('ТО сохранено');
     }
     async function deleteAction(id) {
       if (!confirm('Удалить регламент и связанные задания?')) return;
@@ -1617,7 +1620,27 @@
           task.blockedWorkerName = workerName;
           task.blockedAt = now.toISOString();
         }
-        saveDB();
+        // Persist completion and task state before displaying success.
+        if (completionStatus === 'done') {
+          const completion = c.completions[c.completions.length - 1];
+          const {error: completionError} = await supabaseClient.from('completions').insert({
+            id:completion.id, company_id:c.id, department_id:completion.departmentId,
+            task_id:completion.taskId, action_id:completion.actionId, equipment_id:completion.equipmentId,
+            user_id:completion.userId, worker_name:completion.workerName,
+            title:completion.title, equip_name:completion.equipName, date:completion.date,
+            time:completion.time, photo_path:completion.photoPath, comment:completion.comment || null
+          });
+          if (completionError) {
+            c.completions.pop(); task.status = 'pending';
+            throw completionError;
+          }
+        }
+        const {error: taskError} = await supabaseClient.from('tasks').update({
+          status:task.status, blocked_comment:task.blockedComment || null,
+          blocked_worker_name:task.blockedWorkerName || null, blocked_at:task.blockedAt || null
+        }).eq('id',task.id).eq('company_id',c.id);
+        if (taskError) throw taskError;
+        void refreshMaintenanceNotifications().catch(console.error);
 
         closeCompleteModal();
         const successEl = document.getElementById('modal-success');
