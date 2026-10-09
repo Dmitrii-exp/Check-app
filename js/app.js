@@ -1881,22 +1881,41 @@
       }
     }
 
-    (async function initCloudApp() {
-      try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) return;
-        if (passwordRecoveryActive || window.location.hash.includes('type=recovery')) {
-          passwordRecoveryActive = true;
-          openPasswordRecovery(true);
-          return;
+    // Restore the last signed-in account after reopening the website.
+    // Supabase persists and refreshes the session; passwords are never stored here.
+    let restoringWebsiteSession = null;
+    async function restoreWebsiteSession() {
+      if (!supabaseClient || passwordRecoveryActive ||
+          window.location.hash.includes('type=recovery') ||
+          window.location.search.includes('type=recovery')) return;
+      if (!document.getElementById('app-screen').classList.contains('hidden')) return;
+      if (restoringWebsiteSession) return restoringWebsiteSession;
+      restoringWebsiteSession = (async () => {
+        try {
+          const { data, error } = await supabaseClient.auth.getSession();
+          if (error) throw error;
+          if (!data?.session) return;
+          // getUser validates and refreshes the current identity before restoring UI.
+          const { data: identity, error: identityError } = await supabaseClient.auth.getUser();
+          if (identityError || !identity?.user) return;
+          const ok = await hydrateCurrentUser();
+          if (ok && !passwordRecoveryActive) {
+            enterApp();
+            await handlePaymentReturn();
+          }
+        } catch (e) {
+          console.error('Check App session restoration error:', e);
+          showError('Не удалось восстановить вход. Проверьте интернет и попробуйте снова.');
+        } finally {
+          restoringWebsiteSession = null;
         }
-        const ok = await hydrateCurrentUser();
-        if (ok) { enterApp(); await handlePaymentReturn(); }
-      } catch (e) {
-        console.error('Check App initialization error:', e);
-        showError('Не удалось загрузить данные из Supabase.');
-      }
-    })();
+      })();
+      return restoringWebsiteSession;
+    }
+    void restoreWebsiteSession();
+    window.addEventListener('pageshow', event => {
+      if (event.persisted) void restoreWebsiteSession();
+    });
   
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' && pendingOtp && !document.getElementById('otp-modal').classList.contains('hidden')) {
