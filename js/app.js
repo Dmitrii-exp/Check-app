@@ -1038,36 +1038,101 @@
       }).join('');
     }
 
-    async function renderHistory() {
-      const comps = [...getDeptCompletions()].sort((a,b) => b.date.localeCompare(a.date));
-      const list = document.getElementById('history-list');
-      const empty = document.getElementById('history-empty');
-      if (!comps.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
-      empty.classList.add('hidden');
-      const c = getCompany();
-      list.innerHTML = comps.map(comp => {
-        const user = c.users.find(u => u.id === comp.userId);
-        return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <div class="font-semibold">${esc(comp.title)}</div>
-          <div class="text-sm text-slate-400">${esc(comp.equipName)} · ${formatDate(comp.date)} ${comp.time||''}</div>
-          <div class="text-xs text-slate-500 mt-1">Выполнил: ${user?esc(user.name):'—'}</div>
-          ${comp.comment ? `<div class="text-sm text-slate-300 mt-2 bg-slate-800/60 rounded-lg px-3 py-2">💬 ${esc(comp.comment)}</div>` : ''}
-          ${comp.photoPath ? `<div class="text-xs text-primary-400 mt-3" id="photo-${comp.id}">Загрузка фото…</div>` : ''}
-        </div>`;
-      }).join('');
+    let historyFilter = 'all';
 
-      for (const comp of comps) {
-        if (!comp.photoPath) continue;
-        const { data, error } = await supabaseClient.storage.from('equipment-photos').createSignedUrl(comp.photoPath, 3600);
-        const el = document.getElementById('photo-' + comp.id);
-        if (!el) continue;
-        if (error || !data?.signedUrl) {
-          el.textContent = 'Фото недоступно';
-          el.className = 'text-xs text-rose-400 mt-3';
-        } else {
-          el.outerHTML = `<img src="${esc(data.signedUrl)}" class="rounded-xl max-h-48 object-cover cursor-pointer mt-3" onclick="openPhotoModal(this.src)" alt="Фото выполненной работы" />`;
+    function setHistoryFilter(value) {
+      if (!['all', 'done', 'pending'].includes(value)) return;
+      historyFilter = value;
+      renderHistory();
+    }
+
+    function historyItems() {
+      const c = getCompany(), deptId = getActiveDeptId();
+      const done = getDeptCompletions().map(comp => ({ id: comp.id, status: 'done', date: comp.date, time: comp.time || '', title: comp.title, equipName: comp.equipName, userId: comp.userId, comment: comp.comment, photoPath: comp.photoPath, taskId: comp.taskId, actionId: comp.actionId, equipmentId: comp.equipmentId, completion: comp }));
+      const completedIds = new Set(done.map(x => x.taskId).filter(Boolean));
+      const pending = c.tasks.filter(t => t.departmentId === deptId && t.status !== 'done' && !completedIds.has(t.id)).map(t => ({ id: t.id, status: 'pending', date: t.date, time: '', title: t.title, equipName: t.equipName, userId: t.assignedUserId, comment: '', photoPath: '', taskId: t.id, actionId: t.actionId, equipmentId: t.equipmentId }));
+      return [...done, ...pending].sort((a,b) => (b.date || '').localeCompare(a.date || '') || (b.time || '').localeCompare(a.time || ''));
+    }
+
+    function historyDetailsMarkup(item) {
+      const c = getCompany(), user = c.users.find(u => u.id === item.userId);
+      const equip = c.equipment.find(e => e.id === item.equipmentId);
+      const action = c.actions.find(a => a.id === item.actionId);
+      return `<div class="space-y-3 text-sm">
+        <div><span class="text-slate-400">Статус:</span> <span class="${item.status === 'done' ? 'text-emerald-400' : 'text-amber-400'}">${item.status === 'done' ? 'Выполнено' : 'Не выполнено'}</span></div>
+        <div><span class="text-slate-400">Работа:</span> ${esc(item.title || '—')}</div>
+        <div><span class="text-slate-400">Оборудование:</span> ${esc(item.equipName || equip?.name || '—')}</div>
+        ${equip?.code ? `<div><span class="text-slate-400">Код:</span> ${esc(equip.code)}</div>` : ''}
+        <div><span class="text-slate-400">Дата:</span> ${formatDate(item.date)} ${esc(item.time || '')}</div>
+        <div><span class="text-slate-400">${item.status === 'done' ? 'Выполнил:' : 'Назначен:'}</span> ${esc(user?.name || '—')}</div>
+        ${action?.description ? `<div><span class="text-slate-400">Описание:</span> ${esc(action.description)}</div>` : ''}
+        ${item.comment ? `<div class="bg-slate-800/60 rounded-lg p-3"><span class="text-slate-400">Комментарий:</span> ${esc(item.comment)}</div>` : ''}
+        <div id="history-detail-photo">${item.photoPath ? 'Загрузка фото…' : item.status === 'done' ? 'Фото не прикреплено' : 'Фото появится после выполнения'}</div>
+      </div>`;
+    }
+
+    async function openHistoryDetails(id, status) {
+      const item = historyItems().find(x => x.id === id && x.status === status);
+      if (!item) return toast('Запись не найдена');
+      let modal = document.getElementById('history-detail-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'history-detail-modal';
+        modal.className = 'fixed inset-0 z-[100] bg-black/75 flex items-center justify-center p-4 hidden';
+        modal.innerHTML = '<div role="dialog" aria-modal="true" aria-labelledby="history-detail-title" class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-5"><div class="flex justify-between items-start gap-3 mb-4"><h2 id="history-detail-title" class="text-xl font-bold">Информация о работе</h2><button type="button" onclick="closeHistoryDetails()" class="px-3 py-1.5 rounded-lg bg-slate-800">Закрыть</button></div><div id="history-detail-body"></div></div>';
+        document.body.appendChild(modal);
+      }
+      document.getElementById('history-detail-title').textContent = item.title || 'Информация о работе';
+      document.getElementById('history-detail-body').innerHTML = historyDetailsMarkup(item);
+      modal.classList.remove('hidden');
+      if (item.photoPath) {
+        const photo = document.getElementById('history-detail-photo');
+        try {
+          const { data, error } = await supabaseClient.storage.from('equipment-photos').createSignedUrl(item.photoPath, 3600);
+          if (!modal.classList.contains('hidden') || !photo?.isConnected) {
+            if (error || !data?.signedUrl) { if (photo?.isConnected) photo.textContent = 'Не удалось загрузить фото'; }
+            else if (photo?.isConnected) {
+              const img = document.createElement('img');
+              img.src = data.signedUrl;
+              img.alt = 'Фото выполненной работы';
+              img.className = 'w-full max-h-[60vh] object-contain rounded-xl cursor-pointer';
+              img.onclick = () => openPhotoModal(img.src);
+              photo.replaceChildren(img);
+            }
+          }
+        } catch (_) { if (photo?.isConnected) photo.textContent = 'Не удалось загрузить фото'; }
+      }
+    }
+
+    function closeHistoryDetails() {
+      document.getElementById('history-detail-modal')?.classList.add('hidden');
+    }
+
+    function renderHistory() {
+      const all = historyItems();
+      const items = all.filter(x => historyFilter === 'all' || x.status === historyFilter);
+      const list = document.getElementById('history-list'), empty = document.getElementById('history-empty');
+      for (const value of ['all', 'done', 'pending']) {
+        const button = document.getElementById('history-filter-' + value);
+        if (button) {
+          const active = historyFilter === value;
+          button.classList.toggle('bg-primary-600', active);
+          button.classList.toggle('border-primary-500', active);
+          button.setAttribute('aria-pressed', String(active));
         }
       }
+      empty.classList.toggle('hidden', items.length > 0);
+      empty.textContent = historyFilter === 'done' ? 'Выполненных работ нет' : historyFilter === 'pending' ? 'Невыполненных задач нет' : 'Записей нет';
+      list.innerHTML = items.map(item => {
+        const user = getCompany().users.find(u => u.id === item.userId);
+        return `<button type="button" onclick="openHistoryDetails('${item.id}', '${item.status}')" class="block w-full text-left bg-slate-900 border border-slate-800 rounded-2xl p-4 hover:border-primary-500 transition">
+          <div class="flex justify-between items-start gap-2"><div class="font-semibold">${esc(item.title || '—')}</div><span class="text-xs shrink-0 ${item.status === 'done' ? 'text-emerald-400' : 'text-amber-400'}">${item.status === 'done' ? 'Выполнено' : 'Не выполнено'}</span></div>
+          <div class="text-sm text-slate-400 mt-1">${esc(item.equipName || '—')} · ${formatDate(item.date)} ${esc(item.time || '')}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.status === 'done' ? 'Выполнил' : 'Назначен'}: ${esc(user?.name || '—')}</div>
+          ${item.comment ? `<div class="text-sm text-slate-300 mt-2 bg-slate-800/60 rounded-lg px-3 py-2">${esc(item.comment)}</div>` : ''}
+          <div class="text-xs text-primary-400 mt-3">Открыть задачу →</div>
+        </button>`;
+      }).join('');
     }
 
     function renderReports() {
