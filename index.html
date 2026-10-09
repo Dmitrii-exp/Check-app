@@ -341,7 +341,7 @@
             <a href="https://www.app-check.ru/docs/legal/index.html" target="_blank" rel="noopener noreferrer" class="col-span-2 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">Правовая информация</a>
             <button id="cab-choose-plan" onclick="document.getElementById('plans-section').classList.remove('hidden')" class="w-full bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">Выбрать подписку</button>
             <button id="btn-renew" onclick="renewCurrentPlan()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">Продлить</button>
-            <button onclick="openInfoModal('help')" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">Инструкция</button>
+            <button onclick="openOnboardingTour(true)" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">Инструкция</button>
             <button onclick="openInfoModal('about')" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">О приложении</button>
           </div>
         </div>
@@ -542,6 +542,23 @@
     <img id="photo-viewer-img" class="max-w-full max-h-full rounded-lg" />
   </div>
 
+
+  <!-- First-login guided instruction. All controls are functional. -->
+  <div id="onboarding-overlay" class="hidden fixed inset-0 z-[100] bg-slate-950/95 flex items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Инструкция Check App">
+    <div class="w-full max-w-md max-h-[96dvh] flex flex-col overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
+      <div class="flex justify-between items-center p-4 border-b border-slate-700"><span class="font-semibold text-white">Инструкция Check App</span><button type="button" onclick="closeOnboardingTour()" class="text-slate-300 text-2xl px-2" aria-label="Закрыть инструкцию">×</button></div>
+      <div id="onboarding-content" class="overflow-y-auto flex-1 p-4"></div>
+      <div class="bg-white text-slate-900 p-4 space-y-3">
+        <div class="text-center text-sm font-medium text-slate-500" id="onboarding-count">1 / 10</div>
+        <h2 id="onboarding-title" class="text-center font-bold text-lg text-blue-800"></h2>
+        <p id="onboarding-description" class="text-sm text-center text-slate-600"></p>
+        <div id="onboarding-dots" class="flex justify-center gap-1.5" aria-hidden="true"></div>
+        <div class="grid grid-cols-2 gap-2"><button type="button" id="onboarding-prev" onclick="changeOnboardingSlide(-1)" class="rounded-lg bg-slate-100 text-blue-800 py-3 font-semibold">Назад</button><button type="button" id="onboarding-next" onclick="changeOnboardingSlide(1)" class="rounded-lg bg-blue-600 text-white py-3 font-semibold">Далее →</button></div>
+        <button type="button" id="onboarding-skip" onclick="closeOnboardingTour()" class="w-full text-sm text-slate-500 py-2">Пропустить</button>
+      </div>
+    </div>
+  </div>
+  <script src="js/onboarding.js?v=20261009-01"></script>
   <script src="js/update-center.js?v=20261009-01"></script>
   <script src="js/app.js?v=20261009-09"></script>
   <script src="js/calendar.js?v=20260918-03"></script>
