@@ -503,9 +503,10 @@
         <label class="block text-xs text-slate-400 mb-1">Комментарий</label>
         <textarea id="complete-comment" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
       </div>
+      <p id="complete-save-status" class="hidden text-sm text-slate-300" role="status" aria-live="polite"></p>
       <div class="flex gap-3 pt-2">
         <button onclick="closeCompleteModal()" class="flex-1 py-3 rounded-xl bg-slate-800 text-sm font-medium">Отмена</button>
-        <button onclick="submitComplete()" class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-sm font-medium">Сохранить</button>
+        <button id="complete-save-btn" type="button" onclick="submitComplete()" class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-sm font-medium disabled:opacity-60">Сохранить</button>
       </div>
     </div>
   </div>
@@ -542,7 +543,7 @@
   </div>
 
   <script src="js/update-center.js?v=20261009-01"></script>
-  <script src="js/app.js?v=20261009-01"></script>
+  <script src="js/app.js?v=20261009-09"></script>
   <script src="js/calendar.js?v=20260918-03"></script>
 </body>
 </html>
