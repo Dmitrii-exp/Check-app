@@ -717,6 +717,7 @@
       document.getElementById('header-company').textContent = c.name;
       const roleLabel = user.role === 'manager' ? ' · Руководитель' : (user.role === 'responsible' ? ' · Ответственный' : ' · Сотрудник');
       document.getElementById('header-user').textContent = user.name + roleLabel;
+      document.getElementById('header-email').textContent = db.currentUser?.email || user.email || '';
       // ensure subscription object exists
       if (!c.subscription) {
         c.subscription = { planId: 'free', expiresAt: null, startedAt: new Date().toISOString() };
