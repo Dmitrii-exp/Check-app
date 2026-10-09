@@ -333,7 +333,7 @@
     function openEmailConfirmationModal(email) {
       const message = document.getElementById('otp-message');
       if (message) {
-        message.textContent = `Код подтверждения отправлен на ${email}. Введите 6-значный код из письма.`;
+        message.textContent = `Код подтверждения отправлен на ${email}. Введите код из письма (6 или 8 цифр).`;
       }
       const code = document.getElementById('otp-code');
       if (code) code.value = '';
@@ -421,8 +421,8 @@
       };
 
       if (!email) return setStatus('Данные регистрации потеряны. Откройте ссылку приглашения заново.');
-      if (!/^\d{6}$/.test(code)) {
-        setStatus('Введите 6-значный код из письма.');
+      if (!/^(?:\d{6}|\d{8})$/.test(code)) {
+        setStatus('Введите код из письма (6 или 8 цифр).');
         codeEl?.focus();
         return;
       }
