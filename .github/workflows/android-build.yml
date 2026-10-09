@@ -26,11 +26,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build production CSS
-        run: npm run build:css
-
-      - name: Prepare production HTML
-        run: npm run prepare:production
+      - name: Build mobile assets from current website
+        run: npm run build:mobile
 
       - name: Static JS audit
         run: node scripts/audit-js.mjs
@@ -40,6 +37,9 @@ jobs:
 
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Configure password recovery deep links
+        run: node scripts/configure-mobile-links.mjs android
 
       - name: Build debug APK
         working-directory: android
