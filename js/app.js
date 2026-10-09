@@ -1548,6 +1548,7 @@
       document.getElementById('complete-worker-name').value = '';
       setCompletionStatus('done');
       clearCompletionValidation();
+      setCompletionSaveState(false);
       const task = getCompany().tasks.find(t => t.id === taskId);
       document.getElementById('complete-task-info').textContent = task.title + ' · ' + task.equipName;
       document.getElementById('complete-comment').value = '';
@@ -1605,6 +1606,17 @@
       return false;
     }
     let completionSubmissionBusy = false;
+    function setCompletionSaveState(busy, message = '', isError = false) {
+      const btn = document.getElementById('complete-save-btn');
+      const status = document.getElementById('complete-save-status');
+      if (btn) { btn.disabled = busy; btn.textContent = busy ? 'Сохраняем…' : 'Сохранить'; }
+      if (status) {
+        status.classList.toggle('hidden', !message);
+        status.classList.toggle('text-rose-400', isError);
+        status.classList.toggle('text-slate-300', !isError);
+        status.textContent = message;
+      }
+    }
     async function submitComplete() {
       if (completionSubmissionBusy) return;
       if (!validateCompletionFields()) return;
@@ -1619,6 +1631,7 @@
       if (!task || !user) return toast('Задача или пользователь не найдены');
       if (task.status === 'done' || c.completions.some(x => x.taskId === task.id)) return toast('Эта задача уже выполнена');
       completionSubmissionBusy = true;
+      setCompletionSaveState(true, 'Проверяем задачу…');
       try {
         const {data: existing, error: existingError} = await supabaseClient.from('completions').select('id').eq('task_id', task.id).limit(1);
         if (existingError) throw existingError;
@@ -1626,6 +1639,7 @@
         const now = new Date();
         let path = '';
         if (completionStatus === 'done') {
+          setCompletionSaveState(true, 'Загружаем фотографию…');
           const ext = (currentPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
           path = c.id + '/' + task.departmentId + '/' + task.id + '/' + Date.now() + '.' + ext;
           const { error: uploadError } = await supabaseClient.storage.from('equipment-photos').upload(path, currentPhotoFile, {
@@ -1645,6 +1659,7 @@
           task.blockedWorkerName = workerName;
           task.blockedAt = now.toISOString();
         }
+        setCompletionSaveState(true, 'Сохраняем результат в базе данных…');
         // Persist completion and task state before displaying success.
         if (completionStatus === 'done') {
           const completion = c.completions[c.completions.length - 1];
@@ -1660,6 +1675,7 @@
             throw completionError;
           }
         }
+        setCompletionSaveState(true, 'Обновляем статус задачи…');
         const {error: taskError} = await supabaseClient.from('tasks').update({
           status:task.status, blocked_comment:task.blockedComment || null,
           blocked_worker_name:task.blockedWorkerName || null, blocked_at:task.blockedAt || null
@@ -1675,9 +1691,12 @@
         successEl.style.display = 'flex';
       } catch (e) {
         console.error(e);
+        setCompletionSaveState(false, 'Ошибка сохранения: ' + (e.message || 'Не удалось сохранить результат ТО'), true);
         toast(e.message || 'Не удалось сохранить результат ТО');
       } finally {
         completionSubmissionBusy = false;
+        const btn = document.getElementById('complete-save-btn');
+        if (btn) { btn.disabled = false; btn.textContent = 'Сохранить'; }
       }
     }
     function closeSuccessModal() {
