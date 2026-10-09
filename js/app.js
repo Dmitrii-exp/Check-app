@@ -4,7 +4,14 @@
     const SUPABASE_URL = 'https://qaxoufarhpagcjkhptga.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ZMXWb57L46oreSiZJvCe5Q_JXG-IC-u';
     const supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
-      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            storageKey: 'checkapp-auth-session'
+          }
+        })
       : null;
     function ensureSupabase(){
       if (supabaseClient) return true;
@@ -102,8 +109,8 @@
         departments: (departments || []).map(d => ({id:d.id, name:d.name, inviteCode:d.invite_code})),
         equipment: (equipment || []).map(e => ({id:e.id, name:e.name, code:e.code || '', location:e.location || '', departmentId:e.department_id})),
         actions: (actions || []).map(a => ({id:a.id, equipmentId:a.equipment_id, name:a.name, description:a.description || '', frequency:a.frequency, departmentId:a.department_id})),
-        tasks: (tasks || []).map(t => ({id:t.id, actionId:t.action_id, equipmentId:t.equipment_id, assignedUserId:t.assigned_user_id, departmentId:t.department_id, date:t.date, status:t.status, title:t.title, equipName:t.equip_name || '', equipCode:t.equip_code || '', description:t.description || ''})),
-        completions: (completions || []).map(c => ({id:c.id, taskId:c.task_id, actionId:c.action_id, equipmentId:c.equipment_id, departmentId:c.department_id, userId:c.user_id, title:c.title, equipName:c.equip_name || '', date:c.date, time:c.time || '', photoPath:c.photo_path || '', photo:'', comment:c.comment || ''})),
+        tasks: (tasks || []).map(t => ({id:t.id, actionId:t.action_id, equipmentId:t.equipment_id, assignedUserId:t.assigned_user_id, departmentId:t.department_id, date:t.date, status:t.status, title:t.title, equipName:t.equip_name || '', equipCode:t.equip_code || '', description:t.description || '', blockedComment:t.blocked_comment || '', blockedWorkerName:t.blocked_worker_name || '', blockedAt:t.blocked_at || null})),
+        completions: (completions || []).map(c => ({id:c.id, taskId:c.task_id, actionId:c.action_id, equipmentId:c.equipment_id, departmentId:c.department_id, userId:c.user_id, title:c.title, equipName:c.equip_name || '', date:c.date, time:c.time || '', photoPath:c.photo_path || '', photo:'', comment:c.comment || '', workerName:c.worker_name || ''})),
         users: (profiles || []).map(u => ({id:u.id, name:u.name, email:(u.id === authUser.id ? (authUser.email || '') : ''), phone:u.phone || '', role:u.role, departmentId:u.department_id})),
         subscription: subscriptions ? {planId:subscriptions.plan_id, startedAt:subscriptions.started_at, expiresAt:subscriptions.expires_at} : {planId:'free', expiresAt:null}
       };
@@ -130,14 +137,12 @@
       cloudSyncBusy = true;
       try {
         const operations = [
-          ['компанию', supabaseClient.from('companies').upsert({id:c.id, name:c.name}, {onConflict:'id'})],
           ['подразделения', c.departments?.length ? supabaseClient.from('departments').upsert(c.departments.map(d => ({id:d.id, company_id:c.id, name:d.name, invite_code:d.inviteCode})), {onConflict:'id'}) : null],
           ['профили', c.users?.length ? supabaseClient.from('profiles').upsert(c.users.map(u => ({id:u.id, company_id:c.id, department_id:u.departmentId || null, name:u.name, phone:u.phone || null, role:u.role})), {onConflict:'id'}) : null],
           ['оборудование', c.equipment?.length ? supabaseClient.from('equipment').upsert(c.equipment.map(e => ({id:e.id, company_id:c.id, department_id:e.departmentId, name:e.name, code:e.code || null, location:e.location || null})), {onConflict:'id'}) : null],
           ['регламенты', c.actions?.length ? supabaseClient.from('maintenance_actions').upsert(c.actions.map(a => ({id:a.id, company_id:c.id, department_id:a.departmentId, equipment_id:a.equipmentId, name:a.name, description:a.description || null, frequency:a.frequency})), {onConflict:'id'}) : null],
-          ['задания', c.tasks?.length ? supabaseClient.from('tasks').upsert(c.tasks.map(t => ({id:t.id, company_id:c.id, department_id:t.departmentId, action_id:t.actionId || null, equipment_id:t.equipmentId || null, assigned_user_id:t.assignedUserId || null, date:t.date, status:t.status, title:t.title, equip_name:t.equipName || null, equip_code:t.equipCode || null, description:t.description || null})), {onConflict:'id'}) : null],
-          ['выполнения', c.completions?.length ? supabaseClient.from('completions').upsert(c.completions.map(x => ({id:x.id, company_id:c.id, department_id:x.departmentId, task_id:x.taskId || null, action_id:x.actionId || null, equipment_id:x.equipmentId || null, user_id:x.userId, title:x.title, equip_name:x.equipName || null, date:x.date, time:x.time || null, photo_path:x.photoPath || null, comment:x.comment || null})), {onConflict:'id'}) : null],
-          ['подписку', c.subscription ? supabaseClient.from('subscriptions').upsert({company_id:c.id, plan_id:c.subscription.planId || 'free', started_at:c.subscription.startedAt || new Date().toISOString(), expires_at:c.subscription.expiresAt || null}, {onConflict:'company_id'}) : null]
+          ['задания', c.tasks?.length ? supabaseClient.from('tasks').upsert(c.tasks.map(t => ({id:t.id, company_id:c.id, department_id:t.departmentId, action_id:t.actionId || null, equipment_id:t.equipmentId || null, assigned_user_id:t.assignedUserId || null, date:t.date, status:t.status, title:t.title, equip_name:t.equipName || null, equip_code:t.equipCode || null, description:t.description || null, blocked_comment:t.blockedComment || null, blocked_worker_name:t.blockedWorkerName || null, blocked_at:t.blockedAt || null})), {onConflict:'id'}) : null],
+          ['выполнения', c.completions?.length ? supabaseClient.from('completions').upsert(c.completions.map(x => ({id:x.id, company_id:c.id, department_id:x.departmentId, task_id:x.taskId || null, action_id:x.actionId || null, equipment_id:x.equipmentId || null, user_id:x.userId, title:x.title, equip_name:x.equipName || null, date:x.date, time:x.time || null, photo_path:x.photoPath || null, comment:x.comment || null, worker_name:x.workerName || null})), {onConflict:'id'}) : null]
         ];
         for (const [label, promise] of operations) {
           if (!promise) continue;
@@ -202,9 +207,9 @@
     function getDeptActions() { return getCompany().actions.filter(a => a.departmentId === getActiveDeptId()); }
     function getDeptTasks(date) {
       return getCompany().tasks.filter(t => {
-        if (t.date !== date || t.departmentId !== getActiveDeptId()) return false;
+        if ((t.date !== date && !(t.date < date && t.status !== 'done')) || t.departmentId !== getActiveDeptId()) return false;
         // hide pending tasks for frozen equipment
-        if (t.status === 'pending' && !isEquipmentActive(t.equipmentId)) return false;
+        if (t.status !== 'done' && !isEquipmentActive(t.equipmentId)) return false;
         return true;
       });
     }
@@ -286,6 +291,8 @@
     let adminCompanies = [];
 
     const AUTH_PUBLIC_URL = 'https://www.app-check.ru/';
+    const AUTH_MOBILE_RECOVERY_URL = 'ru.checkapp.mobile://recovery';
+    const isNativeCheckApp = () => !!(window.Capacitor?.isNativePlatform?.());
 
     function inviteCodeFromUrl() {
       try {
@@ -647,6 +654,121 @@
       }
     }
 
+    let passwordRecoveryActive = false;
+    function recoveryMessage(message, error = false) {
+      const el = document.getElementById('recovery-message');
+      el.textContent = message;
+      el.className = 'text-sm min-h-[20px] ' + (error ? 'text-red-400' : 'text-emerald-400');
+    }
+    function openPasswordRecovery(reset = false) {
+      const modal = document.getElementById('password-recovery-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('recovery-email-step').classList.toggle('hidden', reset);
+      document.getElementById('recovery-password-step').classList.toggle('hidden', !reset);
+      document.getElementById('recovery-title').textContent = reset ? 'Создание нового пароля' : 'Восстановление пароля';
+      document.getElementById('recovery-email').value = document.getElementById('login-email').value.trim();
+      document.getElementById('recovery-new-password').value = '';
+      document.getElementById('recovery-repeat-password').value = '';
+      recoveryMessage('');
+      if (reset) passwordRecoveryActive = true;
+    }
+    function closePasswordRecovery() {
+      const modal = document.getElementById('password-recovery-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    async function sendPasswordRecovery() {
+      if (!ensureSupabase()) return;
+      const email = document.getElementById('recovery-email').value.trim().toLowerCase();
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return recoveryMessage('Введите корректный Email.', true);
+      const btn = document.getElementById('recovery-send');
+      btn.disabled = true;
+      try {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: isNativeCheckApp() ? AUTH_MOBILE_RECOVERY_URL : AUTH_PUBLIC_URL });
+        if (error) throw error;
+        recoveryMessage('Если учётная запись существует, письмо для восстановления отправлено на указанный Email.');
+      } catch (e) {
+        recoveryMessage('Не удалось отправить письмо. Повторите попытку позже.', true);
+        console.error('[Check App] password recovery send:', e);
+      } finally { btn.disabled = false; }
+    }
+    async function saveRecoveredPassword() {
+      if (!ensureSupabase() || !passwordRecoveryActive) return recoveryMessage('Откройте ссылку восстановления из письма.', true);
+      const pass = document.getElementById('recovery-new-password').value;
+      const repeat = document.getElementById('recovery-repeat-password').value;
+      const first = document.getElementById('recovery-new-password');
+      const second = document.getElementById('recovery-repeat-password');
+      first.classList.remove('border-red-500'); second.classList.remove('border-red-500');
+      if (pass.length < 8) { first.classList.add('border-red-500'); return recoveryMessage('Пароль должен содержать минимум 8 символов.', true); }
+      if (pass !== repeat) { first.classList.add('border-red-500'); second.classList.add('border-red-500'); return recoveryMessage('Пароли не совпадают.', true); }
+      const btn = document.getElementById('recovery-save');
+      btn.disabled = true;
+      try {
+        const { error } = await supabaseClient.auth.updateUser({ password: pass });
+        if (error) throw error;
+        passwordRecoveryActive = false;
+        await supabaseClient.auth.signOut();
+        closePasswordRecovery();
+        switchAuthTab('login');
+        document.getElementById('login-password').value = '';
+        toast('Пароль изменён. Войдите с новым паролем.');
+      } catch (e) {
+        recoveryMessage('Не удалось изменить пароль. Откройте новую ссылку восстановления.', true);
+        console.error('[Check App] password recovery update:', e);
+      } finally { btn.disabled = false; }
+    }
+    async function processMobileRecoveryLink(url) {
+      if (!url?.startsWith(AUTH_MOBILE_RECOVERY_URL)) return;
+      try {
+        const parsed = new URL(url);
+        const fragment = new URLSearchParams(parsed.hash.replace(/^#/, ''));
+        const query = parsed.searchParams;
+        const error = fragment.get('error_description') || query.get('error_description');
+        if (error) throw new Error(error);
+        const accessToken = fragment.get('access_token') || query.get('access_token');
+        const refreshToken = fragment.get('refresh_token') || query.get('refresh_token');
+        const code = query.get('code');
+        if (accessToken && refreshToken) {
+          const { error: sessionError } = await supabaseClient.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          if (sessionError) throw sessionError;
+        } else if (code) {
+          const { error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+        } else {
+          throw new Error('Ссылка не содержит данных восстановления.');
+        }
+        passwordRecoveryActive = true;
+        openPasswordRecovery(true);
+      } catch (e) {
+        openPasswordRecovery();
+        recoveryMessage('Ссылка восстановления недействительна или истекла. Запросите новое письмо.', true);
+        console.error('[Check App] recovery deep link:', e);
+      }
+    }
+    async function initMobileRecoveryLinks() {
+      if (!isNativeCheckApp()) return;
+      try {
+        const App = window.Capacitor?.Plugins?.App;
+        if (!App) throw new Error('Capacitor App plugin unavailable');
+        App.addListener('appUrlOpen', ({ url }) => { void processMobileRecoveryLink(url); });
+        const launch = await App.getLaunchUrl();
+        if (launch?.url) await processMobileRecoveryLink(launch.url);
+      } catch (e) {
+        console.error('[Check App] mobile link initialization:', e);
+      }
+    }
+    void initMobileRecoveryLinks();
+
+    if (supabaseClient) {
+      supabaseClient.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          passwordRecoveryActive = true;
+          openPasswordRecovery(true);
+        }
+      });
+    }
+
     async function doLogin() {
       if (!ensureSupabase()) return;
       const email = document.getElementById('login-email').value.trim().toLowerCase();
@@ -710,6 +832,64 @@
       document.getElementById('auth-screen').classList.remove('hidden');
     }
 
+    // Native reminders belong only to the responsible employee for their department.
+    // They are re-created on login and whenever the app is opened.
+    const MAINTENANCE_NOTIFICATION_IDS_KEY = 'checkapp-maintenance-notification-ids';
+    function maintenanceNotificationsSettingKey() {
+      return 'checkapp-maintenance-notifications-' + (db.currentUser?.id || 'anonymous');
+    }
+    function maintenanceNotificationsEnabled() {
+      return localStorage.getItem(maintenanceNotificationsSettingKey()) !== 'off';
+    }
+    function setMaintenanceNotificationsEnabled(enabled) {
+      localStorage.setItem(maintenanceNotificationsSettingKey(), enabled ? 'on' : 'off');
+      void refreshMaintenanceNotifications().catch(e => console.error('[Check App] notifications:', e));
+    }
+
+    function notificationId(taskId) {
+      let hash = 2166136261;
+      for (const ch of String(taskId)) {
+        hash ^= ch.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+      }
+      return (hash >>> 1) || 1;
+    }
+    async function refreshMaintenanceNotifications() {
+      const localNotifications = window.Capacitor?.Plugins?.LocalNotifications;
+      if (!window.Capacitor?.isNativePlatform?.() || !localNotifications) return;
+      const previous = JSON.parse(localStorage.getItem(MAINTENANCE_NOTIFICATION_IDS_KEY) || '[]');
+      if (previous.length) await localNotifications.cancel({ notifications: previous.map(id => ({ id })) });
+      localStorage.removeItem(MAINTENANCE_NOTIFICATION_IDS_KEY);
+      const user = getUser();
+      if (!user || !maintenanceNotificationsEnabled()) return;
+      const permissions = await localNotifications.checkPermissions();
+      if (permissions.display !== 'granted') {
+        const requested = await localNotifications.requestPermissions();
+        if (requested.display !== 'granted') return;
+      }
+      const now = new Date();
+      const tasks = getCompany().tasks.filter(task =>
+        (user.role === 'manager' || task.departmentId === user.departmentId) &&
+        task.status !== 'done' &&
+        isEquipmentActive(task.equipmentId)
+      );
+      const notifications = tasks.slice(0, 60).map(task => {
+        const due = new Date(task.date + 'T09:00:00');
+        const late = due.getTime() < now.getTime();
+        const when = late ? new Date(now.getTime() + 12000) : due;
+        return {
+          id: notificationId(task.id),
+          title: late ? 'Просрочено техническое обслуживание' : 'Необходимо выполнить ТО',
+          body: (task.equipName || 'Оборудование') + ' — ' + task.title,
+          schedule: { at: when, allowWhileIdle: true },
+          extra: { taskId: task.id, departmentId: task.departmentId }
+        };
+      });
+      if (!notifications.length) return;
+      await localNotifications.schedule({ notifications });
+      localStorage.setItem(MAINTENANCE_NOTIFICATION_IDS_KEY, JSON.stringify(notifications.map(n => n.id)));
+    }
+
     function enterApp() {
       document.getElementById('auth-screen').classList.add('hidden');
       document.getElementById('app-screen').classList.remove('hidden');
@@ -717,6 +897,7 @@
       document.getElementById('header-company').textContent = c.name;
       const roleLabel = user.role === 'manager' ? ' · Руководитель' : (user.role === 'responsible' ? ' · Ответственный' : ' · Сотрудник');
       document.getElementById('header-user').textContent = user.name + roleLabel;
+      document.getElementById('header-email').textContent = db.currentUser?.email || user.email || '';
       // ensure subscription object exists
       if (!c.subscription) {
         c.subscription = { planId: 'free', expiresAt: null, startedAt: new Date().toISOString() };
@@ -728,10 +909,8 @@
       document.getElementById('manager-nav').classList.toggle('hidden', !isStaff);
       document.getElementById('nav-super-admin')?.classList.toggle('hidden', !isSuperAdmin);
       document.getElementById('dept-bar').classList.toggle('hidden', !isManager);
-      // кабинет и команда — только руководитель компании
-      document.querySelectorAll('.nav-btn[data-page="cabinet"]').forEach(btn => {
-        btn.classList.toggle('hidden', !isManager);
-      });
+      // Личный кабинет доступен всем; подписки — только руководителю.
+      document.querySelectorAll('.nav-btn[data-page="cabinet"]').forEach(btn => btn.classList.remove('hidden'));
       document.querySelectorAll('.nav-btn[data-page="team"]').forEach(btn => {
         btn.classList.toggle('hidden', !isManager);
       });
@@ -740,6 +919,7 @@
         if (!currentDeptId && c.departments.length) currentDeptId = c.departments[0].id;
       }
       generateTodayTasks();
+      void refreshMaintenanceNotifications().catch(e => console.error('[Check App] notifications:', e));
       if (isStaff) showPage('dashboard'); else showPage('today');
     }
 
@@ -784,10 +964,6 @@
 
     function showPage(page) {
       const user = getUser();
-      if (page === 'cabinet' && user.role !== 'manager') {
-        toast('Доступ только у руководителя компании');
-        page = 'dashboard';
-      }
       if (page === 'super-admin' && !isSuperAdmin) {
         toast('Доступ только у SUPER ADMIN');
         page = 'dashboard';
@@ -905,8 +1081,10 @@
 
     function generateTodayTasks() {
       const c = getCompany(); const today = todayStr();
-      c.tasks = c.tasks.filter(t => t.date === today || t.status === 'done');
+      // Preserve overdue tasks until they are actually completed.
+      c.tasks = c.tasks.filter(t => t.status === 'done' || t.date <= today);
       c.actions.forEach(action => {
+        if (c.tasks.some(t => t.actionId === action.id && t.status !== 'done')) return;
         if (c.tasks.some(t => t.actionId === action.id && t.date === today)) return;
         const last = c.completions.filter(comp => comp.actionId === action.id).sort((a,b) => b.date.localeCompare(a.date))[0];
         let shouldCreate = true;
@@ -1037,36 +1215,132 @@
       }).join('');
     }
 
-    async function renderHistory() {
-      const comps = [...getDeptCompletions()].sort((a,b) => b.date.localeCompare(a.date));
-      const list = document.getElementById('history-list');
-      const empty = document.getElementById('history-empty');
-      if (!comps.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
-      empty.classList.add('hidden');
-      const c = getCompany();
-      list.innerHTML = comps.map(comp => {
-        const user = c.users.find(u => u.id === comp.userId);
-        return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <div class="font-semibold">${esc(comp.title)}</div>
-          <div class="text-sm text-slate-400">${esc(comp.equipName)} · ${formatDate(comp.date)} ${comp.time||''}</div>
-          <div class="text-xs text-slate-500 mt-1">Выполнил: ${user?esc(user.name):'—'}</div>
-          ${comp.comment ? `<div class="text-sm text-slate-300 mt-2 bg-slate-800/60 rounded-lg px-3 py-2">💬 ${esc(comp.comment)}</div>` : ''}
-          ${comp.photoPath ? `<div class="text-xs text-primary-400 mt-3" id="photo-${comp.id}">Загрузка фото…</div>` : ''}
-        </div>`;
-      }).join('');
+    let historyFilter = 'all';
 
-      for (const comp of comps) {
-        if (!comp.photoPath) continue;
-        const { data, error } = await supabaseClient.storage.from('equipment-photos').createSignedUrl(comp.photoPath, 3600);
-        const el = document.getElementById('photo-' + comp.id);
-        if (!el) continue;
-        if (error || !data?.signedUrl) {
-          el.textContent = 'Фото недоступно';
-          el.className = 'text-xs text-rose-400 mt-3';
-        } else {
-          el.outerHTML = `<img src="${esc(data.signedUrl)}" class="rounded-xl max-h-48 object-cover cursor-pointer mt-3" onclick="openPhotoModal(this.src)" alt="Фото выполненной работы" />`;
+    function setHistoryFilter(value) {
+      if (!['all', 'done', 'pending'].includes(value)) return;
+      historyFilter = value;
+      renderHistory();
+    }
+
+    function historyItems() {
+      const c = getCompany(), deptId = getActiveDeptId();
+      const done = getDeptCompletions().map(comp => ({ id: comp.id, status: 'done', date: comp.date, time: comp.time || '', title: comp.title, equipName: comp.equipName, userId: comp.userId, comment: comp.comment, workerName: comp.workerName || '', photoPath: comp.photoPath, taskId: comp.taskId, actionId: comp.actionId, equipmentId: comp.equipmentId, completion: comp }));
+      const completedIds = new Set(done.map(x => x.taskId).filter(Boolean));
+      const pending = c.tasks.filter(t => t.departmentId === deptId && t.status !== 'done' && !completedIds.has(t.id)).map(t => ({ id: t.id, status: 'pending', date: t.date, time: t.blockedAt ? new Date(t.blockedAt).toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}) : '', title: t.title, equipName: t.equipName, userId: t.assignedUserId, workerName: t.blockedWorkerName || '', comment: t.blockedComment || '', photoPath: '', taskId: t.id, actionId: t.actionId, equipmentId: t.equipmentId }));
+      return [...done, ...pending].sort((a,b) => (b.date || '').localeCompare(a.date || '') || (b.time || '').localeCompare(a.time || ''));
+    }
+
+    function historyDisplayFields(item) {
+      const c = getCompany();
+      const task = c.tasks.find(t => t.id === item.taskId);
+      const equip = c.equipment.find(e => e.id === item.equipmentId);
+      const action = c.actions.find(a => a.id === item.actionId);
+      const deptId = item.completion?.departmentId || task?.departmentId || equip?.departmentId;
+      const dept = c.departments.find(d => d.id === deptId);
+      return {
+        dateTime: formatDate(item.date) + (item.time ? ' · ' + item.time : ''),
+        department: dept?.name || '—',
+        room: equip?.location || '—',
+        equipment: equip?.name || item.equipName || '—',
+        maintenance: action?.name || item.title || '—',
+        comment: item.comment || '—'
+      };
+    }
+
+    function historyDetailsMarkup(item) {
+      const c = getCompany(), user = c.users.find(u => u.id === item.userId);
+      const fields = historyDisplayFields(item);
+      const equip = c.equipment.find(e => e.id === item.equipmentId);
+      const action = c.actions.find(a => a.id === item.actionId);
+      const overdue = item.status !== 'done' ? Math.max(0, Math.floor((new Date(todayStr() + 'T12:00:00') - new Date(item.date + 'T12:00:00')) / 86400000)) : 0;
+      return `<div class="space-y-3 text-sm">
+        <div><span class="text-slate-400">Статус:</span> <span class="${item.status === 'done' ? 'text-emerald-400' : 'text-amber-400'}">${item.status === 'done' ? 'Выполнено' : 'Не выполнено'}</span></div>
+        ${item.status !== 'done' ? `<div class="text-amber-400">Просрочка: ${overdue} дн.</div>` : ''}
+        <div><span class="text-slate-400">Вид ТО:</span> ${esc(fields.maintenance)}</div>
+        <div><span class="text-slate-400">Подразделение:</span> ${esc(fields.department)}</div>
+        <div><span class="text-slate-400">Помещение:</span> ${esc(fields.room)}</div>
+        <div><span class="text-slate-400">Вид оборудования:</span> ${esc(fields.equipment)}</div>
+        ${equip?.code ? `<div><span class="text-slate-400">Код:</span> ${esc(equip.code)}</div>` : ''}
+        <div><span class="text-slate-400">Дата и время:</span> ${esc(fields.dateTime)}</div>
+        <div><span class="text-slate-400">${item.status === 'done' ? 'Выполнил:' : 'Назначен:'}</span> ${esc(item.workerName || user?.name || '—')}</div>
+        ${action?.description ? `<div><span class="text-slate-400">Описание:</span> ${esc(action.description)}</div>` : ''}
+        <div class="bg-slate-800/60 rounded-lg p-3"><span class="text-slate-400">Комментарий:</span> ${esc(fields.comment)}</div>
+        ${item.status !== 'done' ? `<button type="button" onclick="closeHistoryDetails();openCompleteModal('${item.taskId}')" class="w-full py-3 rounded-xl bg-primary-600 font-medium">Выполнить задачу</button>` : ''}
+        <div id="history-detail-photo">${item.photoPath ? 'Загрузка фото…' : item.status === 'done' ? 'Фото не прикреплено' : 'Фото появится после выполнения'}</div>
+      </div>`;
+    }
+
+    async function openHistoryDetails(id, status) {
+      const item = historyItems().find(x => x.id === id && x.status === status);
+      if (!item) return toast('Запись не найдена');
+      let modal = document.getElementById('history-detail-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'history-detail-modal';
+        modal.className = 'fixed inset-0 z-[100] bg-black/75 flex items-center justify-center p-4 hidden';
+        modal.innerHTML = '<div role="dialog" aria-modal="true" aria-labelledby="history-detail-title" class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-5"><div class="flex justify-between items-start gap-3 mb-4"><h2 id="history-detail-title" class="text-xl font-bold">Информация о работе</h2><button type="button" onclick="closeHistoryDetails()" class="px-3 py-1.5 rounded-lg bg-slate-800">Закрыть</button></div><div id="history-detail-body"></div></div>';
+        document.body.appendChild(modal);
+      }
+      document.getElementById('history-detail-title').textContent = item.title || 'Информация о работе';
+      document.getElementById('history-detail-body').innerHTML = historyDetailsMarkup(item);
+      modal.classList.remove('hidden');
+      if (item.photoPath) {
+        const photo = document.getElementById('history-detail-photo');
+        try {
+          const { data, error } = await supabaseClient.storage.from('equipment-photos').createSignedUrl(item.photoPath, 3600);
+          if (!modal.classList.contains('hidden') && photo?.isConnected) {
+            if (error || !data?.signedUrl) { if (photo?.isConnected) photo.textContent = 'Не удалось загрузить фото'; }
+            else if (photo?.isConnected) {
+              const img = document.createElement('img');
+              img.src = data.signedUrl;
+              img.alt = 'Фото выполненной работы';
+              img.className = 'w-full max-h-[60vh] object-contain rounded-xl cursor-pointer';
+              img.onclick = () => openPhotoModal(img.src);
+              photo.replaceChildren(img);
+            }
+          }
+        } catch (_) { if (photo?.isConnected) photo.textContent = 'Не удалось загрузить фото'; }
+      }
+    }
+
+    function closeHistoryDetails() {
+      document.getElementById('history-detail-modal')?.classList.add('hidden');
+    }
+
+    function renderHistory() {
+      const all = historyItems();
+      const items = all.filter(x => historyFilter === 'all' || x.status === historyFilter);
+      const list = document.getElementById('history-list'), empty = document.getElementById('history-empty');
+      for (const value of ['all', 'done', 'pending']) {
+        const button = document.getElementById('history-filter-' + value);
+        if (button) {
+          const active = historyFilter === value;
+          button.classList.toggle('bg-primary-600', active);
+          button.classList.toggle('border-primary-500', active);
+          button.setAttribute('aria-pressed', String(active));
         }
       }
+      empty.classList.toggle('hidden', items.length > 0);
+      empty.textContent = historyFilter === 'done' ? 'Выполненных работ нет' : historyFilter === 'pending' ? 'Невыполненных задач нет' : 'Записей нет';
+      list.innerHTML = items.map(item => {
+        const user = getCompany().users.find(u => u.id === item.userId);
+        const fields = historyDisplayFields(item);
+        return `<button type="button" onclick="openHistoryDetails('${item.id}', '${item.status}')" class="block w-full text-left bg-slate-900 border border-slate-800 rounded-2xl p-4 hover:border-primary-500 transition">
+          <div class="flex justify-between items-start gap-2"><div class="font-semibold">${esc(item.title || '—')}</div><span class="text-xs shrink-0 ${item.status === 'done' ? 'text-emerald-400' : 'text-amber-400'}">${item.status === 'done' ? 'Выполнено' : 'Не выполнено'}</span></div>
+          <div class="text-sm text-slate-300 mt-2 space-y-1">
+            <div><span class="text-slate-400">Дата и время:</span> ${esc(fields.dateTime)}</div>
+            <div><span class="text-slate-400">Подразделение:</span> ${esc(fields.department)}</div>
+            <div><span class="text-slate-400">Помещение:</span> ${esc(fields.room)}</div>
+            <div><span class="text-slate-400">Вид оборудования:</span> ${esc(fields.equipment)}</div>
+            <div><span class="text-slate-400">Вид ТО:</span> ${esc(fields.maintenance)}</div>
+            <div class="bg-slate-800/60 rounded-lg px-3 py-2 mt-2"><span class="text-slate-400">Комментарий:</span> ${esc(fields.comment)}</div>
+          </div>
+          <div class="text-xs text-slate-500 mt-2">${item.status === 'done' ? 'Выполнил' : 'Назначен'}: ${esc(item.workerName || user?.name || '—')}</div>
+          ${item.status !== 'done' ? `<div class="text-xs text-amber-400 mt-2">Просрочка: ${Math.max(0,Math.floor((new Date(todayStr() + 'T12:00:00') - new Date(item.date + 'T12:00:00'))/86400000))} дн.</div>` : ''}
+          <div class="text-xs text-primary-400 mt-3">Открыть задачу →</div>
+        </button>`;
+      }).join('');
     }
 
     function renderReports() {
@@ -1239,8 +1513,19 @@
       saveDB(); renderActions(); toast('Регламент удалён');
     }
 
+    let completionStatus = 'done';
+    function setCompletionStatus(status) {
+      completionStatus = status === 'blocked' ? 'blocked' : 'done';
+      document.getElementById('complete-photo-section').classList.toggle('hidden', completionStatus === 'blocked');
+      document.getElementById('complete-status-done').className = 'rounded-xl py-3 text-sm ' + (completionStatus === 'done' ? 'bg-emerald-600' : 'bg-slate-800');
+      document.getElementById('complete-status-blocked').className = 'rounded-xl py-3 text-sm ' + (completionStatus === 'blocked' ? 'bg-amber-600' : 'bg-slate-800');
+    }
     function openCompleteModal(taskId) {
       currentCompleteTaskId = taskId; currentPhotoBase64 = null; currentPhotoFile = null;
+      document.getElementById('photo-input').value = '';
+      document.getElementById('complete-worker-name').value = '';
+      setCompletionStatus('done');
+      clearCompletionValidation();
       const task = getCompany().tasks.find(t => t.id === taskId);
       document.getElementById('complete-task-info').textContent = task.title + ' · ' + task.equipName;
       document.getElementById('complete-comment').value = '';
@@ -1248,7 +1533,7 @@
       document.getElementById('photo-placeholder').classList.remove('hidden');
       document.getElementById('modal-complete').classList.remove('hidden');
     }
-    function closeCompleteModal() { document.getElementById('modal-complete').classList.add('hidden'); }
+    function closeCompleteModal() { clearCompletionValidation(); document.getElementById('modal-complete').classList.add('hidden'); }
     function handlePhoto(e) {
       const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
@@ -1261,8 +1546,49 @@
       };
       reader.readAsDataURL(file);
     }
+    let completionValidationTimer;
+    function clearCompletionValidation() {
+      clearTimeout(completionValidationTimer);
+      for (const id of ['complete-worker-name', 'complete-comment', 'complete-photo-dropzone']) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+        el.removeAttribute('aria-invalid');
+      }
+      document.getElementById('complete-validation-toast')?.remove();
+    }
+    function validateCompletionFields() {
+      clearCompletionValidation();
+      const missing = [];
+      const worker = document.getElementById('complete-worker-name');
+      const comment = document.getElementById('complete-comment');
+      if (!worker.value.trim()) missing.push(worker);
+      if (completionStatus === 'done' && !currentPhotoFile) missing.push(document.getElementById('complete-photo-dropzone'));
+      if (completionStatus === 'blocked' && !comment.value.trim()) missing.push(comment);
+      if (!missing.length) return true;
+      for (const el of missing) {
+        el.classList.add('border-red-500', 'ring-2', 'ring-red-500');
+        el.setAttribute('aria-invalid', 'true');
+      }
+      const toastEl = document.createElement('div');
+      toastEl.id = 'complete-validation-toast';
+      toastEl.setAttribute('role', 'alert');
+      toastEl.className = 'fixed bottom-8 left-1/2 -translate-x-1/2 z-[120] bg-red-700 text-white px-5 py-3 rounded-xl shadow-xl text-sm text-center';
+      toastEl.textContent = 'Заполните необходимое поле';
+      document.body.appendChild(toastEl);
+      completionValidationTimer = setTimeout(() => {
+        toastEl.remove();
+        for (const el of missing) el.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+      }, 5000);
+      return false;
+    }
     async function submitComplete() {
-      if (!currentPhotoFile) return toast('Прикрепите фото');
+      if (!validateCompletionFields()) return;
+      const workerName = document.getElementById('complete-worker-name').value.trim();
+      const comment = document.getElementById('complete-comment').value.trim();
+      if (!workerName) return toast('Укажите имя исполнителя');
+      if (completionStatus === 'done' && !currentPhotoFile) return toast('Прикрепите фото');
+      if (completionStatus === 'blocked' && !comment) return toast('Укажите причину невыполнения');
       const c = getCompany();
       const task = c.tasks.find(t => t.id === currentCompleteTaskId);
       const user = getUser();
@@ -1270,25 +1596,33 @@
 
       try {
         const now = new Date();
-        const ext = (currentPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
-        const path = c.id + '/' + task.departmentId + '/' + task.id + '/' + Date.now() + '.' + ext;
-        const { error: uploadError } = await supabaseClient.storage.from('equipment-photos').upload(path, currentPhotoFile, {
-          upsert: false,
-          contentType: currentPhotoFile.type || 'image/jpeg'
-        });
-        if (uploadError) throw uploadError;
-
-        task.status = 'done';
-        c.completions.push({
-          id: uid(), taskId: task.id, actionId: task.actionId, equipmentId: task.equipmentId,
-          departmentId: task.departmentId, userId: user.id, title: task.title, equipName: task.equipName,
-          date: todayStr(), time: now.toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}),
-          photoPath: path, photo: '', comment: document.getElementById('complete-comment').value.trim()
-        });
+        let path = '';
+        if (completionStatus === 'done') {
+          const ext = (currentPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+          path = c.id + '/' + task.departmentId + '/' + task.id + '/' + Date.now() + '.' + ext;
+          const { error: uploadError } = await supabaseClient.storage.from('equipment-photos').upload(path, currentPhotoFile, {
+            upsert: false, contentType: currentPhotoFile.type || 'image/jpeg'
+          });
+          if (uploadError) throw uploadError;
+          task.status = 'done';
+          c.completions.push({
+            id: uid(), taskId: task.id, actionId: task.actionId, equipmentId: task.equipmentId,
+            departmentId: task.departmentId, userId: user.id, workerName, title: task.title, equipName: task.equipName,
+            date: todayStr(), time: now.toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}),
+            photoPath: path, photo: '', comment
+          });
+        } else {
+          task.status = 'blocked';
+          task.blockedComment = comment;
+          task.blockedWorkerName = workerName;
+          task.blockedAt = now.toISOString();
+        }
         saveDB();
 
         closeCompleteModal();
         const successEl = document.getElementById('modal-success');
+        successEl.querySelector('h3').textContent = completionStatus === 'done' ? 'ГОТОВО' : 'НЕ ВЫПОЛНЕНО';
+        successEl.querySelector('p').textContent = completionStatus === 'done' ? 'Задача успешно выполнена' : 'Причина сохранена, задача остаётся открытой';
         successEl.classList.remove('hidden');
         successEl.style.display = 'flex';
       } catch (e) {
@@ -1344,7 +1678,14 @@
     let pendingPlanId = null;
 
     function renderCabinet() {
-      if (getUser().role !== 'manager') { showPage('dashboard'); return; }
+      const notificationToggle = document.getElementById('cab-notifications-toggle');
+      if (notificationToggle) notificationToggle.checked = maintenanceNotificationsEnabled();
+      const manager = getUser().role === 'manager';
+      document.getElementById('cab-subscription-details').classList.toggle('hidden', !manager);
+      document.getElementById('cab-choose-plan').classList.toggle('hidden', !manager);
+      document.getElementById('plans-section').classList.add('hidden');
+      document.getElementById('pay-confirm').classList.add('hidden');
+      if (!manager) return;
       const c = getCompany();
       const sub = c.subscription || { planId: 'free', expiresAt: null };
       const plan = getPlan();
@@ -1512,6 +1853,11 @@
       try {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) return;
+        if (passwordRecoveryActive || window.location.hash.includes('type=recovery')) {
+          passwordRecoveryActive = true;
+          openPasswordRecovery(true);
+          return;
+        }
         const ok = await hydrateCurrentUser();
         if (ok) { enterApp(); await handlePaymentReturn(); }
       } catch (e) {
