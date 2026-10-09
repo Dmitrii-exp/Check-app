@@ -75,7 +75,7 @@
   }
 
   function render(){
-    ensurePage(); ensureNav(); ensureFloatingAccess(); bind();
+    ensurePage(); ensureNav();  bind();
     const grid=document.getElementById('calendar-grid'), mt=document.getElementById('calendar-month-title'); if(!grid||!mt) return;
     mt.textContent=title(month); grid.innerHTML='';
     const y=month.getFullYear(),m=month.getMonth(), days=new Date(y,m+1,0).getDate(), first=(new Date(y,m,1).getDay()+6)%7, today=todayStr();
@@ -92,7 +92,7 @@
   }
 
   function boot(){
-    ensurePage(); ensureNav(); ensureFloatingAccess();
+    ensurePage(); ensureNav(); 
     const old=window.showPage;
     if(typeof old==='function'&&!old.__calendarWrapped){
       const wrap=function(page){if(page==='calendar'){open();return;}return old(page);};
