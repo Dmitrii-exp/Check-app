@@ -263,9 +263,14 @@
       </div>
 
       <div id="page-history" class="page hidden space-y-4 fade-in">
-        <h1 class="text-2xl font-bold">История выполненных работ</h1>
+        <h1 class="text-2xl font-bold">История работ</h1>
+        <div class="flex flex-wrap gap-2" role="group" aria-label="Фильтр истории">
+          <button type="button" onclick="setHistoryFilter('all')" id="history-filter-all" class="px-4 py-2 rounded-xl text-sm border border-slate-600">Все</button>
+          <button type="button" onclick="setHistoryFilter('done')" id="history-filter-done" class="px-4 py-2 rounded-xl text-sm border border-slate-600">Выполнено</button>
+          <button type="button" onclick="setHistoryFilter('pending')" id="history-filter-pending" class="px-4 py-2 rounded-xl text-sm border border-slate-600">Не выполнено</button>
+        </div>
         <div id="history-list" class="space-y-4"></div>
-        <div id="history-empty" class="hidden text-center py-16 text-slate-500">Пока нет выполненных работ</div>
+        <div id="history-empty" class="hidden text-center py-16 text-slate-500">Записей нет</div>
       </div>
 
 
