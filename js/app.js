@@ -647,6 +647,79 @@
       }
     }
 
+    let passwordRecoveryActive = false;
+    function recoveryMessage(message, error = false) {
+      const el = document.getElementById('recovery-message');
+      el.textContent = message;
+      el.className = 'text-sm min-h-[20px] ' + (error ? 'text-red-400' : 'text-emerald-400');
+    }
+    function openPasswordRecovery(reset = false) {
+      const modal = document.getElementById('password-recovery-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('recovery-email-step').classList.toggle('hidden', reset);
+      document.getElementById('recovery-password-step').classList.toggle('hidden', !reset);
+      document.getElementById('recovery-title').textContent = reset ? 'Создание нового пароля' : 'Восстановление пароля';
+      document.getElementById('recovery-email').value = document.getElementById('login-email').value.trim();
+      document.getElementById('recovery-new-password').value = '';
+      document.getElementById('recovery-repeat-password').value = '';
+      recoveryMessage('');
+      if (reset) passwordRecoveryActive = true;
+    }
+    function closePasswordRecovery() {
+      const modal = document.getElementById('password-recovery-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    async function sendPasswordRecovery() {
+      if (!ensureSupabase()) return;
+      const email = document.getElementById('recovery-email').value.trim().toLowerCase();
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return recoveryMessage('Введите корректный Email.', true);
+      const btn = document.getElementById('recovery-send');
+      btn.disabled = true;
+      try {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: AUTH_PUBLIC_URL });
+        if (error) throw error;
+        recoveryMessage('Если учётная запись существует, письмо для восстановления отправлено на указанный Email.');
+      } catch (e) {
+        recoveryMessage('Не удалось отправить письмо. Повторите попытку позже.', true);
+        console.error('[Check App] password recovery send:', e);
+      } finally { btn.disabled = false; }
+    }
+    async function saveRecoveredPassword() {
+      if (!ensureSupabase() || !passwordRecoveryActive) return recoveryMessage('Откройте ссылку восстановления из письма.', true);
+      const pass = document.getElementById('recovery-new-password').value;
+      const repeat = document.getElementById('recovery-repeat-password').value;
+      const first = document.getElementById('recovery-new-password');
+      const second = document.getElementById('recovery-repeat-password');
+      first.classList.remove('border-red-500'); second.classList.remove('border-red-500');
+      if (pass.length < 8) { first.classList.add('border-red-500'); return recoveryMessage('Пароль должен содержать минимум 8 символов.', true); }
+      if (pass !== repeat) { first.classList.add('border-red-500'); second.classList.add('border-red-500'); return recoveryMessage('Пароли не совпадают.', true); }
+      const btn = document.getElementById('recovery-save');
+      btn.disabled = true;
+      try {
+        const { error } = await supabaseClient.auth.updateUser({ password: pass });
+        if (error) throw error;
+        passwordRecoveryActive = false;
+        await supabaseClient.auth.signOut();
+        closePasswordRecovery();
+        switchAuthTab('login');
+        document.getElementById('login-password').value = '';
+        toast('Пароль изменён. Войдите с новым паролем.');
+      } catch (e) {
+        recoveryMessage('Не удалось изменить пароль. Откройте новую ссылку восстановления.', true);
+        console.error('[Check App] password recovery update:', e);
+      } finally { btn.disabled = false; }
+    }
+    if (supabaseClient) {
+      supabaseClient.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          passwordRecoveryActive = true;
+          openPasswordRecovery(true);
+        }
+      });
+    }
+
     async function doLogin() {
       if (!ensureSupabase()) return;
       const email = document.getElementById('login-email').value.trim().toLowerCase();
@@ -1670,6 +1743,11 @@
       try {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) return;
+        if (passwordRecoveryActive || window.location.hash.includes('type=recovery')) {
+          passwordRecoveryActive = true;
+          openPasswordRecovery(true);
+          return;
+        }
         const ok = await hydrateCurrentUser();
         if (ok) { enterApp(); await handlePaymentReturn(); }
       } catch (e) {
