@@ -444,7 +444,7 @@
       <div class="grid grid-cols-2 gap-2"><button type="button" id="complete-status-done" onclick="setCompletionStatus('done')" class="rounded-xl bg-emerald-600 py-3 text-sm">Выполнено</button><button type="button" id="complete-status-blocked" onclick="setCompletionStatus('blocked')" class="rounded-xl bg-slate-800 py-3 text-sm">Не выполнено</button></div>
       <div id="complete-photo-section">
         <label class="block text-xs text-slate-400 mb-2">Фото-фиксация <span class="text-rose-400">*</span></label>
-        <div class="border-2 border-dashed border-slate-600 rounded-xl p-6 text-center cursor-pointer hover:border-primary-500 transition" onclick="document.getElementById('photo-input').click()">
+        <div id="complete-photo-dropzone" class="border-2 border-dashed border-slate-600 rounded-xl p-6 text-center cursor-pointer hover:border-primary-500 transition" onclick="document.getElementById('photo-input').click()">
           <div id="photo-placeholder">
             <p class="text-sm text-slate-400">Нажмите, чтобы сделать фото</p>
           </div>
