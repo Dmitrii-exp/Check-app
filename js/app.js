@@ -769,17 +769,31 @@
       });
     }
 
+    let loginInProgress = false;
+    function setLoginLoading(loading, message = 'Выполняется вход…') {
+      const button = document.getElementById('login-submit');
+      const spinner = document.getElementById('login-spinner');
+      const text = document.getElementById('login-submit-text');
+      const status = document.getElementById('login-loading-status');
+      if (button) { button.disabled = loading; button.setAttribute('aria-busy', String(loading)); }
+      if (spinner) spinner.classList.toggle('hidden', !loading);
+      if (text) text.textContent = loading ? 'Подождите…' : 'Войти';
+      if (status) { status.classList.toggle('hidden', !loading); status.textContent = message; }
+    }
     async function doLogin() {
-      if (!ensureSupabase()) return;
+      if (loginInProgress || !ensureSupabase()) return;
       const email = document.getElementById('login-email').value.trim().toLowerCase();
       const password = document.getElementById('login-password').value;
       if (!email || !password) return showError('Введите Email и пароль.');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('Введите корректный Email.');
 
+      loginInProgress = true;
+      setLoginLoading(true, 'Проверяем данные для входа…');
       try {
         const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
 
+        setLoginLoading(true, 'Загружаем вашу компанию и оборудование…');
         let ok = await hydrateCurrentUser();
 
         // Если регистрация проходила с подтверждением email, сессия появилась
@@ -808,6 +822,7 @@
             if (joinError) throw joinError;
           }
 
+          setLoginLoading(true, 'Подключаем профиль к компании…');
           ok = await hydrateCurrentUser();
         }
 
@@ -821,6 +836,9 @@
       } catch (e) {
         console.error(e);
         showError(e.message || 'Ошибка входа.');
+      } finally {
+        loginInProgress = false;
+        setLoginLoading(false);
       }
     }
 
