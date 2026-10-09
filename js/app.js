@@ -939,6 +939,13 @@
       generateTodayTasks();
       void refreshMaintenanceNotifications().catch(e => console.error('[Check App] notifications:', e));
       if (isStaff) showPage('dashboard'); else showPage('today');
+      // Show the guided tour once for each newly registered account, not on every login.
+      if (typeof window.maybeShowFirstLoginTour === 'function') {
+        void supabaseClient.auth.getSession().then(({data}) => {
+          const authUser = data?.session?.user;
+          if (authUser) window.maybeShowFirstLoginTour(authUser.id, authUser.created_at);
+        }).catch(error => console.warn('[Check App] onboarding:', error));
+      }
     }
 
     function renderDeptSelect() {
