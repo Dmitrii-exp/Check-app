@@ -4,7 +4,14 @@
     const SUPABASE_URL = 'https://qaxoufarhpagcjkhptga.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ZMXWb57L46oreSiZJvCe5Q_JXG-IC-u';
     const supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
-      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            storageKey: 'checkapp-auth-session'
+          }
+        })
       : null;
     function ensureSupabase(){
       if (supabaseClient) return true;
