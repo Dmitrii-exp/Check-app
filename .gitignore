@@ -16,3 +16,8 @@ local.properties
 # IDE
 .idea/
 *.iml
+
+# Generated mobile bundle and native build output
+dist-mobile/
+android/
+ios/
