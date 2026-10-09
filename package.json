@@ -10,7 +10,8 @@
     "prepare:production": "node scripts/prepare-production.mjs",
     "cap:sync": "npx cap sync",
     "android": "npx cap open android",
-    "ios": "npx cap open ios"
+    "ios": "npx cap open ios",
+    "build:mobile": "npm run build:css && node scripts/build-mobile.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.0.0",
