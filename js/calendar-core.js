@@ -111,7 +111,8 @@
   let recoveryMode = false;
   function ensureButton() {
     const form = document.getElementById('form-login');
-    if (!form || document.getElementById('forgot-password-btn')) return;
+    // The login form already contains the single password recovery link.
+    if (!form || form.querySelector('button[onclick="openPasswordRecovery()"]') || document.getElementById('forgot-password-btn')) return;
     const b = document.createElement('button');
     b.id = 'forgot-password-btn'; b.type = 'button'; b.textContent = 'Забыли пароль?';
     b.className = 'w-full mt-1 py-2 text-sm text-primary-400 hover:text-primary-300 transition';
