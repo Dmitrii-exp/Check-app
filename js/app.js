@@ -1635,7 +1635,7 @@
           {
             method:'POST',
             headers:{
-              apikey: SUPABASE_ANON_KEY,
+              apikey: SUPABASE_PUBLISHABLE_KEY,
               authorization:'Bearer ' + sessionData.session.access_token,
               'x-upsert':'false',
               'content-type':file.type || 'image/jpeg'
