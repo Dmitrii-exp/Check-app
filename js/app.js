@@ -1056,21 +1056,41 @@
       return [...done, ...pending].sort((a,b) => (b.date || '').localeCompare(a.date || '') || (b.time || '').localeCompare(a.time || ''));
     }
 
+    function historyDisplayFields(item) {
+      const c = getCompany();
+      const task = c.tasks.find(t => t.id === item.taskId);
+      const equip = c.equipment.find(e => e.id === item.equipmentId);
+      const action = c.actions.find(a => a.id === item.actionId);
+      const deptId = item.completion?.departmentId || task?.departmentId || equip?.departmentId;
+      const dept = c.departments.find(d => d.id === deptId);
+      return {
+        dateTime: formatDate(item.date) + (item.time ? ' · ' + item.time : ''),
+        department: dept?.name || '—',
+        room: equip?.location || '—',
+        equipment: equip?.name || item.equipName || '—',
+        maintenance: action?.name || item.title || '—',
+        comment: item.comment || '—'
+      };
+    }
+
     function historyDetailsMarkup(item) {
       const c = getCompany(), user = c.users.find(u => u.id === item.userId);
+      const fields = historyDisplayFields(item);
       const equip = c.equipment.find(e => e.id === item.equipmentId);
       const action = c.actions.find(a => a.id === item.actionId);
       const overdue = item.status !== 'done' ? Math.max(0, Math.floor((new Date(todayStr() + 'T12:00:00') - new Date(item.date + 'T12:00:00')) / 86400000)) : 0;
       return `<div class="space-y-3 text-sm">
         <div><span class="text-slate-400">Статус:</span> <span class="${item.status === 'done' ? 'text-emerald-400' : 'text-amber-400'}">${item.status === 'done' ? 'Выполнено' : 'Не выполнено'}</span></div>
         ${item.status !== 'done' ? `<div class="text-amber-400">Просрочка: ${overdue} дн.</div>` : ''}
-        <div><span class="text-slate-400">Работа:</span> ${esc(item.title || '—')}</div>
-        <div><span class="text-slate-400">Оборудование:</span> ${esc(item.equipName || equip?.name || '—')}</div>
+        <div><span class="text-slate-400">Вид ТО:</span> ${esc(fields.maintenance)}</div>
+        <div><span class="text-slate-400">Подразделение:</span> ${esc(fields.department)}</div>
+        <div><span class="text-slate-400">Помещение:</span> ${esc(fields.room)}</div>
+        <div><span class="text-slate-400">Вид оборудования:</span> ${esc(fields.equipment)}</div>
         ${equip?.code ? `<div><span class="text-slate-400">Код:</span> ${esc(equip.code)}</div>` : ''}
-        <div><span class="text-slate-400">Дата:</span> ${formatDate(item.date)} ${esc(item.time || '')}</div>
+        <div><span class="text-slate-400">Дата и время:</span> ${esc(fields.dateTime)}</div>
         <div><span class="text-slate-400">${item.status === 'done' ? 'Выполнил:' : 'Назначен:'}</span> ${esc(item.workerName || user?.name || '—')}</div>
         ${action?.description ? `<div><span class="text-slate-400">Описание:</span> ${esc(action.description)}</div>` : ''}
-        ${item.comment ? `<div class="bg-slate-800/60 rounded-lg p-3"><span class="text-slate-400">Комментарий:</span> ${esc(item.comment)}</div>` : ''}
+        <div class="bg-slate-800/60 rounded-lg p-3"><span class="text-slate-400">Комментарий:</span> ${esc(fields.comment)}</div>
         ${item.status !== 'done' ? `<button type="button" onclick="closeHistoryDetails();openCompleteModal('${item.taskId}')" class="w-full py-3 rounded-xl bg-primary-600 font-medium">Выполнить задачу</button>` : ''}
         <div id="history-detail-photo">${item.photoPath ? 'Загрузка фото…' : item.status === 'done' ? 'Фото не прикреплено' : 'Фото появится после выполнения'}</div>
       </div>`;
@@ -1130,11 +1150,18 @@
       empty.textContent = historyFilter === 'done' ? 'Выполненных работ нет' : historyFilter === 'pending' ? 'Невыполненных задач нет' : 'Записей нет';
       list.innerHTML = items.map(item => {
         const user = getCompany().users.find(u => u.id === item.userId);
+        const fields = historyDisplayFields(item);
         return `<button type="button" onclick="openHistoryDetails('${item.id}', '${item.status}')" class="block w-full text-left bg-slate-900 border border-slate-800 rounded-2xl p-4 hover:border-primary-500 transition">
           <div class="flex justify-between items-start gap-2"><div class="font-semibold">${esc(item.title || '—')}</div><span class="text-xs shrink-0 ${item.status === 'done' ? 'text-emerald-400' : 'text-amber-400'}">${item.status === 'done' ? 'Выполнено' : 'Не выполнено'}</span></div>
-          <div class="text-sm text-slate-400 mt-1">${esc(item.equipName || '—')} · ${formatDate(item.date)} ${esc(item.time || '')}</div>
-          <div class="text-xs text-slate-500 mt-1">${item.status === 'done' ? 'Выполнил' : 'Назначен'}: ${esc(user?.name || '—')}</div>
-          ${item.comment ? `<div class="text-sm text-slate-300 mt-2 bg-slate-800/60 rounded-lg px-3 py-2">${esc(item.comment)}</div>` : ''}
+          <div class="text-sm text-slate-300 mt-2 space-y-1">
+            <div><span class="text-slate-400">Дата и время:</span> ${esc(fields.dateTime)}</div>
+            <div><span class="text-slate-400">Подразделение:</span> ${esc(fields.department)}</div>
+            <div><span class="text-slate-400">Помещение:</span> ${esc(fields.room)}</div>
+            <div><span class="text-slate-400">Вид оборудования:</span> ${esc(fields.equipment)}</div>
+            <div><span class="text-slate-400">Вид ТО:</span> ${esc(fields.maintenance)}</div>
+            <div class="bg-slate-800/60 rounded-lg px-3 py-2 mt-2"><span class="text-slate-400">Комментарий:</span> ${esc(fields.comment)}</div>
+          </div>
+          <div class="text-xs text-slate-500 mt-2">${item.status === 'done' ? 'Выполнил' : 'Назначен'}: ${esc(item.workerName || user?.name || '—')}</div>
           ${item.status !== 'done' ? `<div class="text-xs text-amber-400 mt-2">Просрочка: ${Math.max(0,Math.floor((new Date(todayStr() + 'T12:00:00') - new Date(item.date + 'T12:00:00'))/86400000))} дн.</div>` : ''}
           <div class="text-xs text-primary-400 mt-3">Открыть задачу →</div>
         </button>`;
