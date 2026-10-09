@@ -1323,6 +1323,7 @@
       document.getElementById('photo-input').value = '';
       document.getElementById('complete-worker-name').value = '';
       setCompletionStatus('done');
+      clearCompletionValidation();
       const task = getCompany().tasks.find(t => t.id === taskId);
       document.getElementById('complete-task-info').textContent = task.title + ' · ' + task.equipName;
       document.getElementById('complete-comment').value = '';
@@ -1330,7 +1331,7 @@
       document.getElementById('photo-placeholder').classList.remove('hidden');
       document.getElementById('modal-complete').classList.remove('hidden');
     }
-    function closeCompleteModal() { document.getElementById('modal-complete').classList.add('hidden'); }
+    function closeCompleteModal() { clearCompletionValidation(); document.getElementById('modal-complete').classList.add('hidden'); }
     function handlePhoto(e) {
       const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
@@ -1343,7 +1344,44 @@
       };
       reader.readAsDataURL(file);
     }
+    let completionValidationTimer;
+    function clearCompletionValidation() {
+      clearTimeout(completionValidationTimer);
+      for (const id of ['complete-worker-name', 'complete-comment', 'complete-photo-dropzone']) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+        el.removeAttribute('aria-invalid');
+      }
+      document.getElementById('complete-validation-toast')?.remove();
+    }
+    function validateCompletionFields() {
+      clearCompletionValidation();
+      const missing = [];
+      const worker = document.getElementById('complete-worker-name');
+      const comment = document.getElementById('complete-comment');
+      if (!worker.value.trim()) missing.push(worker);
+      if (completionStatus === 'done' && !currentPhotoFile) missing.push(document.getElementById('complete-photo-dropzone'));
+      if (completionStatus === 'blocked' && !comment.value.trim()) missing.push(comment);
+      if (!missing.length) return true;
+      for (const el of missing) {
+        el.classList.add('border-red-500', 'ring-2', 'ring-red-500');
+        el.setAttribute('aria-invalid', 'true');
+      }
+      const toastEl = document.createElement('div');
+      toastEl.id = 'complete-validation-toast';
+      toastEl.setAttribute('role', 'alert');
+      toastEl.className = 'fixed bottom-8 left-1/2 -translate-x-1/2 z-[120] bg-red-700 text-white px-5 py-3 rounded-xl shadow-xl text-sm text-center';
+      toastEl.textContent = 'Заполните необходимое поле';
+      document.body.appendChild(toastEl);
+      completionValidationTimer = setTimeout(() => {
+        toastEl.remove();
+        for (const el of missing) el.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+      }, 5000);
+      return false;
+    }
     async function submitComplete() {
+      if (!validateCompletionFields()) return;
       const workerName = document.getElementById('complete-worker-name').value.trim();
       const comment = document.getElementById('complete-comment').value.trim();
       if (!workerName) return toast('Укажите имя исполнителя');
