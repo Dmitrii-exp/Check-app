@@ -36,6 +36,9 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Configure Android password recovery links
+        run: node scripts/configure-mobile-links.mjs android
+
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug
