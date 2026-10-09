@@ -202,9 +202,9 @@
     function getDeptActions() { return getCompany().actions.filter(a => a.departmentId === getActiveDeptId()); }
     function getDeptTasks(date) {
       return getCompany().tasks.filter(t => {
-        if (t.date !== date || t.departmentId !== getActiveDeptId()) return false;
+        if ((t.date !== date && !(t.date < date && t.status !== 'done')) || t.departmentId !== getActiveDeptId()) return false;
         // hide pending tasks for frozen equipment
-        if (t.status === 'pending' && !isEquipmentActive(t.equipmentId)) return false;
+        if (t.status !== 'done' && !isEquipmentActive(t.equipmentId)) return false;
         return true;
       });
     }
@@ -906,8 +906,10 @@
 
     function generateTodayTasks() {
       const c = getCompany(); const today = todayStr();
-      c.tasks = c.tasks.filter(t => t.date === today || t.status === 'done');
+      // Preserve overdue tasks until they are actually completed.
+      c.tasks = c.tasks.filter(t => t.status === 'done' || t.date <= today);
       c.actions.forEach(action => {
+        if (c.tasks.some(t => t.actionId === action.id && t.status !== 'done')) return;
         if (c.tasks.some(t => t.actionId === action.id && t.date === today)) return;
         const last = c.completions.filter(comp => comp.actionId === action.id).sort((a,b) => b.date.localeCompare(a.date))[0];
         let shouldCreate = true;
@@ -1048,9 +1050,9 @@
 
     function historyItems() {
       const c = getCompany(), deptId = getActiveDeptId();
-      const done = getDeptCompletions().map(comp => ({ id: comp.id, status: 'done', date: comp.date, time: comp.time || '', title: comp.title, equipName: comp.equipName, userId: comp.userId, comment: comp.comment, photoPath: comp.photoPath, taskId: comp.taskId, actionId: comp.actionId, equipmentId: comp.equipmentId, completion: comp }));
+      const done = getDeptCompletions().map(comp => ({ id: comp.id, status: 'done', date: comp.date, time: comp.time || '', title: comp.title, equipName: comp.equipName, userId: comp.userId, comment: comp.comment, workerName: comp.workerName || '', photoPath: comp.photoPath, taskId: comp.taskId, actionId: comp.actionId, equipmentId: comp.equipmentId, completion: comp }));
       const completedIds = new Set(done.map(x => x.taskId).filter(Boolean));
-      const pending = c.tasks.filter(t => t.departmentId === deptId && t.status !== 'done' && !completedIds.has(t.id)).map(t => ({ id: t.id, status: 'pending', date: t.date, time: '', title: t.title, equipName: t.equipName, userId: t.assignedUserId, comment: '', photoPath: '', taskId: t.id, actionId: t.actionId, equipmentId: t.equipmentId }));
+      const pending = c.tasks.filter(t => t.departmentId === deptId && t.status !== 'done' && !completedIds.has(t.id)).map(t => ({ id: t.id, status: 'pending', date: t.date, time: t.blockedAt ? new Date(t.blockedAt).toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}) : '', title: t.title, equipName: t.equipName, userId: t.assignedUserId, workerName: t.blockedWorkerName || '', comment: t.blockedComment || '', photoPath: '', taskId: t.id, actionId: t.actionId, equipmentId: t.equipmentId }));
       return [...done, ...pending].sort((a,b) => (b.date || '').localeCompare(a.date || '') || (b.time || '').localeCompare(a.time || ''));
     }
 
@@ -1058,15 +1060,18 @@
       const c = getCompany(), user = c.users.find(u => u.id === item.userId);
       const equip = c.equipment.find(e => e.id === item.equipmentId);
       const action = c.actions.find(a => a.id === item.actionId);
+      const overdue = item.status !== 'done' ? Math.max(0, Math.floor((new Date(todayStr() + 'T12:00:00') - new Date(item.date + 'T12:00:00')) / 86400000)) : 0;
       return `<div class="space-y-3 text-sm">
         <div><span class="text-slate-400">Статус:</span> <span class="${item.status === 'done' ? 'text-emerald-400' : 'text-amber-400'}">${item.status === 'done' ? 'Выполнено' : 'Не выполнено'}</span></div>
+        ${item.status !== 'done' ? `<div class="text-amber-400">Просрочка: ${overdue} дн.</div>` : ''}
         <div><span class="text-slate-400">Работа:</span> ${esc(item.title || '—')}</div>
         <div><span class="text-slate-400">Оборудование:</span> ${esc(item.equipName || equip?.name || '—')}</div>
         ${equip?.code ? `<div><span class="text-slate-400">Код:</span> ${esc(equip.code)}</div>` : ''}
         <div><span class="text-slate-400">Дата:</span> ${formatDate(item.date)} ${esc(item.time || '')}</div>
-        <div><span class="text-slate-400">${item.status === 'done' ? 'Выполнил:' : 'Назначен:'}</span> ${esc(user?.name || '—')}</div>
+        <div><span class="text-slate-400">${item.status === 'done' ? 'Выполнил:' : 'Назначен:'}</span> ${esc(item.workerName || user?.name || '—')}</div>
         ${action?.description ? `<div><span class="text-slate-400">Описание:</span> ${esc(action.description)}</div>` : ''}
         ${item.comment ? `<div class="bg-slate-800/60 rounded-lg p-3"><span class="text-slate-400">Комментарий:</span> ${esc(item.comment)}</div>` : ''}
+        ${item.status !== 'done' ? `<button type="button" onclick="closeHistoryDetails();openCompleteModal('${item.taskId}')" class="w-full py-3 rounded-xl bg-primary-600 font-medium">Выполнить задачу</button>` : ''}
         <div id="history-detail-photo">${item.photoPath ? 'Загрузка фото…' : item.status === 'done' ? 'Фото не прикреплено' : 'Фото появится после выполнения'}</div>
       </div>`;
     }
@@ -1130,6 +1135,7 @@
           <div class="text-sm text-slate-400 mt-1">${esc(item.equipName || '—')} · ${formatDate(item.date)} ${esc(item.time || '')}</div>
           <div class="text-xs text-slate-500 mt-1">${item.status === 'done' ? 'Выполнил' : 'Назначен'}: ${esc(user?.name || '—')}</div>
           ${item.comment ? `<div class="text-sm text-slate-300 mt-2 bg-slate-800/60 rounded-lg px-3 py-2">${esc(item.comment)}</div>` : ''}
+          ${item.status !== 'done' ? `<div class="text-xs text-amber-400 mt-2">Просрочка: ${Math.max(0,Math.floor((new Date(todayStr() + 'T12:00:00') - new Date(item.date + 'T12:00:00'))/86400000))} дн.</div>` : ''}
           <div class="text-xs text-primary-400 mt-3">Открыть задачу →</div>
         </button>`;
       }).join('');
@@ -1305,8 +1311,18 @@
       saveDB(); renderActions(); toast('Регламент удалён');
     }
 
+    let completionStatus = 'done';
+    function setCompletionStatus(status) {
+      completionStatus = status === 'blocked' ? 'blocked' : 'done';
+      document.getElementById('complete-photo-section').classList.toggle('hidden', completionStatus === 'blocked');
+      document.getElementById('complete-status-done').className = 'rounded-xl py-3 text-sm ' + (completionStatus === 'done' ? 'bg-emerald-600' : 'bg-slate-800');
+      document.getElementById('complete-status-blocked').className = 'rounded-xl py-3 text-sm ' + (completionStatus === 'blocked' ? 'bg-amber-600' : 'bg-slate-800');
+    }
     function openCompleteModal(taskId) {
       currentCompleteTaskId = taskId; currentPhotoBase64 = null; currentPhotoFile = null;
+      document.getElementById('photo-input').value = '';
+      document.getElementById('complete-worker-name').value = '';
+      setCompletionStatus('done');
       const task = getCompany().tasks.find(t => t.id === taskId);
       document.getElementById('complete-task-info').textContent = task.title + ' · ' + task.equipName;
       document.getElementById('complete-comment').value = '';
@@ -1328,7 +1344,11 @@
       reader.readAsDataURL(file);
     }
     async function submitComplete() {
-      if (!currentPhotoFile) return toast('Прикрепите фото');
+      const workerName = document.getElementById('complete-worker-name').value.trim();
+      const comment = document.getElementById('complete-comment').value.trim();
+      if (!workerName) return toast('Укажите имя исполнителя');
+      if (completionStatus === 'done' && !currentPhotoFile) return toast('Прикрепите фото');
+      if (completionStatus === 'blocked' && !comment) return toast('Укажите причину невыполнения');
       const c = getCompany();
       const task = c.tasks.find(t => t.id === currentCompleteTaskId);
       const user = getUser();
@@ -1336,25 +1356,33 @@
 
       try {
         const now = new Date();
-        const ext = (currentPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
-        const path = c.id + '/' + task.departmentId + '/' + task.id + '/' + Date.now() + '.' + ext;
-        const { error: uploadError } = await supabaseClient.storage.from('equipment-photos').upload(path, currentPhotoFile, {
-          upsert: false,
-          contentType: currentPhotoFile.type || 'image/jpeg'
-        });
-        if (uploadError) throw uploadError;
-
-        task.status = 'done';
-        c.completions.push({
-          id: uid(), taskId: task.id, actionId: task.actionId, equipmentId: task.equipmentId,
-          departmentId: task.departmentId, userId: user.id, title: task.title, equipName: task.equipName,
-          date: todayStr(), time: now.toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}),
-          photoPath: path, photo: '', comment: document.getElementById('complete-comment').value.trim()
-        });
+        let path = '';
+        if (completionStatus === 'done') {
+          const ext = (currentPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+          path = c.id + '/' + task.departmentId + '/' + task.id + '/' + Date.now() + '.' + ext;
+          const { error: uploadError } = await supabaseClient.storage.from('equipment-photos').upload(path, currentPhotoFile, {
+            upsert: false, contentType: currentPhotoFile.type || 'image/jpeg'
+          });
+          if (uploadError) throw uploadError;
+          task.status = 'done';
+          c.completions.push({
+            id: uid(), taskId: task.id, actionId: task.actionId, equipmentId: task.equipmentId,
+            departmentId: task.departmentId, userId: user.id, workerName, title: task.title, equipName: task.equipName,
+            date: todayStr(), time: now.toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}),
+            photoPath: path, photo: '', comment
+          });
+        } else {
+          task.status = 'blocked';
+          task.blockedComment = comment;
+          task.blockedWorkerName = workerName;
+          task.blockedAt = now.toISOString();
+        }
         saveDB();
 
         closeCompleteModal();
         const successEl = document.getElementById('modal-success');
+        successEl.querySelector('h3').textContent = completionStatus === 'done' ? 'ГОТОВО' : 'НЕ ВЫПОЛНЕНО';
+        successEl.querySelector('p').textContent = completionStatus === 'done' ? 'Задача успешно выполнена' : 'Причина сохранена, задача остаётся открытой';
         successEl.classList.remove('hidden');
         successEl.style.display = 'flex';
       } catch (e) {
