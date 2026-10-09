@@ -65,6 +65,7 @@
           <label class="block text-xs font-medium text-slate-400 mb-1.5">Пароль</label>
           <input id="login-password" type="password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
+        <button type="button" onclick="openPasswordRecovery()" class="text-sm text-primary-400 hover:underline">Забыли пароль?</button>
         <button onclick="doLogin()" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-primary-600/20">Войти</button>
       </div>
 
@@ -112,6 +113,23 @@
 
       <p id="auth-error" class="text-red-400 text-sm text-center mt-4 hidden"></p>
 
+      <div id="password-recovery-modal" class="fixed inset-0 bg-slate-950/95 z-[110] hidden items-center justify-center p-4">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 space-y-4">
+          <h2 class="text-xl font-bold" id="recovery-title">Восстановление пароля</h2>
+          <div id="recovery-email-step" class="space-y-3">
+            <label for="recovery-email" class="block text-sm">Email учётной записи</label>
+            <input id="recovery-email" type="email" autocomplete="email" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3" placeholder="you@company.ru"/>
+            <button type="button" id="recovery-send" onclick="sendPasswordRecovery()" class="w-full bg-primary-600 rounded-xl py-3 font-medium">Отправить письмо</button>
+          </div>
+          <div id="recovery-password-step" class="space-y-3 hidden">
+            <div><label for="recovery-new-password" class="block text-sm mb-2">Введите новый пароль</label><input id="recovery-new-password" type="password" autocomplete="new-password" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3" /></div>
+            <div><label for="recovery-repeat-password" class="block text-sm mb-2">Повторите новый пароль</label><input id="recovery-repeat-password" type="password" autocomplete="new-password" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3" /></div>
+            <button type="button" id="recovery-save" onclick="saveRecoveredPassword()" class="w-full bg-primary-600 rounded-xl py-3 font-medium">Сохранить новый пароль</button>
+          </div>
+          <p id="recovery-message" role="status" class="text-sm text-slate-300 min-h-[20px]"></p>
+          <button type="button" onclick="closePasswordRecovery()" class="w-full py-2 text-slate-400">Закрыть</button>
+        </div>
+      </div>
       <div id="otp-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
         <div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl">
           <div class="text-center">
