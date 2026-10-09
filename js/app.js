@@ -835,6 +835,17 @@
     // Native reminders belong only to the responsible employee for their department.
     // They are re-created on login and whenever the app is opened.
     const MAINTENANCE_NOTIFICATION_IDS_KEY = 'checkapp-maintenance-notification-ids';
+    function maintenanceNotificationsSettingKey() {
+      return 'checkapp-maintenance-notifications-' + (db.currentUser?.id || 'anonymous');
+    }
+    function maintenanceNotificationsEnabled() {
+      return localStorage.getItem(maintenanceNotificationsSettingKey()) !== 'off';
+    }
+    function setMaintenanceNotificationsEnabled(enabled) {
+      localStorage.setItem(maintenanceNotificationsSettingKey(), enabled ? 'on' : 'off');
+      void refreshMaintenanceNotifications().catch(e => console.error('[Check App] notifications:', e));
+    }
+
     function notificationId(taskId) {
       let hash = 2166136261;
       for (const ch of String(taskId)) {
@@ -850,7 +861,7 @@
       if (previous.length) await localNotifications.cancel({ notifications: previous.map(id => ({ id })) });
       localStorage.removeItem(MAINTENANCE_NOTIFICATION_IDS_KEY);
       const user = getUser();
-      if (!user || user.role !== 'responsible') return;
+      if (!user || !maintenanceNotificationsEnabled()) return;
       const permissions = await localNotifications.checkPermissions();
       if (permissions.display !== 'granted') {
         const requested = await localNotifications.requestPermissions();
@@ -858,7 +869,7 @@
       }
       const now = new Date();
       const tasks = getCompany().tasks.filter(task =>
-        task.departmentId === user.departmentId &&
+        (user.role === 'manager' || task.departmentId === user.departmentId) &&
         task.status !== 'done' &&
         isEquipmentActive(task.equipmentId)
       );
@@ -1667,6 +1678,8 @@
     let pendingPlanId = null;
 
     function renderCabinet() {
+      const notificationToggle = document.getElementById('cab-notifications-toggle');
+      if (notificationToggle) notificationToggle.checked = maintenanceNotificationsEnabled();
       const manager = getUser().role === 'manager';
       document.getElementById('cab-subscription-details').classList.toggle('hidden', !manager);
       document.getElementById('cab-choose-plan').classList.toggle('hidden', !manager);
