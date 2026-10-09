@@ -130,7 +130,6 @@
       cloudSyncBusy = true;
       try {
         const operations = [
-          ['компанию', supabaseClient.from('companies').upsert({id:c.id, name:c.name}, {onConflict:'id'})],
           ['подразделения', c.departments?.length ? supabaseClient.from('departments').upsert(c.departments.map(d => ({id:d.id, company_id:c.id, name:d.name, invite_code:d.inviteCode})), {onConflict:'id'}) : null],
           ['профили', c.users?.length ? supabaseClient.from('profiles').upsert(c.users.map(u => ({id:u.id, company_id:c.id, department_id:u.departmentId || null, name:u.name, phone:u.phone || null, role:u.role})), {onConflict:'id'}) : null],
           ['оборудование', c.equipment?.length ? supabaseClient.from('equipment').upsert(c.equipment.map(e => ({id:e.id, company_id:c.id, department_id:e.departmentId, name:e.name, code:e.code || null, location:e.location || null})), {onConflict:'id'}) : null],
