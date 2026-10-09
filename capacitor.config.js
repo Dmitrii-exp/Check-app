@@ -1,7 +1,7 @@
 const config = {
   appId: 'ru.checkapp.mobile',
   appName: 'Check App',
-  webDir: '.',
+  webDir: 'dist-mobile',
   bundledWebRuntime: false
 };
 
