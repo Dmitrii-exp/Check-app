@@ -1225,7 +1225,8 @@
 
     function historyItems() {
       const c = getCompany(), deptId = getActiveDeptId();
-      const done = getDeptCompletions().map(comp => ({ id: comp.id, status: 'done', date: comp.date, time: comp.time || '', title: comp.title, equipName: comp.equipName, userId: comp.userId, comment: comp.comment, workerName: comp.workerName || '', photoPath: comp.photoPath, taskId: comp.taskId, actionId: comp.actionId, equipmentId: comp.equipmentId, completion: comp }));
+      const uniqueCompletions = [...new Map([...getDeptCompletions()].reverse().map(comp => [comp.taskId || comp.id, comp])).values()];
+      const done = uniqueCompletions.map(comp => ({ id: comp.id, status: 'done', date: comp.date, time: comp.time || '', title: comp.title, equipName: comp.equipName, userId: comp.userId, comment: comp.comment, workerName: comp.workerName || '', photoPath: comp.photoPath, taskId: comp.taskId, actionId: comp.actionId, equipmentId: comp.equipmentId, completion: comp }));
       const completedIds = new Set(done.map(x => x.taskId).filter(Boolean));
       const pending = c.tasks.filter(t => t.departmentId === deptId && t.status !== 'done' && !completedIds.has(t.id)).map(t => ({ id: t.id, status: 'pending', date: t.date, time: t.blockedAt ? new Date(t.blockedAt).toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}) : '', title: t.title, equipName: t.equipName, userId: t.assignedUserId, workerName: t.blockedWorkerName || '', comment: t.blockedComment || '', photoPath: '', taskId: t.id, actionId: t.actionId, equipmentId: t.equipmentId }));
       return [...done, ...pending].sort((a,b) => (b.date || '').localeCompare(a.date || '') || (b.time || '').localeCompare(a.time || ''));
@@ -1585,7 +1586,9 @@
       }, 5000);
       return false;
     }
+    let completionSubmissionBusy = false;
     async function submitComplete() {
+      if (completionSubmissionBusy) return;
       if (!validateCompletionFields()) return;
       const workerName = document.getElementById('complete-worker-name').value.trim();
       const comment = document.getElementById('complete-comment').value.trim();
@@ -1596,8 +1599,12 @@
       const task = c.tasks.find(t => t.id === currentCompleteTaskId);
       const user = getUser();
       if (!task || !user) return toast('Задача или пользователь не найдены');
-
+      if (task.status === 'done' || c.completions.some(x => x.taskId === task.id)) return toast('Эта задача уже выполнена');
+      completionSubmissionBusy = true;
       try {
+        const {data: existing, error: existingError} = await supabaseClient.from('completions').select('id').eq('task_id', task.id).limit(1);
+        if (existingError) throw existingError;
+        if (existing?.length) return toast('Эта задача уже сохранена как выполненная. Обновите страницу.');
         const now = new Date();
         let path = '';
         if (completionStatus === 'done') {
@@ -1650,7 +1657,9 @@
         successEl.style.display = 'flex';
       } catch (e) {
         console.error(e);
-        toast(e.message || 'Не удалось загрузить фото');
+        toast(e.message || 'Не удалось сохранить результат ТО');
+      } finally {
+        completionSubmissionBusy = false;
       }
     }
     function closeSuccessModal() {
