@@ -1605,6 +1605,56 @@
       }, 5000);
       return false;
     }
+    async function prepareCompletionPhoto(file) {
+      // iPhone photos may be multi-megabyte HEIC/JPEG images. Compress on-device
+      // before upload to reduce cellular transfer time and avoid HEIC previews.
+      if (!file || !file.type.startsWith('image/')) return file;
+      const bitmap = await createImageBitmap(file);
+      try {
+        const maxSide = 1600;
+        const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.78));
+        if (!blob) return file;
+        return new File([blob], 'maintenance-photo.jpg', {type:'image/jpeg'});
+      } finally {
+        bitmap.close?.();
+      }
+    }
+    async function uploadCompletionPhoto(path, file) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25000);
+      try {
+        const {data: sessionData, error: sessionError} = await supabaseClient.auth.getSession();
+        if (sessionError || !sessionData?.session?.access_token) throw new Error('Сессия истекла. Войдите заново.');
+        const response = await fetch(
+          'https://qaxoufarhpagcjkhptga.supabase.co/storage/v1/object/equipment-photos/' + path,
+          {
+            method:'POST',
+            headers:{
+              apikey: SUPABASE_ANON_KEY,
+              authorization:'Bearer ' + sessionData.session.access_token,
+              'x-upsert':'false',
+              'content-type':file.type || 'image/jpeg'
+            },
+            body:file,
+            signal:controller.signal
+          }
+        );
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.message || error.error || 'Ошибка загрузки фото (' + response.status + ')');
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') throw new Error('Загрузка фото заняла больше 25 секунд. Проверьте интернет и попробуйте снова.');
+        throw error;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
     let completionSubmissionBusy = false;
     function setCompletionSaveState(busy, message = '', isError = false) {
       const btn = document.getElementById('complete-save-btn');
@@ -1640,12 +1690,16 @@
         let path = '';
         if (completionStatus === 'done') {
           setCompletionSaveState(true, 'Загружаем фотографию…');
-          const ext = (currentPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
-          path = c.id + '/' + task.departmentId + '/' + task.id + '/' + Date.now() + '.' + ext;
-          const { error: uploadError } = await supabaseClient.storage.from('equipment-photos').upload(path, currentPhotoFile, {
-            upsert: false, contentType: currentPhotoFile.type || 'image/jpeg'
-          });
-          if (uploadError) throw uploadError;
+          let uploadFile = currentPhotoFile;
+          try {
+            setCompletionSaveState(true, 'Подготавливаем фотографию…');
+            uploadFile = await prepareCompletionPhoto(currentPhotoFile);
+          } catch (photoError) {
+            console.warn('Photo compression unavailable, uploading original', photoError);
+          }
+          path = c.id + '/' + task.departmentId + '/' + task.id + '/' + Date.now() + '.' + (uploadFile.type === 'image/jpeg' ? 'jpg' : ((uploadFile.name.split('.').pop() || 'jpg').toLowerCase()));
+          setCompletionSaveState(true, 'Загружаем фотографию (' + Math.max(1, Math.ceil(uploadFile.size / 1024)) + ' КБ)…');
+          await uploadCompletionPhoto(path, uploadFile);
           task.status = 'done';
           c.completions.push({
             id: uid(), taskId: task.id, actionId: task.actionId, equipmentId: task.equipmentId,
