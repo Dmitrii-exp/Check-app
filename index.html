@@ -295,6 +295,19 @@
       <!-- CABINET -->
       <div id="page-cabinet" class="page hidden space-y-6 fade-in">
         <h1 class="text-2xl font-bold">Личный кабинет</h1>
+        <section class="bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-3" aria-label="Обновления Check App">
+          <h2 class="font-semibold text-lg">Обновления Check App</h2>
+          <p id="app-update-current" class="text-sm text-slate-400">Версия приложения: 1.0.0</p>
+          <p id="app-update-latest" class="text-sm text-slate-400">Информация о последней версии ещё не загружена</p>
+          <p id="app-update-status" class="text-sm text-slate-300" role="status">Нажмите «Проверить обновления»</p>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="checkAppUpdates()" class="bg-primary-600 hover:bg-primary-500 text-white font-medium text-sm px-4 py-3 rounded-xl">Проверить обновления</button>
+            <button type="button" id="app-update-install" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm px-4 py-3 rounded-xl">Скачать обновление APK</button>
+          </div>
+          <h3 class="text-sm font-semibold pt-2">Новые функции и исправления</h3>
+          <ul id="app-update-changes" class="list-disc pl-5 text-sm text-slate-300 space-y-2"><li>Нажмите «Проверить обновления», чтобы посмотреть список изменений.</li></ul>
+        </section>
+
         <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5">
           <label for="cab-notifications-toggle" class="flex items-center justify-between gap-4 cursor-pointer">
             <span>
@@ -524,7 +537,8 @@
     <img id="photo-viewer-img" class="max-w-full max-h-full rounded-lg" />
   </div>
 
-  <script src="js/app.js?v=20260918-02"></script>
+  <script src="js/update-center.js?v=20261009-01"></script>
+  <script src="js/app.js?v=20261009-01"></script>
   <script src="js/calendar.js?v=20260918-03"></script>
 </body>
 </html>
