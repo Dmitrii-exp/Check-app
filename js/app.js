@@ -744,7 +744,8 @@
     async function initMobileRecoveryLinks() {
       if (!isNativeCheckApp()) return;
       try {
-        const { App } = await import('@capacitor/app');
+        const App = window.Capacitor?.Plugins?.App;
+        if (!App) throw new Error('Capacitor App plugin unavailable');
         App.addListener('appUrlOpen', ({ url }) => { void processMobileRecoveryLink(url); });
         const launch = await App.getLaunchUrl();
         if (launch?.url) await processMobileRecoveryLink(launch.url);
