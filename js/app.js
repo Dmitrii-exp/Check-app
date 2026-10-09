@@ -286,6 +286,8 @@
     let adminCompanies = [];
 
     const AUTH_PUBLIC_URL = 'https://www.app-check.ru/';
+    const AUTH_MOBILE_RECOVERY_URL = 'ru.checkapp.mobile://recovery';
+    const isNativeCheckApp = () => !!(window.Capacitor?.isNativePlatform?.());
 
     function inviteCodeFromUrl() {
       try {
@@ -678,7 +680,7 @@
       const btn = document.getElementById('recovery-send');
       btn.disabled = true;
       try {
-        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: AUTH_PUBLIC_URL });
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: isNativeCheckApp() ? AUTH_MOBILE_RECOVERY_URL : AUTH_PUBLIC_URL });
         if (error) throw error;
         recoveryMessage('Если учётная запись существует, письмо для восстановления отправлено на указанный Email.');
       } catch (e) {
@@ -711,6 +713,47 @@
         console.error('[Check App] password recovery update:', e);
       } finally { btn.disabled = false; }
     }
+    async function processMobileRecoveryLink(url) {
+      if (!url?.startsWith(AUTH_MOBILE_RECOVERY_URL)) return;
+      try {
+        const parsed = new URL(url);
+        const fragment = new URLSearchParams(parsed.hash.replace(/^#/, ''));
+        const query = parsed.searchParams;
+        const error = fragment.get('error_description') || query.get('error_description');
+        if (error) throw new Error(error);
+        const accessToken = fragment.get('access_token') || query.get('access_token');
+        const refreshToken = fragment.get('refresh_token') || query.get('refresh_token');
+        const code = query.get('code');
+        if (accessToken && refreshToken) {
+          const { error: sessionError } = await supabaseClient.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          if (sessionError) throw sessionError;
+        } else if (code) {
+          const { error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+        } else {
+          throw new Error('Ссылка не содержит данных восстановления.');
+        }
+        passwordRecoveryActive = true;
+        openPasswordRecovery(true);
+      } catch (e) {
+        openPasswordRecovery();
+        recoveryMessage('Ссылка восстановления недействительна или истекла. Запросите новое письмо.', true);
+        console.error('[Check App] recovery deep link:', e);
+      }
+    }
+    async function initMobileRecoveryLinks() {
+      if (!isNativeCheckApp()) return;
+      try {
+        const { App } = await import('@capacitor/app');
+        App.addListener('appUrlOpen', ({ url }) => { void processMobileRecoveryLink(url); });
+        const launch = await App.getLaunchUrl();
+        if (launch?.url) await processMobileRecoveryLink(launch.url);
+      } catch (e) {
+        console.error('[Check App] mobile link initialization:', e);
+      }
+    }
+    void initMobileRecoveryLinks();
+
     if (supabaseClient) {
       supabaseClient.auth.onAuthStateChange((event) => {
         if (event === 'PASSWORD_RECOVERY') {
