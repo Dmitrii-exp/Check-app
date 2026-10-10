@@ -1,29 +1,60 @@
 // Private photos: company-scoped paths, signed URLs and client-side compression.
 const checkPhotoMaxBytes = 5 * 1024 * 1024;
+function checkPhotoDeadline(promise, ms, message) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), ms); })
+  ]).finally(() => clearTimeout(timer));
+}
 async function checkPreparePhoto(file) {
   if (!file) return null;
   if (!file.type.startsWith('image/')) throw new Error('Выберите изображение');
-  if (file.size > 25 * 1024 * 1024) throw new Error('Исходное фото слишком большое (максимум 25 МБ)');
-  const image = await createImageBitmap(file);
+  if (file.size > 25 * 1024 * 1024) throw new Error('Фото больше 25 МБ');
+  // iOS Safari reliably decodes camera JPEG/HEIC via HTMLImageElement.
+  const url = URL.createObjectURL(file);
+  const image = new Image();
   try {
-    const maxSide = 1600;
-    const scale = Math.min(1,maxSide/Math.max(image.width,image.height));
+    await checkPhotoDeadline(new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error('Не удалось прочитать фотографию'));
+      image.src = url;
+    }), 12000, 'Слишком долго обрабатывается фотография');
+    const maxSide = 1200;
+    const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
     const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1,Math.round(image.width*scale));
-    canvas.height = Math.max(1,Math.round(image.height*scale));
-    canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
-    const blob = await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Не удалось обработать фото')),'image/jpeg',0.78));
-    if(blob.size>checkPhotoMaxBytes) throw new Error('Фото слишком большое');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await checkPhotoDeadline(new Promise((resolve, reject) => {
+      canvas.toBlob(result => result ? resolve(result) : reject(new Error('Ошибка сжатия фото')), 'image/jpeg', 0.68);
+    }), 12000, 'Слишком долго сжимается фотография');
+    if (blob.size > checkPhotoMaxBytes) throw new Error('Фото больше 5 МБ после сжатия');
     return blob;
-  } finally { image.close(); }
+  } finally {
+    image.onload = null;
+    image.onerror = null;
+    URL.revokeObjectURL(url);
+  }
 }
 async function checkUploadPhoto(bucket, companyId, recordId, file) {
   if (!file) return null;
-  const blob=await checkPreparePhoto(file);
-  const path=companyId+'/'+recordId+'/'+crypto.randomUUID()+'.jpg';
-  const {error}=await supabaseClient.storage.from(bucket).upload(path,blob,{contentType:'image/jpeg',upsert:false});
-  if(error)throw error;
-  return path;
+  const blob = await checkPreparePhoto(file);
+  const path = companyId + '/' + recordId + '/' + crypto.randomUUID() + '.jpg';
+  const controller = new AbortController();
+  try {
+    const {error} = await checkPhotoDeadline(
+      supabaseClient.storage.from(bucket).upload(path, blob, {
+        contentType: 'image/jpeg', upsert: false, abortSignal: controller.signal
+      }),
+      20000, 'Загрузка фото заняла больше 20 секунд. Проверьте интернет и повторите'
+    );
+    if (error) throw error;
+    return path;
+  } catch(error) {
+    controller.abort();
+    throw error;
+  }
 }
 async function checkRemovePhoto(bucket,path) {
   if(path)await supabaseClient.storage.from(bucket).remove([path]);
