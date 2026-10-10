@@ -1,11 +1,45 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    .fade-in { animation: fadeIn 0.25s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-    .photo-preview { max-height: 180px; object-fit: cover; }
-    input[type="file"] { display: none; }
-    .scroll-thin::-webkit-scrollbar { width: 4px; }
-    .scroll-thin::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-    /* Calendar is informational: actions are performed from Today/Tasks, not here. */
-    #calendar-task-list button { display: none !important; }
+/* Check App design system. This file replaces the former stylesheet in full.
+   No duplicate theme stylesheet or runtime style injection. */
+:root {
+  color-scheme: dark;
+  --check-surface: #131e2d;
+  --check-surface-raised: #1c2a3d;
+  --check-border: #263448;
+  --check-text: #f6f8ff;
+  --check-muted: #a8b5c8;
+  --check-primary: #5b50f5;
+  --check-focus: #9286ff;
+}
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  letter-spacing: -0.012em;
+  background: #090e19;
+  color: var(--check-text);
+}
+button, input, select, textarea { font: inherit; }
+button, a, select, input[type="checkbox"] { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled) { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+:focus-visible { outline: 2px solid var(--check-focus); outline-offset: 3px; }
+input, textarea, select { min-width: 0; }
+input::placeholder, textarea::placeholder { color: #8191a8; opacity: 1; }
+.fade-in { animation: checkFadeIn .22s ease-out both; }
+@keyframes checkFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.photo-preview { max-height: 180px; object-fit: cover; }
+input[type="file"] { display: none; }
+.scroll-thin { scrollbar-width: thin; scrollbar-color: #5b50f5 transparent; }
+.scroll-thin::-webkit-scrollbar { width: 5px; height: 5px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: #5b50f5; border-radius: 10px; }
+#calendar-task-list button { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .fade-in { animation: none; }
+  *, *::before, *::after { scroll-behavior: auto !important; }
+}
+@media (max-width: 640px) {
+  input, select, textarea { font-size: 16px; }
+  .page { min-width: 0; }
+}
