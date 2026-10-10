@@ -61,7 +61,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           node scripts/create-release-notes.mjs > "$RUNNER_TEMP/release-notes.md"
-          gh release create "v$VERSION" android/app/build/outputs/apk/release/app-release.apk#Check-App-v$VERSION.apk --title "Check App v$VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" --latest --verify-tag || {
+          gh release create "v$VERSION" android/app/build/outputs/apk/release/app-release.apk#Check-App-v$VERSION.apk --title "Check App v$VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" --latest || {
             echo "::error::Release tag already exists or release publishing failed. Bump package.json version for a new release."
             exit 1
           }
