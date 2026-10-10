@@ -6,6 +6,8 @@ const js = ['js/app.js', 'js/update-center.js', 'js/calendar-core.js', 'js/onboa
 const defined = new Set();
 for (const match of js.matchAll(/(?:^|\n)\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)) defined.add(match[1]);
 for (const match of js.matchAll(/(?:^|\n)\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\(/g)) defined.add(match[1]);
+// Onboarding and other modules expose handlers by assigning functions to window.
+for (const match of js.matchAll(/\bwindow\.([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?function\s*\(/g)) defined.add(match[1]);
 
 const referenced = new Set();
 for (const match of html.matchAll(/(?:onclick|onchange|oninput|onkeydown|onkeyup|onsubmit)\s*=\s*["']([^"']+)["']/gi)) {
