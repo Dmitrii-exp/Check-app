@@ -125,12 +125,13 @@ async function checkSaveReplacePhoto(){
   const button=document.getElementById('replace-photo-save');
   let newPath=null,committed=false;
   checkReplacingPhoto=true;
-  button.disabled=true;button.textContent='Сохранение…';
+  button.disabled=true;button.textContent='Сжатие и загрузка…';
   try{
     newPath=await checkUploadPhoto(bucket,target.companyId,target.id,file);
-    const {data,error}=await supabaseClient.from(table).update({photo_path:newPath})
+    button.textContent='Сохранение…';
+    const {data,error}=await checkPhotoDeadline(supabaseClient.from(table).update({photo_path:newPath})
       .eq('id',target.id).eq('company_id',target.companyId)
-      .eq('department_id',target.departmentId).select('id');
+      .eq('department_id',target.departmentId).select('id'),12000,'Сервер долго не отвечает. Повторите попытку');
     if(error)throw error;
     if(!data?.length)throw new Error('Запись не найдена или недостаточно прав');
     committed=true;
@@ -147,11 +148,11 @@ async function checkSaveReplacePhoto(){
     document.getElementById('modal-replace-photo').classList.add('hidden');
     toast('Фотография заменена');
     if(target.oldPath&&target.oldPath!==newPath){
-      try{await checkRemovePhoto(bucket,target.oldPath);}catch(error){console.warn('Old photo cleanup failed',error);}
+      void checkRemovePhoto(bucket,target.oldPath).catch(error=>console.warn('Old photo cleanup failed',error));
     }
   }catch(error){
     if(newPath&&!committed){
-      try{await checkRemovePhoto(bucket,newPath);}catch(cleanupError){console.warn('Photo rollback failed',cleanupError);}
+      void checkRemovePhoto(bucket,newPath).catch(cleanupError=>console.warn('Photo rollback failed',cleanupError));
     }
     toast('Не удалось заменить фото: '+(error.message||'Ошибка сети'));
   }finally{
