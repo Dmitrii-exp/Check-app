@@ -198,6 +198,7 @@
         <button onclick="showPage('today')" data-page="today" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Сегодня</button>
         <button onclick="showPage('equipment')" data-page="equipment" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Оборудование</button>
         <button onclick="showPage('actions')" data-page="actions" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Действия</button>
+        <button onclick="showPage('consumables')" data-page="consumables" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Расходники <span id="consumables-nav-count" class="hidden ml-1 text-xs rounded-full bg-blue-600 text-white px-1.5 py-0.5"></span></button>
         <button onclick="showPage('team')" data-page="team" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Команда</button>
         <button onclick="showPage('history')" data-page="history" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">История</button>
         <button onclick="showPage('reports')" data-page="reports" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Отчёты</button>
@@ -282,6 +283,33 @@
           <h2 class="font-semibold mb-3">Сотрудники подразделения</h2>
           <div id="team-list" class="space-y-2"></div>
         </div>
+      </div>
+
+      <div id="page-consumables" class="page hidden space-y-5 fade-in">
+        <div class="flex items-center justify-between gap-3"><h1 class="text-2xl font-bold">Расходники</h1><button type="button" onclick="openConsumableModal()" class="bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl">+ Добавить</button></div>
+        <p class="text-sm text-slate-400">Общий список потребностей подразделения для следующей закупки.</p>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 text-center"><div id="consumables-needed-count" class="text-2xl font-bold text-amber-400">0</div><div class="text-xs text-slate-400">Нужно купить</div></div>
+          <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 text-center"><div id="consumables-ordered-count" class="text-2xl font-bold text-blue-400">0</div><div class="text-xs text-slate-400">Заказано</div></div>
+          <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 text-center"><div id="consumables-purchased-count" class="text-2xl font-bold text-emerald-400">0</div><div class="text-xs text-slate-400">Закуплено</div></div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" onclick="setConsumablesFilter('active')" data-consumables-filter="active" class="px-3 py-2 rounded-lg border border-blue-500 text-sm">К закупке</button>
+          <button type="button" onclick="setConsumablesFilter('needed')" data-consumables-filter="needed" class="px-3 py-2 rounded-lg border border-slate-700 text-sm">Нужно купить</button>
+          <button type="button" onclick="setConsumablesFilter('ordered')" data-consumables-filter="ordered" class="px-3 py-2 rounded-lg border border-slate-700 text-sm">Заказано</button>
+          <button type="button" onclick="setConsumablesFilter('purchased')" data-consumables-filter="purchased" class="px-3 py-2 rounded-lg border border-slate-700 text-sm">История закупок</button>
+          <button type="button" onclick="setConsumablesFilter('all')" data-consumables-filter="all" class="px-3 py-2 rounded-lg border border-slate-700 text-sm">Все</button>
+        </div>
+        <div id="consumables-list" class="space-y-3"><p class="text-slate-400 text-center py-10">Загрузка…</p></div>
+      </div>
+      <div id="consumables-modal" class="hidden fixed inset-0 z-[90] bg-black/75 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Добавить расходник">
+        <form onsubmit="saveConsumable(event)" class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-md space-y-4">
+          <h2 class="text-xl font-bold">Добавить расходник</h2>
+          <div><label for="consumable-name" class="block text-sm text-slate-400 mb-1">Наименование *</label><input id="consumable-name" required maxlength="160" minlength="2" placeholder="Например, вентили грузовые" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-3"></div>
+          <div class="grid grid-cols-2 gap-3"><div><label for="consumable-quantity" class="block text-sm text-slate-400 mb-1">Количество *</label><input id="consumable-quantity" type="number" required min="0.01" max="1000000" step="0.01" value="1" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-3"></div><div><label for="consumable-unit" class="block text-sm text-slate-400 mb-1">Единица</label><select id="consumable-unit" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-3"><option>шт.</option><option>уп.</option><option>пар</option><option>кг</option><option>л</option><option>м</option><option>банок</option><option>рулонов</option></select></div></div>
+          <div><label for="consumable-comment" class="block text-sm text-slate-400 mb-1">Комментарий</label><textarea id="consumable-comment" maxlength="1000" rows="3" placeholder="Для чего нужно, срочность, особенности" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-3"></textarea></div>
+          <div class="flex gap-2"><button type="button" onclick="closeConsumableModal()" class="flex-1 bg-slate-800 py-3 rounded-xl">Отмена</button><button id="consumable-save" type="submit" class="flex-1 bg-primary-600 py-3 rounded-xl font-semibold">Добавить</button></div>
+        </form>
       </div>
 
       <div id="page-history" class="page hidden space-y-4 fade-in">
@@ -560,7 +588,7 @@
   </div>
   <script src="js/onboarding.js?v=20261009-01"></script>
   <script src="js/update-center.js?v=20261009-01"></script>
-  <script src="js/app.js?v=20261009-09"></script>
+  <script src="js/app.js?v=20261010-consumables1"></script>
   <script src="js/calendar.js?v=20260918-03"></script>
 </body>
 </html>
