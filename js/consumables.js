@@ -103,12 +103,14 @@ function paintConsumables(){
       Object.entries(consumablesLabels).map(([status,label])=>'<button type="button" data-consumable-id="'+consumablesEscape(r.id)+'" data-new-status="'+status+'" '+(r.status===status?'disabled ':'')+'class="px-3 py-1.5 rounded-xl border text-xs '+(r.status===status?'border-blue-500 bg-blue-600/20 text-blue-300':'border-slate-600 text-slate-300')+'">'+label+'</button>').join('')+'</div>':'';
     return '<article class="bg-[#131e2d] rounded-2xl border border-[#263448] p-4 space-y-2"><div class="flex items-start justify-between gap-2"><h3 class="font-semibold break-words">'+consumablesEscape(r.item_name)+'</h3><span class="text-xs whitespace-nowrap '+(colors[r.status]||'text-[#a8b5c8]')+'">'+consumablesEscape(consumablesLabels[r.status]||r.status)+'</span></div>'+
       (r.photo_path?'<img class="hidden w-24 h-24 rounded-xl object-cover" alt="Фото расходника" data-check-photo-bucket="consumable-photos" data-check-photo-path="'+consumablesEscape(r.photo_path)+'">':'')+
+      (editable?'<button type="button" data-consumable-replace-photo="'+consumablesEscape(r.id)+'" class="text-xs text-primary-300 hover:text-primary-200">'+(r.photo_path?'Заменить фото':'Добавить фото')+'</button>':'')+
       '<div class="text-sm text-slate-300">'+consumablesEscape(r.quantity)+' '+consumablesEscape(r.unit)+'</div>'+
       (r.comment?'<p class="text-sm text-[#a8b5c8] whitespace-pre-wrap break-words">'+consumablesEscape(r.comment)+'</p>':'')+
       '<div class="text-xs text-[#8191a8]">'+consumablesEscape(owner?.name||'Сотрудник')+' · '+new Date(r.created_at).toLocaleDateString('ru-RU')+'</div>'+
       statusControls+(scope.manager?'<button type="button" data-consumable-delete="'+consumablesEscape(r.id)+'" class="text-xs text-rose-400 mt-2">Удалить заявку</button>':'')+'</article>';
   }).join('');
   void checkShowSignedPhotos(list);
+  list.querySelectorAll('[data-consumable-replace-photo]').forEach(btn=>btn.addEventListener('click',()=>checkOpenReplacePhoto('consumable',btn.dataset.consumableReplacePhoto)));
   list.querySelectorAll('[data-new-status]').forEach(btn=>btn.addEventListener('click',()=>changeConsumableStatus(btn.dataset.consumableId,btn.dataset.newStatus)));
   list.querySelectorAll('[data-consumable-delete]').forEach(btn=>btn.addEventListener('click',()=>deleteConsumable(btn.dataset.consumableDelete)));
 }
