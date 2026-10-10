@@ -308,6 +308,7 @@
           <div><label for="consumable-name" class="block text-sm text-[#a8b5c8] mb-1">Наименование *</label><input id="consumable-name" required maxlength="160" minlength="2" placeholder="Например, вентили грузовые" class="w-full bg-[#1c2a3d] border border-[#45536a] rounded-2xl px-3 py-3"></div>
           <div class="grid grid-cols-2 gap-3"><div><label for="consumable-quantity" class="block text-sm text-[#a8b5c8] mb-1">Количество *</label><input id="consumable-quantity" type="number" required min="0.01" max="1000000" step="0.01" value="1" class="w-full bg-[#1c2a3d] border border-[#45536a] rounded-2xl px-3 py-3"></div><div><label for="consumable-unit" class="block text-sm text-[#a8b5c8] mb-1">Единица</label><select id="consumable-unit" class="w-full bg-[#1c2a3d] border border-[#45536a] rounded-2xl px-3 py-3"><option>шт.</option><option>уп.</option><option>пар</option><option>кг</option><option>л</option><option>м</option><option>банок</option><option>рулонов</option></select></div></div>
           <div><label for="consumable-comment" class="block text-sm text-[#a8b5c8] mb-1">Комментарий</label><textarea id="consumable-comment" maxlength="1000" rows="3" placeholder="Для чего нужно, срочность, особенности" class="w-full bg-[#1c2a3d] border border-[#45536a] rounded-2xl px-3 py-3"></textarea></div>
+<div class="space-y-2"><label class="block text-sm text-[#a8b5c8]">Фотография (необязательно)</label><div class="flex flex-wrap gap-2"><label class="cursor-pointer rounded-xl bg-[#1c2a3d] border border-[#354359] px-3 py-2 text-sm">Выбрать фото<input id="consumable-photo" type="file" accept="image/*" class="hidden" onchange="checkPhotoInputChanged(this,'consumable-photo-preview')"></label><label class="cursor-pointer rounded-xl bg-[#1c2a3d] border border-[#354359] px-3 py-2 text-sm">Сделать фото<input type="file" accept="image/*" capture="environment" class="hidden" onchange="checkPhotoFromCamera(this,'consumable-photo','consumable-photo-preview')"></label></div><img id="consumable-photo-preview" alt="Предпросмотр фотографии" class="hidden w-28 h-28 rounded-xl object-cover border border-[#354359]"></div>
           <div class="flex gap-2"><button type="button" onclick="closeConsumableModal()" class="flex-1 bg-[#1c2a3d] py-3 rounded-2xl">Отмена</button><button id="consumable-save" type="submit" class="flex-1 bg-primary-600 py-3 rounded-2xl font-semibold">Добавить</button></div>
         </form>
       </div>
@@ -469,6 +470,7 @@
         <label class="block text-xs text-[#a8b5c8] mb-1">Расположение</label>
         <input id="equip-location" type="text" placeholder="Цех 2" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
       </div>
+<div class="space-y-2"><label class="block text-sm text-[#a8b5c8]">Фотография (необязательно)</label><div class="flex flex-wrap gap-2"><label class="cursor-pointer rounded-xl bg-[#1c2a3d] border border-[#354359] px-3 py-2 text-sm">Выбрать фото<input id="equip-photo" type="file" accept="image/*" class="hidden" onchange="checkPhotoInputChanged(this,'equip-photo-preview')"></label><label class="cursor-pointer rounded-xl bg-[#1c2a3d] border border-[#354359] px-3 py-2 text-sm">Сделать фото<input type="file" accept="image/*" capture="environment" class="hidden" onchange="checkPhotoFromCamera(this,'equip-photo','equip-photo-preview')"></label></div><img id="equip-photo-preview" alt="Предпросмотр фотографии" class="hidden w-28 h-28 rounded-xl object-cover border border-[#354359]"></div>
       <div class="flex gap-3 pt-2">
         <button onclick="closeEquipModal()" class="flex-1 py-3 rounded-2xl bg-[#1c2a3d] text-sm font-medium">Отмена</button>
         <button onclick="saveEquipment()" class="flex-1 py-3 rounded-2xl bg-primary-600 text-sm font-medium">Сохранить</button>
@@ -588,8 +590,9 @@
   </div>
   <script src="js/onboarding.js?v=20261009-01"></script>
   <script src="js/update-center.js?v=20261009-01"></script>
-  <script src="js/consumables.js?v=20261010-01"></script>
-  <script src="js/app.js?v=20261010-consumables2"></script>
+  <script src="js/photo-attachments.js?v=20261010-01"></script>
+  <script src="js/consumables.js?v=20261010-02"></script>
+  <script src="js/app.js?v=20261010-photos1"></script>
   <script src="js/calendar.js?v=20260918-03"></script>
 </body>
 </html>
