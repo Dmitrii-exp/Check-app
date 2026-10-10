@@ -51,3 +51,5 @@ function checkPhotoInputChanged(input,previewId){
   preview.src=url;
   preview.classList.remove('hidden');
 }
+
+function checkPhotoFromCamera(input,targetId,previewId){const target=document.getElementById(targetId);if(!target||!input.files?.length)return;const transfer=new DataTransfer();transfer.items.add(input.files[0]);target.files=transfer.files;checkPhotoInputChanged(target,previewId);}
