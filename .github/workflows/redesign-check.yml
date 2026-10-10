@@ -1,0 +1,30 @@
+name: Check App redesign validation
+on:
+  push:
+    branches: [design/ui-ux-pro-max]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+      - name: Build production CSS
+        run: npm run build:css
+      - name: Validate JavaScript syntax
+        run: |
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Check inline handlers and secrets
+        run: node scripts/audit-js.mjs
+      - name: Build mobile assets
+        run: npm run build:mobile
+      - name: Verify generated artifacts
+        run: |
+          test -s css/tailwind.css
+          test -f dist/index.html || test -f www/index.html || test -f mobile/index.html
