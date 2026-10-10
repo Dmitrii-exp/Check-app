@@ -13,18 +13,18 @@
       theme: {
         extend: {
           colors: {
-            primary: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a' },
-            accent:  { 400:'#38bdf8',500:'#0ea5e9',600:'#0284c7' }
+            primary: { 50:'#f4f3ff',100:'#e9e7ff',200:'#d4d0ff',300:'#b3acff',400:'#9286ff',500:'#7567ff',600:'#5b50f5',700:'#4940d7',800:'#3732a8',900:'#252471' },
+            accent:  { 400:'#60a5fa',500:'#3b82f6',600:'#2563eb' }
           }
         }
       }
     }
   </script>
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/styles.css?v=20261010-redesign1" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/dist/umd/supabase.js"></script>
   <link rel="manifest" href="public/manifest.webmanifest" />
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
+<body class="bg-[#090e19] text-slate-100 min-h-screen">
 
   <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md">
@@ -45,119 +45,119 @@
           </svg>
           <div>
             <div class="text-3xl font-bold tracking-tight text-white">Check App</div>
-            <p class="text-slate-400 text-sm mt-1">Оборудование под контролем</p>
+            <p class="text-[#a8b5c8] text-sm mt-1">Оборудование под контролем</p>
           </div>
         </div>
       </div>
 
-      <div class="flex bg-slate-900 rounded-xl p-1 mb-6">
-        <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 py-2.5 rounded-lg text-sm font-medium bg-primary-600 text-white transition">Вход</button>
-        <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-400 transition">Регистрация</button>
-        <button id="tab-invite" onclick="switchAuthTab('invite')" class="flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-400 transition">По коду</button>
+      <div class="flex bg-[#131e2d] rounded-2xl p-1 mb-6">
+        <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-primary-600 text-white transition">Вход</button>
+        <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 py-2.5 rounded-xl text-sm font-medium text-[#a8b5c8] transition">Регистрация</button>
+        <button id="tab-invite" onclick="switchAuthTab('invite')" class="flex-1 py-2.5 rounded-xl text-sm font-medium text-[#a8b5c8] transition">По коду</button>
       </div>
 
       <div id="form-login" class="space-y-4 fade-in">
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Email</label>
-          <input id="login-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Email</label>
+          <input id="login-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Пароль</label>
-          <input id="login-password" type="password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Пароль</label>
+          <input id="login-password" type="password" placeholder="••••••••" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
-        <button id="login-submit" onclick="doLogin()" class="w-full bg-primary-600 hover:bg-primary-500 disabled:opacity-70 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2">
+        <button id="login-submit" onclick="doLogin()" class="w-full bg-primary-600 hover:bg-primary-500 disabled:opacity-70 text-white font-semibold py-3.5 rounded-2xl transition shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2">
           <svg id="login-spinner" class="hidden animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".3" stroke-width="3"></circle><path d="M12 3a9 9 0 0 1 9 9" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path></svg>
           <span id="login-submit-text">Войти</span>
         </button>
-        <p id="login-loading-status" class="hidden text-center text-sm text-slate-400" role="status" aria-live="polite">Выполняется вход…</p>
+        <p id="login-loading-status" class="hidden text-center text-sm text-[#a8b5c8]" role="status" aria-live="polite">Выполняется вход…</p>
         <button type="button" onclick="openPasswordRecovery()" class="block mx-auto mt-3 text-sm text-primary-400 hover:underline">Забыли пароль?</button>
       </div>
 
       <div id="form-register" class="space-y-4 hidden fade-in">
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Название компании</label>
-          <input id="reg-company" type="text" placeholder="Название" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Название компании</label>
+          <input id="reg-company" type="text" placeholder="Название" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Ваше имя (руководитель)</label>
-          <input id="reg-name" type="text" placeholder="Иван Иванов" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Ваше имя (руководитель)</label>
+          <input id="reg-name" type="text" placeholder="Иван Иванов" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Email</label>
-          <input id="reg-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Email</label>
+          <input id="reg-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Пароль</label>
-          <input id="reg-password" type="password" placeholder="минимум 8 символов" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Пароль</label>
+          <input id="reg-password" type="password" placeholder="минимум 8 символов" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
-        <button onclick="doRegister()" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-primary-600/20">Зарегистрировать компанию</button>
+        <button onclick="doRegister()" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-semibold py-3.5 rounded-2xl transition shadow-lg shadow-primary-600/20">Зарегистрировать компанию</button>
       </div>
 
       <div id="form-invite" class="space-y-4 hidden fade-in">
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Код приглашения</label>
-          <input id="invite-code" type="text" placeholder="XXXX-XXXX" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 uppercase tracking-widest text-center text-lg" />
+          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Код приглашения</label>
+          <input id="invite-code" type="text" placeholder="XXXX-XXXX" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 uppercase tracking-widest text-center text-lg" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Ваше имя</label>
-          <input id="invite-name" type="text" placeholder="Пётр Петров" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Ваше имя</label>
+          <input id="invite-name" type="text" placeholder="Пётр Петров" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Email</label>
-          <input id="invite-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Email</label>
+          <input id="invite-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Пароль</label>
-          <input id="invite-password" type="password" placeholder="минимум 8 символов" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Пароль</label>
+          <input id="invite-password" type="password" placeholder="минимум 8 символов" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
-        <button type="button" onclick="doRegister()" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-900 font-semibold py-3.5 rounded-xl transition">Присоединиться</button>
+        <button type="button" onclick="doRegister()" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-900 font-semibold py-3.5 rounded-2xl transition">Присоединиться</button>
       </div>
 
-      <div class="text-center mt-5"><a href="https://www.app-check.ru/docs/legal/index.html" target="_blank" rel="noopener noreferrer" class="text-sm text-slate-400 hover:text-primary-400 underline underline-offset-4 transition">Правовая информация</a></div>
+      <div class="text-center mt-5"><a href="https://www.app-check.ru/docs/legal/index.html" target="_blank" rel="noopener noreferrer" class="text-sm text-[#a8b5c8] hover:text-primary-400 underline underline-offset-4 transition">Правовая информация</a></div>
 
       <p id="auth-error" class="text-red-400 text-sm text-center mt-4 hidden"></p>
 
-      <div id="password-recovery-modal" class="fixed inset-0 bg-slate-950/95 z-[110] hidden items-center justify-center p-4">
-        <div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 space-y-4">
+      <div id="password-recovery-modal" class="fixed inset-0 bg-[#090e19]/95 z-[110] hidden items-center justify-center p-4">
+        <div class="w-full max-w-md bg-[#131e2d] border border-[#354359] rounded-2xl p-6 space-y-4">
           <h2 class="text-xl font-bold" id="recovery-title">Восстановление пароля</h2>
           <div id="recovery-email-step" class="space-y-3">
             <label for="recovery-email" class="block text-sm">Email учётной записи</label>
-            <input id="recovery-email" type="email" autocomplete="email" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3" placeholder="you@company.ru"/>
-            <button type="button" id="recovery-send" onclick="sendPasswordRecovery()" class="w-full bg-primary-600 rounded-xl py-3 font-medium">Отправить письмо</button>
+            <input id="recovery-email" type="email" autocomplete="email" class="w-full bg-[#090e19] border border-[#354359] rounded-2xl px-4 py-3" placeholder="you@company.ru"/>
+            <button type="button" id="recovery-send" onclick="sendPasswordRecovery()" class="w-full bg-primary-600 rounded-2xl py-3 font-medium">Отправить письмо</button>
           </div>
           <div id="recovery-password-step" class="space-y-3 hidden">
-            <div><label for="recovery-new-password" class="block text-sm mb-2">Введите новый пароль</label><input id="recovery-new-password" type="password" autocomplete="new-password" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3" /></div>
-            <div><label for="recovery-repeat-password" class="block text-sm mb-2">Повторите новый пароль</label><input id="recovery-repeat-password" type="password" autocomplete="new-password" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3" /></div>
-            <button type="button" id="recovery-save" onclick="saveRecoveredPassword()" class="w-full bg-primary-600 rounded-xl py-3 font-medium">Сохранить новый пароль</button>
+            <div><label for="recovery-new-password" class="block text-sm mb-2">Введите новый пароль</label><input id="recovery-new-password" type="password" autocomplete="new-password" class="w-full bg-[#090e19] border border-[#354359] rounded-2xl px-4 py-3" /></div>
+            <div><label for="recovery-repeat-password" class="block text-sm mb-2">Повторите новый пароль</label><input id="recovery-repeat-password" type="password" autocomplete="new-password" class="w-full bg-[#090e19] border border-[#354359] rounded-2xl px-4 py-3" /></div>
+            <button type="button" id="recovery-save" onclick="saveRecoveredPassword()" class="w-full bg-primary-600 rounded-2xl py-3 font-medium">Сохранить новый пароль</button>
           </div>
           <p id="recovery-message" role="status" class="text-sm text-slate-300 min-h-[20px]"></p>
-          <button type="button" onclick="closePasswordRecovery()" class="w-full py-2 text-slate-400">Закрыть</button>
+          <button type="button" onclick="closePasswordRecovery()" class="w-full py-2 text-[#a8b5c8]">Закрыть</button>
         </div>
       </div>
-      <div id="otp-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
-        <div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+      <div id="otp-modal" class="fixed inset-0 bg-[#090e19]/90 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="w-full max-w-md bg-[#131e2d] border border-[#354359] rounded-2xl p-6 shadow-2xl">
           <div class="text-center">
             <div class="text-xl font-bold text-white">Подтверждение Email</div>
-            <p id="otp-message" class="text-slate-400 text-sm mt-2">Проверьте почту.</p>
+            <p id="otp-message" class="text-[#a8b5c8] text-sm mt-2">Проверьте почту.</p>
           </div>
           <div class="mt-6">
-            <label class="block text-xs font-medium text-slate-400 mb-1.5">Код из письма</label>
+            <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Код из письма</label>
             <input id="otp-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="Введите код из письма"
-              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-center text-xl tracking-[0.35em] focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              class="w-full bg-[#090e19] border border-[#354359] rounded-2xl px-4 py-3 text-center text-xl tracking-[0.35em] focus:outline-none focus:ring-2 focus:ring-primary-500" />
           </div>
           <p id="otp-status" class="text-sm text-center mt-4 min-h-[20px]"></p>
           <div class="grid grid-cols-2 gap-3 mt-5">
-            <button onclick="closeOtpModal()" class="py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition">Отмена</button>
-            <button id="otp-submit" onclick="verifyEmailOtp()" class="py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold transition">Подтвердить</button>
+            <button onclick="closeOtpModal()" class="py-3 rounded-2xl border border-[#354359] text-slate-300 hover:bg-[#1c2a3d] transition">Отмена</button>
+            <button id="otp-submit" onclick="verifyEmailOtp()" class="py-3 rounded-2xl bg-primary-600 hover:bg-primary-500 text-white font-semibold transition">Подтвердить</button>
           </div>
-          <button id="otp-resend" onclick="resendEmailOtp()" class="w-full mt-3 py-2.5 rounded-xl text-primary-400 hover:text-primary-300 text-sm">Отправить код ещё раз</button>
+          <button id="otp-resend" onclick="resendEmailOtp()" class="w-full mt-3 py-2.5 rounded-2xl text-primary-400 hover:text-primary-300 text-sm">Отправить код ещё раз</button>
         </div>
       </div>
     </div>
   </div>
 
   <div id="app-screen" class="hidden min-h-screen flex flex-col">
-    <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-40">
+    <header class="bg-[#111827]/90 backdrop-blur border-b border-[#263448] sticky top-0 z-40">
       <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <svg width="36" height="36" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0">
@@ -175,34 +175,34 @@
           </svg>
           <div>
             <div class="font-semibold text-sm" id="header-company">—</div>
-            <div class="text-xs text-slate-400" id="header-user">—</div>
-            <div class="text-xs text-slate-400 break-all" id="header-email"></div>
+            <div class="text-xs text-[#a8b5c8]" id="header-user">—</div>
+            <div class="text-xs text-[#a8b5c8] break-all" id="header-email"></div>
           </div>
           <span id="cloud-status" class="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Облако</span>
         </div>
-        <button onclick="doLogout()" class="text-slate-400 hover:text-white text-sm px-3 py-1.5 rounded-lg hover:bg-slate-800 transition">Выйти</button>
+        <button onclick="doLogout()" class="text-[#a8b5c8] hover:text-white text-sm px-3 py-1.5 rounded-xl hover:bg-[#1c2a3d] transition">Выйти</button>
       </div>
     </header>
 
-    <div id="dept-bar" class="bg-slate-900/50 border-b border-slate-800 hidden">
+    <div id="dept-bar" class="bg-[#131e2d]/50 border-b border-[#263448] hidden">
       <div class="max-w-5xl mx-auto px-4 py-2 flex items-center gap-3 overflow-x-auto scroll-thin">
-        <span class="text-xs text-slate-500 flex-shrink-0">Подразделение:</span>
-        <select id="dept-select" onchange="onDeptChange()" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-[160px]"></select>
+        <span class="text-xs text-[#8191a8] flex-shrink-0">Подразделение:</span>
+        <select id="dept-select" onchange="onDeptChange()" class="bg-[#1c2a3d] border border-[#354359] rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-[160px]"></select>
         <button onclick="openDeptModal()" class="text-xs text-primary-400 hover:text-primary-300 flex-shrink-0 px-2 py-1">+ Создать</button>
       </div>
     </div>
 
-    <nav id="manager-nav" class="bg-slate-900 border-b border-slate-800 hidden">
+    <nav id="manager-nav" class="bg-[#131e2d] border-b border-[#263448] hidden">
       <div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin">
         <button onclick="showPage('dashboard')" data-page="dashboard" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-400">Главная</button>
-        <button onclick="showPage('today')" data-page="today" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Сегодня</button>
-        <button onclick="showPage('equipment')" data-page="equipment" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Оборудование</button>
-        <button onclick="showPage('actions')" data-page="actions" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Действия</button>
-        <button onclick="showPage('consumables')" data-page="consumables" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Расходники <span id="consumables-nav-count" class="hidden ml-1 text-xs rounded-full bg-blue-600 text-white px-1.5 py-0.5"></span></button>
-        <button onclick="showPage('team')" data-page="team" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Команда</button>
-        <button onclick="showPage('history')" data-page="history" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">История</button>
-        <button onclick="showPage('reports')" data-page="reports" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Отчёты</button>
-        <button onclick="showPage('cabinet')" data-page="cabinet" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white">Кабинет</button>
+        <button onclick="showPage('today')" data-page="today" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Сегодня</button>
+        <button onclick="showPage('equipment')" data-page="equipment" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Оборудование</button>
+        <button onclick="showPage('actions')" data-page="actions" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Действия</button>
+        <button onclick="showPage('consumables')" data-page="consumables" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Расходники <span id="consumables-nav-count" class="hidden ml-1 text-xs rounded-full bg-blue-600 text-white px-1.5 py-0.5"></span></button>
+        <button onclick="showPage('team')" data-page="team" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Команда</button>
+        <button onclick="showPage('history')" data-page="history" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">История</button>
+        <button onclick="showPage('reports')" data-page="reports" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Отчёты</button>
+        <button onclick="showPage('cabinet')" data-page="cabinet" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Кабинет</button>
         <button id="nav-super-admin" onclick="showPage('super-admin')" data-page="super-admin" class="nav-btn hidden flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-amber-400 hover:text-amber-300">👑 Администрирование</button>
       </div>
     </nav>
@@ -212,24 +212,24 @@
       <div id="page-dashboard" class="page hidden space-y-6 fade-in">
         <h1 class="text-2xl font-bold">Главная <span id="dash-dept-name" class="text-primary-400 text-lg font-normal"></span></h1>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800">
+          <div class="bg-[#131e2d] rounded-2xl p-4 border border-[#263448]">
             <div class="text-3xl font-bold text-primary-400" id="stat-equipment">0</div>
-            <div class="text-xs text-slate-400 mt-1">Оборудования</div>
+            <div class="text-xs text-[#a8b5c8] mt-1">Оборудования</div>
           </div>
-          <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800">
+          <div class="bg-[#131e2d] rounded-2xl p-4 border border-[#263448]">
             <div class="text-3xl font-bold text-amber-400" id="stat-today">0</div>
-            <div class="text-xs text-slate-400 mt-1">Задач сегодня</div>
+            <div class="text-xs text-[#a8b5c8] mt-1">Задач сегодня</div>
           </div>
-          <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800">
+          <div class="bg-[#131e2d] rounded-2xl p-4 border border-[#263448]">
             <div class="text-3xl font-bold text-emerald-400" id="stat-done">0</div>
-            <div class="text-xs text-slate-400 mt-1">Выполнено</div>
+            <div class="text-xs text-[#a8b5c8] mt-1">Выполнено</div>
           </div>
-          <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800">
+          <div class="bg-[#131e2d] rounded-2xl p-4 border border-[#263448]">
             <div class="text-3xl font-bold text-rose-400" id="stat-pending">0</div>
-            <div class="text-xs text-slate-400 mt-1">Ожидают</div>
+            <div class="text-xs text-[#a8b5c8] mt-1">Ожидают</div>
           </div>
         </div>
-        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5">
+        <div class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5">
           <h2 class="font-semibold mb-4">Задачи на сегодня</h2>
           <div id="dash-today-list" class="space-y-3"></div>
         </div>
@@ -238,11 +238,11 @@
       <div id="page-today" class="page hidden space-y-4 fade-in">
         <div class="flex items-center justify-between">
           <h1 class="text-2xl font-bold">Задачи на сегодня</h1>
-          <span class="text-sm text-slate-400" id="today-date"></span>
+          <span class="text-sm text-[#a8b5c8]" id="today-date"></span>
         </div>
         <div id="today-dept-label" class="text-sm text-primary-400 hidden"></div>
         <div id="today-list" class="space-y-3"></div>
-        <div id="today-empty" class="hidden text-center py-16 text-slate-500">
+        <div id="today-empty" class="hidden text-center py-16 text-[#8191a8]">
           <p>На сегодня задач нет</p>
         </div>
       </div>
@@ -250,7 +250,7 @@
       <div id="page-equipment" class="page hidden space-y-4 fade-in">
         <div class="flex items-center justify-between">
           <h1 class="text-2xl font-bold">Оборудование</h1>
-          <button onclick="openEquipModal()" class="bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition">+ Добавить</button>
+          <button onclick="openEquipModal()" class="bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-4 py-2 rounded-2xl transition">+ Добавить</button>
         </div>
         <div id="equip-list" class="space-y-3"></div>
       </div>
@@ -258,25 +258,25 @@
       <div id="page-actions" class="page hidden space-y-4 fade-in">
         <div class="flex items-center justify-between">
           <h1 class="text-2xl font-bold">Действия ТО</h1>
-          <button onclick="openActionModal()" class="bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition">+ Добавить</button>
+          <button onclick="openActionModal()" class="bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-4 py-2 rounded-2xl transition">+ Добавить</button>
         </div>
-        <p class="text-sm text-slate-400">Настройте работы и периодичность для текущего подразделения.</p>
+        <p class="text-sm text-[#a8b5c8]">Настройте работы и периодичность для текущего подразделения.</p>
         <div id="actions-list" class="space-y-3"></div>
       </div>
 
       <div id="page-team" class="page hidden space-y-6 fade-in">
         <h1 class="text-2xl font-bold">Команда</h1>
-        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5">
+        <div class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5">
           <h2 class="font-semibold mb-2">Пригласить сотрудника в подразделение</h2>
-          <p class="text-sm text-slate-400 mb-3">Код привязан к выбранному подразделению. Сотрудник увидит только его данные.</p>
+          <p class="text-sm text-[#a8b5c8] mb-3">Код привязан к выбранному подразделению. Сотрудник увидит только его данные.</p>
           <div class="mb-3">
-            <label class="block text-xs text-slate-400 mb-1">Подразделение для приглашения</label>
-            <select id="invite-dept-select" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"></select>
+            <label class="block text-xs text-[#a8b5c8] mb-1">Подразделение для приглашения</label>
+            <select id="invite-dept-select" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"></select>
           </div>
           <div class="flex items-center gap-3">
-            <div id="invite-code-display" class="flex-1 bg-slate-800 rounded-xl px-4 py-3 font-mono text-lg tracking-widest text-center text-primary-400">—</div>
-            <button onclick="copyInviteCode()" class="bg-slate-800 hover:bg-slate-700 px-4 py-3 rounded-xl text-sm transition">Копировать</button>
-            <button onclick="regenerateInvite()" class="bg-primary-600 hover:bg-primary-500 px-4 py-3 rounded-xl text-sm transition">Новый</button>
+            <div id="invite-code-display" class="flex-1 bg-[#1c2a3d] rounded-2xl px-4 py-3 font-mono text-lg tracking-widest text-center text-primary-400">—</div>
+            <button onclick="copyInviteCode()" class="bg-[#1c2a3d] hover:bg-slate-700 px-4 py-3 rounded-2xl text-sm transition">Копировать</button>
+            <button onclick="regenerateInvite()" class="bg-primary-600 hover:bg-primary-500 px-4 py-3 rounded-2xl text-sm transition">Новый</button>
           </div>
         </div>
         <div>
@@ -286,91 +286,91 @@
       </div>
 
       <div id="page-consumables" class="page hidden space-y-5 fade-in">
-        <div class="flex items-center justify-between gap-3"><h1 class="text-2xl font-bold">Расходники</h1><button type="button" onclick="openConsumableModal()" class="bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl">+ Добавить</button></div>
-        <p class="text-sm text-slate-400">Общий список потребностей подразделения для следующей закупки.</p>
+        <div class="flex items-center justify-between gap-3"><h1 class="text-2xl font-bold">Расходники</h1><button type="button" onclick="openConsumableModal()" class="bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-4 py-2.5 rounded-2xl">+ Добавить</button></div>
+        <p class="text-sm text-[#a8b5c8]">Общий список потребностей подразделения для следующей закупки.</p>
         <div class="grid grid-cols-3 gap-2">
-          <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 text-center"><div id="consumables-needed-count" class="text-2xl font-bold text-amber-400">0</div><div class="text-xs text-slate-400">Нужно купить</div></div>
-          <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 text-center"><div id="consumables-ordered-count" class="text-2xl font-bold text-blue-400">0</div><div class="text-xs text-slate-400">Заказано</div></div>
-          <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 text-center"><div id="consumables-purchased-count" class="text-2xl font-bold text-emerald-400">0</div><div class="text-xs text-slate-400">Закуплено</div></div>
+          <div class="bg-[#131e2d] rounded-2xl p-3 border border-[#263448] text-center"><div id="consumables-needed-count" class="text-2xl font-bold text-amber-400">0</div><div class="text-xs text-[#a8b5c8]">Нужно купить</div></div>
+          <div class="bg-[#131e2d] rounded-2xl p-3 border border-[#263448] text-center"><div id="consumables-ordered-count" class="text-2xl font-bold text-blue-400">0</div><div class="text-xs text-[#a8b5c8]">Заказано</div></div>
+          <div class="bg-[#131e2d] rounded-2xl p-3 border border-[#263448] text-center"><div id="consumables-purchased-count" class="text-2xl font-bold text-emerald-400">0</div><div class="text-xs text-[#a8b5c8]">Закуплено</div></div>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button type="button" onclick="setConsumablesFilter('active')" data-consumables-filter="active" class="px-3 py-2 rounded-lg border border-blue-500 text-sm">К закупке</button>
-          <button type="button" onclick="setConsumablesFilter('needed')" data-consumables-filter="needed" class="px-3 py-2 rounded-lg border border-slate-700 text-sm">Нужно купить</button>
-          <button type="button" onclick="setConsumablesFilter('ordered')" data-consumables-filter="ordered" class="px-3 py-2 rounded-lg border border-slate-700 text-sm">Заказано</button>
-          <button type="button" onclick="setConsumablesFilter('purchased')" data-consumables-filter="purchased" class="px-3 py-2 rounded-lg border border-slate-700 text-sm">История закупок</button>
-          <button type="button" onclick="setConsumablesFilter('all')" data-consumables-filter="all" class="px-3 py-2 rounded-lg border border-slate-700 text-sm">Все</button>
+          <button type="button" onclick="setConsumablesFilter('active')" data-consumables-filter="active" class="px-3 py-2 rounded-xl border border-blue-500 text-sm">К закупке</button>
+          <button type="button" onclick="setConsumablesFilter('needed')" data-consumables-filter="needed" class="px-3 py-2 rounded-xl border border-[#354359] text-sm">Нужно купить</button>
+          <button type="button" onclick="setConsumablesFilter('ordered')" data-consumables-filter="ordered" class="px-3 py-2 rounded-xl border border-[#354359] text-sm">Заказано</button>
+          <button type="button" onclick="setConsumablesFilter('purchased')" data-consumables-filter="purchased" class="px-3 py-2 rounded-xl border border-[#354359] text-sm">История закупок</button>
+          <button type="button" onclick="setConsumablesFilter('all')" data-consumables-filter="all" class="px-3 py-2 rounded-xl border border-[#354359] text-sm">Все</button>
         </div>
-        <div id="consumables-list" class="space-y-3"><p class="text-slate-400 text-center py-10">Загрузка…</p></div>
+        <div id="consumables-list" class="space-y-3"><p class="text-[#a8b5c8] text-center py-10">Загрузка…</p></div>
       </div>
       <div id="consumables-modal" class="hidden fixed inset-0 z-[90] bg-black/75 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Добавить расходник">
-        <form onsubmit="saveConsumable(event)" class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-md space-y-4">
+        <form onsubmit="saveConsumable(event)" class="bg-[#131e2d] border border-[#354359] rounded-2xl p-5 w-full max-w-md space-y-4">
           <h2 class="text-xl font-bold">Добавить расходник</h2>
-          <div><label for="consumable-name" class="block text-sm text-slate-400 mb-1">Наименование *</label><input id="consumable-name" required maxlength="160" minlength="2" placeholder="Например, вентили грузовые" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-3"></div>
-          <div class="grid grid-cols-2 gap-3"><div><label for="consumable-quantity" class="block text-sm text-slate-400 mb-1">Количество *</label><input id="consumable-quantity" type="number" required min="0.01" max="1000000" step="0.01" value="1" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-3"></div><div><label for="consumable-unit" class="block text-sm text-slate-400 mb-1">Единица</label><select id="consumable-unit" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-3"><option>шт.</option><option>уп.</option><option>пар</option><option>кг</option><option>л</option><option>м</option><option>банок</option><option>рулонов</option></select></div></div>
-          <div><label for="consumable-comment" class="block text-sm text-slate-400 mb-1">Комментарий</label><textarea id="consumable-comment" maxlength="1000" rows="3" placeholder="Для чего нужно, срочность, особенности" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-3"></textarea></div>
-          <div class="flex gap-2"><button type="button" onclick="closeConsumableModal()" class="flex-1 bg-slate-800 py-3 rounded-xl">Отмена</button><button id="consumable-save" type="submit" class="flex-1 bg-primary-600 py-3 rounded-xl font-semibold">Добавить</button></div>
+          <div><label for="consumable-name" class="block text-sm text-[#a8b5c8] mb-1">Наименование *</label><input id="consumable-name" required maxlength="160" minlength="2" placeholder="Например, вентили грузовые" class="w-full bg-[#1c2a3d] border border-[#45536a] rounded-2xl px-3 py-3"></div>
+          <div class="grid grid-cols-2 gap-3"><div><label for="consumable-quantity" class="block text-sm text-[#a8b5c8] mb-1">Количество *</label><input id="consumable-quantity" type="number" required min="0.01" max="1000000" step="0.01" value="1" class="w-full bg-[#1c2a3d] border border-[#45536a] rounded-2xl px-3 py-3"></div><div><label for="consumable-unit" class="block text-sm text-[#a8b5c8] mb-1">Единица</label><select id="consumable-unit" class="w-full bg-[#1c2a3d] border border-[#45536a] rounded-2xl px-3 py-3"><option>шт.</option><option>уп.</option><option>пар</option><option>кг</option><option>л</option><option>м</option><option>банок</option><option>рулонов</option></select></div></div>
+          <div><label for="consumable-comment" class="block text-sm text-[#a8b5c8] mb-1">Комментарий</label><textarea id="consumable-comment" maxlength="1000" rows="3" placeholder="Для чего нужно, срочность, особенности" class="w-full bg-[#1c2a3d] border border-[#45536a] rounded-2xl px-3 py-3"></textarea></div>
+          <div class="flex gap-2"><button type="button" onclick="closeConsumableModal()" class="flex-1 bg-[#1c2a3d] py-3 rounded-2xl">Отмена</button><button id="consumable-save" type="submit" class="flex-1 bg-primary-600 py-3 rounded-2xl font-semibold">Добавить</button></div>
         </form>
       </div>
 
       <div id="page-history" class="page hidden space-y-4 fade-in">
         <h1 class="text-2xl font-bold">История работ</h1>
         <div class="flex flex-wrap gap-2" role="group" aria-label="Фильтр истории">
-          <button type="button" onclick="setHistoryFilter('all')" id="history-filter-all" class="px-4 py-2 rounded-xl text-sm border border-slate-600">Все</button>
-          <button type="button" onclick="setHistoryFilter('done')" id="history-filter-done" class="px-4 py-2 rounded-xl text-sm border border-slate-600">Выполнено</button>
-          <button type="button" onclick="setHistoryFilter('pending')" id="history-filter-pending" class="px-4 py-2 rounded-xl text-sm border border-slate-600">Не выполнено</button>
+          <button type="button" onclick="setHistoryFilter('all')" id="history-filter-all" class="px-4 py-2 rounded-2xl text-sm border border-[#45536a]">Все</button>
+          <button type="button" onclick="setHistoryFilter('done')" id="history-filter-done" class="px-4 py-2 rounded-2xl text-sm border border-[#45536a]">Выполнено</button>
+          <button type="button" onclick="setHistoryFilter('pending')" id="history-filter-pending" class="px-4 py-2 rounded-2xl text-sm border border-[#45536a]">Не выполнено</button>
         </div>
         <div id="history-list" class="space-y-4"></div>
-        <div id="history-empty" class="hidden text-center py-16 text-slate-500">Записей нет</div>
+        <div id="history-empty" class="hidden text-center py-16 text-[#8191a8]">Записей нет</div>
       </div>
 
 
       <!-- CABINET -->
       <div id="page-cabinet" class="page hidden space-y-6 fade-in">
         <h1 class="text-2xl font-bold">Личный кабинет</h1>
-        <section class="bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-3" aria-label="Обновления Check App">
+        <section class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5 space-y-3" aria-label="Обновления Check App">
           <h2 class="font-semibold text-lg">Обновления Check App</h2>
-          <p id="app-update-current" class="text-sm text-slate-400">Версия приложения: 1.0.0</p>
-          <p id="app-update-latest" class="text-sm text-slate-400">Информация о последней версии ещё не загружена</p>
+          <p id="app-update-current" class="text-sm text-[#a8b5c8]">Версия приложения: 1.0.0</p>
+          <p id="app-update-latest" class="text-sm text-[#a8b5c8]">Информация о последней версии ещё не загружена</p>
           <p id="app-update-status" class="text-sm text-slate-300" role="status">Нажмите «Проверить обновления»</p>
           <div class="flex flex-wrap gap-2">
-            <button type="button" onclick="checkAppUpdates()" class="bg-primary-600 hover:bg-primary-500 text-white font-medium text-sm px-4 py-3 rounded-xl">Проверить обновления</button>
-            <button type="button" id="app-update-install" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm px-4 py-3 rounded-xl">Скачать обновление APK</button>
+            <button type="button" onclick="checkAppUpdates()" class="bg-primary-600 hover:bg-primary-500 text-white font-medium text-sm px-4 py-3 rounded-2xl">Проверить обновления</button>
+            <button type="button" id="app-update-install" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm px-4 py-3 rounded-2xl">Скачать обновление APK</button>
           </div>
           <h3 class="text-sm font-semibold pt-2">Новые функции и исправления</h3>
           <ul id="app-update-changes" class="list-disc pl-5 text-sm text-slate-300 space-y-2"><li>Нажмите «Проверить обновления», чтобы посмотреть список изменений.</li></ul>
         </section>
 
-        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5">
+        <div class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5">
           <label for="cab-notifications-toggle" class="flex items-center justify-between gap-4 cursor-pointer">
             <span>
               <span class="block font-semibold">Уведомления о ТО</span>
-              <span class="block text-sm text-slate-400 mt-1">Напоминания о предстоящем и просроченном обслуживании</span>
+              <span class="block text-sm text-[#a8b5c8] mt-1">Напоминания о предстоящем и просроченном обслуживании</span>
             </span>
             <input id="cab-notifications-toggle" type="checkbox" checked onchange="setMaintenanceNotificationsEnabled(this.checked)" class="w-5 h-5 accent-violet-500" />
           </label>
         </div>
 
 
-        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5">
+        <div class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5">
           <div id="cab-subscription-details">
           <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
             <div>
-              <div class="text-sm text-slate-400">Текущая подписка</div>
+              <div class="text-sm text-[#a8b5c8]">Текущая подписка</div>
               <div class="text-xl font-bold text-primary-400" id="cab-plan-name">Бесплатная</div>
             </div>
             <div class="text-right">
-              <div class="text-sm text-slate-400">Осталось дней</div>
+              <div class="text-sm text-[#a8b5c8]">Осталось дней</div>
               <div class="text-2xl font-bold" id="cab-days-left">∞</div>
             </div>
           </div>
-          <div class="text-sm text-slate-400 mb-4" id="cab-limits"></div>
+          <div class="text-sm text-[#a8b5c8] mb-4" id="cab-limits"></div>
           </div>
-          <div class="mt-8 pt-4 border-t border-slate-800 grid grid-cols-2 gap-3">
-            <a href="https://www.app-check.ru/docs/legal/index.html" target="_blank" rel="noopener noreferrer" class="col-span-2 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">Правовая информация</a>
-            <button id="cab-choose-plan" onclick="document.getElementById('plans-section').classList.remove('hidden')" class="w-full bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">Выбрать подписку</button>
-            <button id="btn-renew" onclick="renewCurrentPlan()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">Продлить</button>
-            <button onclick="openOnboardingTour(true)" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">Инструкция</button>
-            <button onclick="openInfoModal('about')" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition">О приложении</button>
+          <div class="mt-8 pt-4 border-t border-[#263448] grid grid-cols-2 gap-3">
+            <a href="https://www.app-check.ru/docs/legal/index.html" target="_blank" rel="noopener noreferrer" class="col-span-2 flex items-center justify-center bg-[#1c2a3d] hover:bg-slate-700 text-white text-sm font-medium px-5 py-2.5 rounded-2xl transition">Правовая информация</a>
+            <button id="cab-choose-plan" onclick="document.getElementById('plans-section').classList.remove('hidden')" class="w-full bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-5 py-2.5 rounded-2xl transition">Выбрать подписку</button>
+            <button id="btn-renew" onclick="renewCurrentPlan()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium px-5 py-2.5 rounded-2xl transition">Продлить</button>
+            <button onclick="openOnboardingTour(true)" class="w-full bg-[#1c2a3d] hover:bg-slate-700 text-white text-sm font-medium px-5 py-2.5 rounded-2xl transition">Инструкция</button>
+            <button onclick="openInfoModal('about')" class="w-full bg-[#1c2a3d] hover:bg-slate-700 text-white text-sm font-medium px-5 py-2.5 rounded-2xl transition">О приложении</button>
           </div>
         </div>
 
@@ -379,14 +379,14 @@
           <div id="plans-list" class="grid gap-4 md:grid-cols-2"></div>
         </div>
 
-        <div id="pay-confirm" class="hidden bg-slate-900 rounded-2xl border border-primary-500/40 p-5">
+        <div id="pay-confirm" class="hidden bg-[#131e2d] rounded-2xl border border-primary-500/40 p-5">
           <h3 class="font-semibold mb-2">Подтверждение оплаты</h3>
-          <p class="text-sm text-slate-400 mb-4" id="pay-confirm-text"></p>
+          <p class="text-sm text-[#a8b5c8] mb-4" id="pay-confirm-text"></p>
           <div class="flex gap-3">
-            <button onclick="cancelPay()" class="flex-1 py-3 rounded-xl bg-slate-800 text-sm">Отмена</button>
-            <button id="pay-confirm-btn" onclick="confirmPay()" class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-sm font-medium">Перейти к оплате</button>
+            <button onclick="cancelPay()" class="flex-1 py-3 rounded-2xl bg-[#1c2a3d] text-sm">Отмена</button>
+            <button id="pay-confirm-btn" onclick="confirmPay()" class="flex-1 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-sm font-medium">Перейти к оплате</button>
           </div>
-          <p class="text-xs text-slate-500 mt-3">После успешной оплаты подписка активируется автоматически.</p>
+          <p class="text-xs text-[#8191a8] mt-3">После успешной оплаты подписка активируется автоматически.</p>
         </div>
       </div>
 
@@ -394,44 +394,44 @@
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 class="text-2xl font-bold">👑 Администрирование</h1>
-            <p class="text-sm text-slate-400 mt-1">Управление бесплатным безлимитным доступом компаний.</p>
+            <p class="text-sm text-[#a8b5c8] mt-1">Управление бесплатным безлимитным доступом компаний.</p>
           </div>
           <span class="text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">SUPER ADMIN</span>
         </div>
 
-        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5">
+        <div class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5">
           <div class="flex flex-col md:flex-row gap-3">
             <input id="admin-company-search" type="text" placeholder="Поиск по названию компании или email..."
               oninput="filterAdminCompanies()"
-              class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
-            <button onclick="loadAdminCompanies()" class="bg-slate-800 hover:bg-slate-700 px-5 py-3 rounded-xl text-sm font-medium">Обновить</button>
+              class="flex-1 bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            <button onclick="loadAdminCompanies()" class="bg-[#1c2a3d] hover:bg-slate-700 px-5 py-3 rounded-2xl text-sm font-medium">Обновить</button>
           </div>
         </div>
 
         <div id="admin-companies-list" class="space-y-3">
-          <div class="text-center py-10 text-slate-500 text-sm">Загрузка компаний…</div>
+          <div class="text-center py-10 text-[#8191a8] text-sm">Загрузка компаний…</div>
         </div>
       </div>
 
       <div id="page-reports" class="page hidden space-y-6 fade-in">
         <h1 class="text-2xl font-bold">Отчёты</h1>
-        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5">
+        <div class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5">
           <div class="flex items-center justify-between mb-4">
             <h2 class="font-semibold text-lg">Невыполненное ТО</h2>
             <span id="overdue-count" class="text-xs px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400">0</span>
           </div>
           <div id="overdue-list" class="space-y-3"></div>
-          <div id="overdue-empty" class="hidden text-center py-8 text-slate-500 text-sm">Просроченных задач нет</div>
+          <div id="overdue-empty" class="hidden text-center py-8 text-[#8191a8] text-sm">Просроченных задач нет</div>
         </div>
-        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5">
+        <div class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5">
           <h2 class="font-semibold text-lg mb-4">Выполнение по сотрудникам</h2>
           <div id="employee-stats" class="space-y-4"></div>
-          <div id="employee-stats-empty" class="hidden text-center py-8 text-slate-500 text-sm">Пока нет данных о выполнении</div>
+          <div id="employee-stats-empty" class="hidden text-center py-8 text-[#8191a8] text-sm">Пока нет данных о выполнении</div>
         </div>
-        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5">
+        <div class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5">
           <h2 class="font-semibold text-lg mb-4">Кто что выполнил</h2>
           <div id="employee-tasks-list" class="space-y-3"></div>
-          <div id="employee-tasks-empty" class="hidden text-center py-8 text-slate-500 text-sm">Нет выполненных задач</div>
+          <div id="employee-tasks-empty" class="hidden text-center py-8 text-[#8191a8] text-sm">Нет выполненных задач</div>
         </div>
       </div>
 
@@ -440,61 +440,61 @@
 
   <!-- Department Modal -->
   <div id="modal-dept" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-    <div class="bg-slate-900 rounded-2xl w-full max-w-md border border-slate-700 p-6 space-y-4 fade-in">
+    <div class="bg-[#131e2d] rounded-2xl w-full max-w-md border border-[#354359] p-6 space-y-4 fade-in">
       <h3 class="text-lg font-bold">Новое подразделение</h3>
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Название</label>
-        <input id="dept-name" type="text" placeholder="Название" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+        <label class="block text-xs text-[#a8b5c8] mb-1">Название</label>
+        <input id="dept-name" type="text" placeholder="Название" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
       </div>
       <div class="flex gap-3 pt-2">
-        <button onclick="closeDeptModal()" class="flex-1 py-3 rounded-xl bg-slate-800 text-sm font-medium">Отмена</button>
-        <button onclick="saveDepartment()" class="flex-1 py-3 rounded-xl bg-primary-600 text-sm font-medium">Создать</button>
+        <button onclick="closeDeptModal()" class="flex-1 py-3 rounded-2xl bg-[#1c2a3d] text-sm font-medium">Отмена</button>
+        <button onclick="saveDepartment()" class="flex-1 py-3 rounded-2xl bg-primary-600 text-sm font-medium">Создать</button>
       </div>
     </div>
   </div>
 
   <!-- Equipment Modal -->
   <div id="modal-equip" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-    <div class="bg-slate-900 rounded-2xl w-full max-w-md border border-slate-700 p-6 space-y-4 fade-in">
+    <div class="bg-[#131e2d] rounded-2xl w-full max-w-md border border-[#354359] p-6 space-y-4 fade-in">
       <h3 class="text-lg font-bold">Добавить оборудование</h3>
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Название</label>
-        <input id="equip-name" type="text" placeholder="Название" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+        <label class="block text-xs text-[#a8b5c8] mb-1">Название</label>
+        <input id="equip-name" type="text" placeholder="Название" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
       </div>
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Инвентарный номер / ID</label>
-        <input id="equip-code" type="text" placeholder="INV-001" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+        <label class="block text-xs text-[#a8b5c8] mb-1">Инвентарный номер / ID</label>
+        <input id="equip-code" type="text" placeholder="INV-001" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
       </div>
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Расположение</label>
-        <input id="equip-location" type="text" placeholder="Цех 2" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+        <label class="block text-xs text-[#a8b5c8] mb-1">Расположение</label>
+        <input id="equip-location" type="text" placeholder="Цех 2" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
       </div>
       <div class="flex gap-3 pt-2">
-        <button onclick="closeEquipModal()" class="flex-1 py-3 rounded-xl bg-slate-800 text-sm font-medium">Отмена</button>
-        <button onclick="saveEquipment()" class="flex-1 py-3 rounded-xl bg-primary-600 text-sm font-medium">Сохранить</button>
+        <button onclick="closeEquipModal()" class="flex-1 py-3 rounded-2xl bg-[#1c2a3d] text-sm font-medium">Отмена</button>
+        <button onclick="saveEquipment()" class="flex-1 py-3 rounded-2xl bg-primary-600 text-sm font-medium">Сохранить</button>
       </div>
     </div>
   </div>
 
   <!-- Action Modal -->
   <div id="modal-action" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-    <div class="bg-slate-900 rounded-2xl w-full max-w-md border border-slate-700 p-6 space-y-4 fade-in">
+    <div class="bg-[#131e2d] rounded-2xl w-full max-w-md border border-[#354359] p-6 space-y-4 fade-in">
       <h3 class="text-lg font-bold">Добавить действие ТО</h3>
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Оборудование</label>
-        <select id="action-equip" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"></select>
+        <label class="block text-xs text-[#a8b5c8] mb-1">Оборудование</label>
+        <select id="action-equip" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"></select>
       </div>
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Название действия</label>
-        <input id="action-name" type="text" placeholder="Название" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+        <label class="block text-xs text-[#a8b5c8] mb-1">Название действия</label>
+        <input id="action-name" type="text" placeholder="Название" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
       </div>
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Описание</label>
-        <textarea id="action-desc" rows="2" placeholder="Кратко" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
+        <label class="block text-xs text-[#a8b5c8] mb-1">Описание</label>
+        <textarea id="action-desc" rows="2" placeholder="Кратко" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
       </div>
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Периодичность</label>
-        <select id="action-freq" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+        <label class="block text-xs text-[#a8b5c8] mb-1">Периодичность</label>
+        <select id="action-freq" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
           <option value="1">Каждый день</option>
           <option value="2">Раз в 2 дня</option>
           <option value="3">Раз в 3 дня</option>
@@ -504,85 +504,85 @@
         </select>
       </div>
       <div class="flex gap-3 pt-2">
-        <button onclick="closeActionModal()" class="flex-1 py-3 rounded-xl bg-slate-800 text-sm font-medium">Отмена</button>
-        <button onclick="saveAction()" class="flex-1 py-3 rounded-xl bg-primary-600 text-sm font-medium">Сохранить</button>
+        <button onclick="closeActionModal()" class="flex-1 py-3 rounded-2xl bg-[#1c2a3d] text-sm font-medium">Отмена</button>
+        <button onclick="saveAction()" class="flex-1 py-3 rounded-2xl bg-primary-600 text-sm font-medium">Сохранить</button>
       </div>
     </div>
   </div>
 
   <!-- Complete Modal -->
   <div id="modal-complete" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-    <div class="bg-slate-900 rounded-2xl w-full max-w-md border border-slate-700 p-6 space-y-4 fade-in">
+    <div class="bg-[#131e2d] rounded-2xl w-full max-w-md border border-[#354359] p-6 space-y-4 fade-in">
       <h3 class="text-lg font-bold">Выполнить задачу</h3>
-      <p class="text-sm text-slate-400" id="complete-task-info"></p>
-      <div><label class="block text-xs text-slate-400 mb-1" for="complete-worker-name">Имя фактического исполнителя <span class="text-rose-400">*</span></label><input id="complete-worker-name" type="text" maxlength="100" autocomplete="off" placeholder="Например, Александр" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm" /></div>
-      <div class="grid grid-cols-2 gap-2"><button type="button" id="complete-status-done" onclick="setCompletionStatus('done')" class="rounded-xl bg-emerald-600 py-3 text-sm">Выполнено</button><button type="button" id="complete-status-blocked" onclick="setCompletionStatus('blocked')" class="rounded-xl bg-slate-800 py-3 text-sm">Не выполнено</button></div>
+      <p class="text-sm text-[#a8b5c8]" id="complete-task-info"></p>
+      <div><label class="block text-xs text-[#a8b5c8] mb-1" for="complete-worker-name">Имя фактического исполнителя <span class="text-rose-400">*</span></label><input id="complete-worker-name" type="text" maxlength="100" autocomplete="off" placeholder="Например, Александр" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm" /></div>
+      <div class="grid grid-cols-2 gap-2"><button type="button" id="complete-status-done" onclick="setCompletionStatus('done')" class="rounded-2xl bg-emerald-600 py-3 text-sm">Выполнено</button><button type="button" id="complete-status-blocked" onclick="setCompletionStatus('blocked')" class="rounded-2xl bg-[#1c2a3d] py-3 text-sm">Не выполнено</button></div>
       <div id="complete-photo-section">
-        <label class="block text-xs text-slate-400 mb-2">Фото-фиксация <span class="text-rose-400">*</span></label>
-        <div id="complete-photo-dropzone" class="border-2 border-dashed border-slate-600 rounded-xl p-6 text-center cursor-pointer hover:border-primary-500 transition" onclick="document.getElementById('photo-input').click()">
+        <label class="block text-xs text-[#a8b5c8] mb-2">Фото-фиксация <span class="text-rose-400">*</span></label>
+        <div id="complete-photo-dropzone" class="border-2 border-dashed border-[#45536a] rounded-2xl p-6 text-center cursor-pointer hover:border-primary-500 transition" onclick="document.getElementById('photo-input').click()">
           <div id="photo-placeholder">
-            <p class="text-sm text-slate-400">Нажмите, чтобы сделать фото</p>
+            <p class="text-sm text-[#a8b5c8]">Нажмите, чтобы сделать фото</p>
           </div>
-          <img id="photo-preview" class="photo-preview rounded-lg mx-auto hidden" />
+          <img id="photo-preview" class="photo-preview rounded-xl mx-auto hidden" />
         </div>
         <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="handlePhoto(event)" />
       </div>
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Комментарий</label>
-        <textarea id="complete-comment" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
+        <label class="block text-xs text-[#a8b5c8] mb-1">Комментарий</label>
+        <textarea id="complete-comment" rows="2" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
       </div>
       <p id="complete-save-status" class="hidden text-sm text-slate-300" role="status" aria-live="polite"></p>
       <div class="flex gap-3 pt-2">
-        <button onclick="closeCompleteModal()" class="flex-1 py-3 rounded-xl bg-slate-800 text-sm font-medium">Отмена</button>
-        <button id="complete-save-btn" type="button" onclick="submitComplete()" class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-sm font-medium disabled:opacity-60">Сохранить</button>
+        <button onclick="closeCompleteModal()" class="flex-1 py-3 rounded-2xl bg-[#1c2a3d] text-sm font-medium">Отмена</button>
+        <button id="complete-save-btn" type="button" onclick="submitComplete()" class="flex-1 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-sm font-medium disabled:opacity-60">Сохранить</button>
       </div>
     </div>
   </div>
 
   <!-- Success Modal -->
   <div id="modal-success" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 rounded-2xl w-full max-w-sm border border-slate-700 p-8 text-center space-y-5 fade-in shadow-2xl">
+    <div class="bg-[#131e2d] rounded-2xl w-full max-w-sm border border-[#354359] p-8 text-center space-y-5 fade-in shadow-2xl">
       <div class="w-20 h-20 mx-auto rounded-full bg-emerald-500/20 flex items-center justify-center">
         <svg class="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
       </div>
       <div>
         <h3 class="text-3xl font-bold text-white tracking-wide">ГОТОВО</h3>
-        <p class="text-slate-400 text-sm mt-2">Задача успешно выполнена</p>
+        <p class="text-[#a8b5c8] text-sm mt-2">Задача успешно выполнена</p>
       </div>
-      <button type="button" onclick="closeSuccessModal()" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-base transition">OK</button>
+      <button type="button" onclick="closeSuccessModal()" class="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-base transition">OK</button>
     </div>
   </div>
 
 
   <!-- Info Modal (Инструкция / О приложении) -->
   <div id="modal-info" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-    <div class="bg-slate-900 rounded-2xl w-full max-w-lg border border-slate-700 p-6 space-y-4 fade-in max-h-[85vh] overflow-y-auto">
+    <div class="bg-[#131e2d] rounded-2xl w-full max-w-lg border border-[#354359] p-6 space-y-4 fade-in max-h-[85vh] overflow-y-auto">
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-bold" id="info-modal-title">—</h3>
-        <button onclick="closeInfoModal()" class="text-slate-400 hover:text-white text-xl leading-none px-2">&times;</button>
+        <button onclick="closeInfoModal()" class="text-[#a8b5c8] hover:text-white text-xl leading-none px-2">&times;</button>
       </div>
       <div id="info-modal-body" class="text-sm text-slate-300 space-y-3 leading-relaxed"></div>
-      <button onclick="closeInfoModal()" class="w-full py-3 rounded-xl bg-slate-800 text-sm font-medium">Закрыть</button>
+      <button onclick="closeInfoModal()" class="w-full py-3 rounded-2xl bg-[#1c2a3d] text-sm font-medium">Закрыть</button>
     </div>
   </div>
 
   <div id="modal-photo" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4" onclick="closePhotoModal()">
-    <img id="photo-viewer-img" class="max-w-full max-h-full rounded-lg" />
+    <img id="photo-viewer-img" class="max-w-full max-h-full rounded-xl" />
   </div>
 
 
   <!-- First-login guided instruction. All controls are functional. -->
-  <div id="onboarding-overlay" class="hidden fixed inset-0 z-[100] bg-slate-950/95 flex items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Инструкция Check App">
-    <div class="w-full max-w-md max-h-[96dvh] flex flex-col overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
-      <div class="flex justify-between items-center p-4 border-b border-slate-700"><span class="font-semibold text-white">Инструкция Check App</span><button type="button" onclick="closeOnboardingTour()" class="text-slate-300 text-2xl px-2" aria-label="Закрыть инструкцию">×</button></div>
+  <div id="onboarding-overlay" class="hidden fixed inset-0 z-[100] bg-[#090e19]/95 flex items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Инструкция Check App">
+    <div class="w-full max-w-md max-h-[96dvh] flex flex-col overflow-hidden rounded-2xl bg-[#131e2d] border border-[#354359] shadow-2xl">
+      <div class="flex justify-between items-center p-4 border-b border-[#354359]"><span class="font-semibold text-white">Инструкция Check App</span><button type="button" onclick="closeOnboardingTour()" class="text-slate-300 text-2xl px-2" aria-label="Закрыть инструкцию">×</button></div>
       <div id="onboarding-content" class="overflow-y-auto flex-1 p-4"></div>
       <div class="bg-white text-slate-900 p-4 space-y-3">
-        <div class="text-center text-sm font-medium text-slate-500" id="onboarding-count">1 / 10</div>
+        <div class="text-center text-sm font-medium text-[#8191a8]" id="onboarding-count">1 / 10</div>
         <h2 id="onboarding-title" class="text-center font-bold text-lg text-blue-800"></h2>
         <p id="onboarding-description" class="text-sm text-center text-slate-600"></p>
         <div id="onboarding-dots" class="flex justify-center gap-1.5" aria-hidden="true"></div>
-        <div class="grid grid-cols-2 gap-2"><button type="button" id="onboarding-prev" onclick="changeOnboardingSlide(-1)" class="rounded-lg bg-slate-100 text-blue-800 py-3 font-semibold">Назад</button><button type="button" id="onboarding-next" onclick="changeOnboardingSlide(1)" class="rounded-lg bg-blue-600 text-white py-3 font-semibold">Далее →</button></div>
-        <button type="button" id="onboarding-skip" onclick="closeOnboardingTour()" class="w-full text-sm text-slate-500 py-2">Пропустить</button>
+        <div class="grid grid-cols-2 gap-2"><button type="button" id="onboarding-prev" onclick="changeOnboardingSlide(-1)" class="rounded-xl bg-slate-100 text-blue-800 py-3 font-semibold">Назад</button><button type="button" id="onboarding-next" onclick="changeOnboardingSlide(1)" class="rounded-xl bg-blue-600 text-white py-3 font-semibold">Далее →</button></div>
+        <button type="button" id="onboarding-skip" onclick="closeOnboardingTour()" class="w-full text-sm text-[#8191a8] py-2">Пропустить</button>
       </div>
     </div>
   </div>
