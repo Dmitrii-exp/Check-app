@@ -588,11 +588,32 @@
       </div>
     </div>
   </div>
+
+  <!-- Replace an existing equipment or consumable photo -->
+  <div id="modal-replace-photo" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] hidden flex items-end sm:items-center justify-center p-4">
+    <div class="bg-[#131e2d] rounded-2xl w-full max-w-md border border-[#354359] p-6 space-y-4 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="replace-photo-title">
+      <h3 id="replace-photo-title" class="text-lg font-bold">Заменить фотографию</h3>
+      <p class="text-sm text-[#a8b5c8]">Новое фото заменит прежнее после сохранения.</p>
+      <div class="flex flex-wrap gap-2">
+        <label class="cursor-pointer rounded-xl bg-[#1c2a3d] border border-[#354359] px-3 py-2 text-sm">Выбрать фото
+          <input id="replace-photo-file" type="file" accept="image/*" class="hidden" onchange="checkPhotoInputChanged(this,'replace-photo-preview')">
+        </label>
+        <label class="cursor-pointer rounded-xl bg-[#1c2a3d] border border-[#354359] px-3 py-2 text-sm">Сделать фото
+          <input type="file" accept="image/*" capture="environment" class="hidden" onchange="checkPhotoFromCamera(this,'replace-photo-file','replace-photo-preview')">
+        </label>
+      </div>
+      <img id="replace-photo-preview" alt="Предпросмотр нового фото" class="hidden w-full max-h-64 rounded-xl object-contain">
+      <div class="flex gap-3">
+        <button id="replace-photo-cancel" type="button" onclick="checkCloseReplacePhoto()" class="flex-1 py-3 rounded-xl bg-[#1c2a3d]">Отмена</button>
+        <button id="replace-photo-save" type="button" onclick="checkSaveReplacePhoto()" class="flex-1 py-3 rounded-xl bg-primary-600 font-semibold">Сохранить</button>
+      </div>
+    </div>
+  </div>
   <script src="js/onboarding.js?v=20261009-01"></script>
   <script src="js/update-center.js?v=20261009-01"></script>
-  <script src="js/photo-attachments.js?v=20261010-01"></script>
-  <script src="js/consumables.js?v=20261010-02"></script>
-  <script src="js/app.js?v=20261010-photos1"></script>
+  <script src="js/photo-attachments.js?v=20261010-02"></script>
+  <script src="js/consumables.js?v=20261010-03"></script>
+  <script src="js/app.js?v=20261010-photos2"></script>
   <script src="js/calendar.js?v=20260918-03"></script>
 </body>
 </html>
