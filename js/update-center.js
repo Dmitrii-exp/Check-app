@@ -47,16 +47,30 @@
         };
         return;
       }
-      if(!data.published||!data.apkUrl||versionCompare(latest,CURRENT_VERSION)<=0){
-        status.textContent='Установлена актуальная версия приложения. Новая APK пока не опубликована.';
+      // Signed APK releases are published on GitHub; never advertise a debug build.
+      const releaseResponse=await fetch('https://api.github.com/repos/Dmitrii-exp/Check-app/releases/latest',{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
+      if(releaseResponse.status===404){
+        status.textContent='Новая подписанная версия Android пока не опубликована.';
         return;
       }
-      const url=new URL(data.apkUrl,location.origin);
-      if(url.protocol!=='https:'||url.origin!==location.origin||!url.pathname.toLowerCase().endsWith('.apk'))throw Error('Небезопасный адрес обновления');
-      status.textContent='Доступна версия '+latest+'. Сохраните работу перед установкой.';
+      if(!releaseResponse.ok)throw Error('Не удалось проверить Android-релизы');
+      const release=await releaseResponse.json();
+      const releaseVersion=String(release.tag_name||'').replace(/^v/,'');
+      const apk=Array.isArray(release.assets)?release.assets.find(asset=>asset.name==='Check-App-v'+releaseVersion+'.apk'):null;
+      if(!/^\\d+\\.\\d+\\.\\d+$/.test(releaseVersion)||versionCompare(releaseVersion,CURRENT_VERSION)<=0||!apk){
+        status.textContent='Установлена актуальная версия Android.';
+        return;
+      }
+      const url=new URL(apk.browser_download_url);
+      if(url.protocol!=='https:'||url.hostname!=='github.com'||!url.pathname.startsWith('/Dmitrii-exp/Check-app/releases/download/')||!url.pathname.endsWith('.apk'))throw Error('Некорректный адрес APK');
+      status.textContent='Доступна версия '+releaseVersion+'. Android попросит подтвердить установку.';
+      const notes=String(release.body||'').split('\\n').filter(line=>line.startsWith('- '));
+      if(notes.length){
+        changes.replaceChildren();
+        for(const line of notes){const item=document.createElement('li');item.textContent=line.slice(2);changes.appendChild(item);}
+      }
       button.textContent='Установить обновление';
       button.classList.remove('hidden');
-      // Android requires user confirmation to install an APK. iOS apps cannot self-install.
       button.onclick=()=>window.open(url.href,'_system');
     }catch(error){
       status.textContent='Не удалось проверить обновления. Проверьте интернет.';
