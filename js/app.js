@@ -1007,6 +1007,7 @@
       if (page === 'equipment') renderEquipment();
       if (page === 'actions') renderActions();
       if (page === 'team') renderTeam();
+      if (page === 'consumables') void renderConsumables();
       if (page === 'history') renderHistory();
       if (page === 'reports') renderReports();
       if (page === 'cabinet') renderCabinet();
