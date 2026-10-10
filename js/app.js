@@ -107,7 +107,7 @@
         id: company.id,
         name: company.name,
         departments: (departments || []).map(d => ({id:d.id, name:d.name, inviteCode:d.invite_code})),
-        equipment: (equipment || []).map(e => ({id:e.id, name:e.name, code:e.code || '', location:e.location || '', departmentId:e.department_id})),
+        equipment: (equipment || []).map(e => ({id:e.id, name:e.name, code:e.code || '', location:e.location || '', photoPath:e.photo_path || null, departmentId:e.department_id})),
         actions: (actions || []).map(a => ({id:a.id, equipmentId:a.equipment_id, name:a.name, description:a.description || '', frequency:a.frequency, departmentId:a.department_id})),
         tasks: (tasks || []).map(t => ({id:t.id, actionId:t.action_id, equipmentId:t.equipment_id, assignedUserId:t.assigned_user_id, departmentId:t.department_id, date:t.date, status:t.status, title:t.title, equipName:t.equip_name || '', equipCode:t.equip_code || '', description:t.description || '', blockedComment:t.blocked_comment || '', blockedWorkerName:t.blocked_worker_name || '', blockedAt:t.blocked_at || null})),
         completions: (completions || []).map(c => ({id:c.id, taskId:c.task_id, actionId:c.action_id, equipmentId:c.equipment_id, departmentId:c.department_id, userId:c.user_id, title:c.title, equipName:c.equip_name || '', date:c.date, time:c.time || '', photoPath:c.photo_path || '', photo:'', comment:c.comment || '', workerName:c.worker_name || ''})),
@@ -1468,6 +1468,8 @@
       document.getElementById('equip-name').value = '';
       document.getElementById('equip-code').value = '';
       document.getElementById('equip-location').value = '';
+      document.getElementById('equip-photo').value = '';
+      document.getElementById('equip-photo-preview').classList.add('hidden');
       document.getElementById('modal-equip').classList.remove('hidden');
     }
     function closeEquipModal() { document.getElementById('modal-equip').classList.add('hidden'); }
@@ -1478,16 +1480,23 @@
       if (c.equipment.filter(e => e.departmentId === deptId).length >= plan.maxEquip)
         return toast('Достигнут лимит оборудования по тарифу «' + plan.name + '»');
       const equipment = { id:uid(), name, code:document.getElementById('equip-code').value.trim(),
-        location:document.getElementById('equip-location').value.trim(), departmentId:deptId };
-      const {error} = await supabaseClient.from('equipment').insert({
-        id:equipment.id, company_id:c.id, department_id:deptId, name,
-        code:equipment.code || null, location:equipment.location || null
-      });
-      if (error) return toast('Не удалось сохранить оборудование: ' + error.message);
-      c.equipment.push(equipment);
-      closeEquipModal(); renderEquipment(); toast('Оборудование сохранено');
+        location:document.getElementById('equip-location').value.trim(), departmentId:deptId, photoPath:null };
+      const file=document.getElementById('equip-photo').files?.[0];
+      try {
+        if(file) equipment.photoPath=await checkUploadPhoto('equipment-photos',c.id,equipment.id,file);
+        const {error}=await supabaseClient.from('equipment').insert({
+          id:equipment.id,company_id:c.id,department_id:deptId,name,
+          code:equipment.code||null,location:equipment.location||null,photo_path:equipment.photoPath
+        });
+        if(error)throw error;
+        c.equipment.push(equipment);
+        closeEquipModal();renderEquipment();toast('Оборудование сохранено');
+      } catch(error) {
+        if(equipment.photoPath)await checkRemovePhoto('equipment-photos',equipment.photoPath);
+        toast('Не удалось сохранить оборудование: '+(error.message||'Ошибка фото'));
+      }
     }
-    async function deleteEquipment(id) {
+        async function deleteEquipment(id) {
       if (!confirm('Удалить оборудование и связанные регламенты?')) return;
       const c = getCompany();
       const actionIds = c.actions.filter(a => a.equipmentId === id).map(a => a.id);
