@@ -1191,9 +1191,12 @@
       if (!items.length) { list.innerHTML = '<p class="text-[#8191a8] text-sm py-8 text-center">Нет оборудования</p>'; return; }
       list.innerHTML = items.map(e => `
         <div class="bg-[#131e2d] border border-[#263448] rounded-2xl p-4 flex items-center justify-between ${e._active ? '' : 'opacity-50'}">
-          <div>
+          <div class="flex items-center gap-3">
+            ${e.photoPath ? `<img class="hidden w-16 h-16 rounded-xl object-cover" data-check-photo-bucket="equipment-photos" data-check-photo-path="${esc(e.photoPath)}" alt="Фото оборудования">` : ''}
+            <div>
             <div class="font-semibold">${esc(e.name)} ${e._active ? '' : '<span class="text-xs text-rose-400 font-normal">· заморожено</span>'}</div>
             <div class="text-sm text-[#a8b5c8]">${esc(e.code||'—')} · ${esc(e.location||'—')}</div>
+            </div>
           </div>
           ${e._active ? `<button onclick="deleteEquipment('${e.id}')" class="text-[#8191a8] hover:text-rose-400 text-sm px-2 py-1">Удалить</button>` : '<span class="text-xs text-[#8191a8]">нет доступа</span>'}
         </div>`).join('');
