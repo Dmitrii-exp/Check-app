@@ -1196,6 +1196,7 @@
             <div>
             <div class="font-semibold">${esc(e.name)} ${e._active ? '' : '<span class="text-xs text-rose-400 font-normal">· заморожено</span>'}</div>
             <div class="text-sm text-[#a8b5c8]">${esc(e.code||'—')} · ${esc(e.location||'—')}</div>
+            ${e._active ? `<button type="button" onclick="checkOpenReplacePhoto('equipment','${e.id}')" class="mt-2 text-xs text-primary-300 hover:text-primary-200">${e.photoPath ? 'Заменить фото' : 'Добавить фото'}</button>` : ''}
             </div>
           </div>
           ${e._active ? `<button onclick="deleteEquipment('${e.id}')" class="text-[#8191a8] hover:text-rose-400 text-sm px-2 py-1">Удалить</button>` : '<span class="text-xs text-[#8191a8]">нет доступа</span>'}
