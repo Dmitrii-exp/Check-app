@@ -53,3 +53,78 @@ function checkPhotoInputChanged(input,previewId){
 }
 
 function checkPhotoFromCamera(input,targetId,previewId){const target=document.getElementById(targetId);if(!target||!input.files?.length)return;const transfer=new DataTransfer();transfer.items.add(input.files[0]);target.files=transfer.files;checkPhotoInputChanged(target,previewId);}
+
+
+let checkReplacePhotoTarget = null;
+let checkReplacingPhoto = false;
+function checkOpenReplacePhoto(kind,id){
+  const company=getCompany(), user=getUser();
+  if(!company||!user||!['equipment','consumable'].includes(kind))return;
+  let record;
+  if(kind==='equipment'){
+    record=company.equipment.find(e=>e.id===id&&e.departmentId===getActiveDeptId());
+  }else{
+    record=consumablesRows.find(e=>e.id===id);
+    const allowed=record&&(user.role==='manager'||(record.created_by===user.id&&record.status==='needed'));
+    if(!allowed)record=null;
+  }
+  if(!record)return toast('Нет доступа к этой записи');
+  checkReplacePhotoTarget={kind,id,companyId:company.id,departmentId:getActiveDeptId(),oldPath:kind==='equipment'?record.photoPath:record.photo_path};
+  const input=document.getElementById('replace-photo-file');
+  input.value='';
+  const preview=document.getElementById('replace-photo-preview');
+  preview.removeAttribute('src');
+  preview.classList.add('hidden');
+  document.getElementById('modal-replace-photo').classList.remove('hidden');
+}
+function checkCloseReplacePhoto(){
+  if(checkReplacingPhoto)return;
+  checkReplacePhotoTarget=null;
+  document.getElementById('modal-replace-photo').classList.add('hidden');
+}
+async function checkSaveReplacePhoto(){
+  if(checkReplacingPhoto||!checkReplacePhotoTarget)return;
+  const file=document.getElementById('replace-photo-file').files?.[0];
+  if(!file)return toast('Выберите фотографию');
+  const target=checkReplacePhotoTarget;
+  const scope=consumablesScope();
+  if(scope.companyId!==target.companyId||scope.departmentId!==target.departmentId)return toast('Подразделение изменилось. Повторите операцию');
+  const bucket=target.kind==='equipment'?'equipment-photos':'consumable-photos';
+  const table=target.kind==='equipment'?'equipment':'consumable_requests';
+  const button=document.getElementById('replace-photo-save');
+  let newPath=null,committed=false;
+  checkReplacingPhoto=true;
+  button.disabled=true;button.textContent='Сохранение…';
+  try{
+    newPath=await checkUploadPhoto(bucket,target.companyId,target.id,file);
+    const {data,error}=await supabaseClient.from(table).update({photo_path:newPath})
+      .eq('id',target.id).eq('company_id',target.companyId)
+      .eq('department_id',target.departmentId).select('id');
+    if(error)throw error;
+    if(!data?.length)throw new Error('Запись не найдена или недостаточно прав');
+    committed=true;
+    if(target.kind==='equipment'){
+      const record=getCompany()?.equipment.find(e=>e.id===target.id);
+      if(record)record.photoPath=newPath;
+      renderEquipment();
+    }else{
+      const record=consumablesRows.find(e=>e.id===target.id);
+      if(record)record.photo_path=newPath;
+      paintConsumables();
+    }
+    checkReplacePhotoTarget=null;
+    document.getElementById('modal-replace-photo').classList.add('hidden');
+    toast('Фотография заменена');
+    if(target.oldPath&&target.oldPath!==newPath){
+      try{await checkRemovePhoto(bucket,target.oldPath);}catch(error){console.warn('Old photo cleanup failed',error);}
+    }
+  }catch(error){
+    if(newPath&&!committed){
+      try{await checkRemovePhoto(bucket,newPath);}catch(cleanupError){console.warn('Photo rollback failed',cleanupError);}
+    }
+    toast('Не удалось заменить фото: '+(error.message||'Ошибка сети'));
+  }finally{
+    checkReplacingPhoto=false;
+    button.disabled=false;button.textContent='Сохранить';
+  }
+}
