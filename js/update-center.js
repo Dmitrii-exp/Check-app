@@ -57,14 +57,14 @@
       const release=await releaseResponse.json();
       const releaseVersion=String(release.tag_name||'').replace(/^v/,'');
       const apk=Array.isArray(release.assets)?release.assets.find(asset=>asset.name==='Check-App-v'+releaseVersion+'.apk'):null;
-      if(!/^\\d+\\.\\d+\\.\\d+$/.test(releaseVersion)||versionCompare(releaseVersion,CURRENT_VERSION)<=0||!apk){
+      if(!/^\d+\.\d+\.\d+$/.test(releaseVersion)||versionCompare(releaseVersion,CURRENT_VERSION)<=0||!apk){
         status.textContent='Установлена актуальная версия Android.';
         return;
       }
       const url=new URL(apk.browser_download_url);
       if(url.protocol!=='https:'||url.hostname!=='github.com'||!url.pathname.startsWith('/Dmitrii-exp/Check-app/releases/download/')||!url.pathname.endsWith('.apk'))throw Error('Некорректный адрес APK');
       status.textContent='Доступна версия '+releaseVersion+'. Android попросит подтвердить установку.';
-      const notes=String(release.body||'').split('\\n').filter(line=>line.startsWith('- '));
+      const notes=String(release.body||'').split('\n').filter(line=>line.startsWith('- '));
       if(notes.length){
         changes.replaceChildren();
         for(const line of notes){const item=document.createElement('li');item.textContent=line.slice(2);changes.appendChild(item);}
