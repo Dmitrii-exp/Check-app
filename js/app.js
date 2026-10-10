@@ -924,7 +924,13 @@
       const isManager = user.role === 'manager';
       const isResponsible = user.role === 'responsible';
       const isStaff = isManager || isResponsible;
-      document.getElementById('manager-nav').classList.toggle('hidden', !isStaff);
+      document.getElementById('manager-nav').classList.remove('hidden');
+      // Employees need the Today, Consumables and Cabinet tabs too.
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (['today','consumables','cabinet'].includes(btn.dataset.page)) return;
+        if (btn.dataset.page === 'super-admin') return;
+        btn.classList.toggle('hidden', !isStaff);
+      });
       document.getElementById('nav-super-admin')?.classList.toggle('hidden', !isSuperAdmin);
       document.getElementById('dept-bar').classList.toggle('hidden', !isManager);
       // Личный кабинет доступен всем; подписки — только руководителю.
