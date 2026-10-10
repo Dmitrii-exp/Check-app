@@ -1200,6 +1200,7 @@
           </div>
           ${e._active ? `<button onclick="deleteEquipment('${e.id}')" class="text-[#8191a8] hover:text-rose-400 text-sm px-2 py-1">Удалить</button>` : '<span class="text-xs text-[#8191a8]">нет доступа</span>'}
         </div>`).join('');
+      void checkShowSignedPhotos(list);
     }
 
     function renderActions() {
