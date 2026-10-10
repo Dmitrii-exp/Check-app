@@ -1,0 +1,67 @@
+name: Publish signed Android update
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Require Android signing secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for value in "$KEYSTORE_BASE64" "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD"; do
+            if [ -z "$value" ]; then
+              echo "::error::Set ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD in repository secrets"
+              exit 1
+            fi
+          done
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/check-app-release.jks"
+      - run: npm ci
+      - run: npm run build:mobile
+      - run: node scripts/audit-js.mjs
+      - run: npx cap add android
+      - run: npx cap sync android
+      - run: node scripts/configure-mobile-links.mjs android
+      - name: Configure release version and signing
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          node scripts/configure-android-release.mjs
+          cat >> android/gradle.properties <<EOF
+          CHECKAPP_STORE_FILE=$RUNNER_TEMP/check-app-release.jks
+          CHECKAPP_STORE_PASSWORD=$STORE_PASSWORD
+          CHECKAPP_KEY_ALIAS=$KEY_ALIAS
+          CHECKAPP_KEY_PASSWORD=$KEY_PASSWORD
+          EOF
+          chmod 600 android/gradle.properties
+      - name: Build signed release APK
+        working-directory: android
+        run: ./gradlew assembleRelease
+      - name: Publish GitHub Release with changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          node scripts/create-release-notes.mjs > "$RUNNER_TEMP/release-notes.md"
+          gh release create "v$VERSION" android/app/build/outputs/apk/release/app-release.apk#Check-App-v$VERSION.apk --title "Check App v$VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" --latest --verify-tag || {
+            echo "::error::Release tag already exists or release publishing failed. Bump package.json version for a new release."
+            exit 1
+          }
