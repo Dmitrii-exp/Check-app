@@ -32,7 +32,7 @@ jobs:
             fi
           done
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/check-app-release.jks"
-      - run: npm ci
+      - run: npm install
       - run: npm run build:mobile
       - run: node scripts/audit-js.mjs
       - run: npx cap add android
