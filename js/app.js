@@ -1015,6 +1015,8 @@
       if (depts.some(d=>d.id===selected)) deptSelect.value=selected;
       deptSelect.disabled=user.role!=='manager';
       updateOneTimeEmployees();
+      const dueInput=document.getElementById('one-time-date');
+      if (!dueInput.value) dueInput.value=todayStr();
       const visible = oneTimeTasks.filter(t => user.role==='manager' || (user.role==='responsible' && t.department_id===user.departmentId) || t.assigned_user_id===user.id);
       list.innerHTML = visible.length ? visible.map(t=>{
         const assignee=c.users.find(u=>u.id===t.assigned_user_id);
@@ -1045,7 +1047,7 @@
       const dueDate=document.getElementById('one-time-date').value;
       if (!c.departments.some(d=>d.id===departmentId) || (user.role==='responsible' && departmentId!==user.departmentId)) return toast('Недоступное подразделение');
       if (!c.users.some(u=>u.id===employeeId && u.departmentId===departmentId && u.role==='employee')) return toast('Выберите сотрудника');
-      if (!description || description.length>4000 || !/^\\d{4}-\\d{2}-\\d{2}$/.test(dueDate)) return toast('Заполните описание и дату задачи');
+      if (!description || description.length>4000 || !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return toast('Заполните описание и дату задачи');
       oneTimeBusy=true;
       try {
         const {error}=await supabaseClient.from('one_time_tasks').insert({company_id:c.id,department_id:departmentId,assigned_user_id:employeeId,created_by:user.id,description,due_date:dueDate});
