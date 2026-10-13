@@ -1334,14 +1334,14 @@
       list.innerHTML = users.map(u => {
         const isResp = u.role === 'responsible';
         const roleBadge = isResp
-          ? '<span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">Ответственный</span>'
+          ? '<span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">Руководитель подразделения</span>'
           : '<span class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">Сотрудник</span>';
         let actions = '';
         if (me.role === 'manager') {
           if (isResp) {
             actions = `<button onclick="setResponsible('${u.id}', false)" class="text-xs text-[#a8b5c8] hover:text-white px-3 py-1.5 rounded-xl hover:bg-[#1c2a3d]">Снять</button>`;
           } else {
-            actions = `<button onclick="setResponsible('${u.id}', true)" class="text-xs text-primary-400 hover:text-primary-300 px-3 py-1.5 rounded-xl hover:bg-primary-500/10">Назначить ответственным</button>`;
+            actions = `<button onclick="setResponsible('${u.id}', true)" class="text-xs text-primary-400 hover:text-primary-300 px-3 py-1.5 rounded-xl hover:bg-primary-500/10">Назначить руководителем подразделения</button>`;
           }
           actions += `<button onclick="removeEmployee('${u.id}')" class="text-xs text-rose-400 hover:text-rose-300 px-3 py-1.5 rounded-xl hover:bg-rose-500/10">Удалить</button>`;
         }
