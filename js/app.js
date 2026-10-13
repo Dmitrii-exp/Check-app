@@ -1879,6 +1879,8 @@
       document.getElementById('pay-confirm-text').textContent =
         'Тариф «' + p.name + '» — ' + p.price + ' ₽. После оплаты доступ откроется на 30 дней.';
       document.getElementById('pay-confirm').classList.remove('hidden');
+      const testBtn = document.getElementById('test-pay-btn');
+      if (testBtn) testBtn.classList.toggle('hidden', new URLSearchParams(location.search).get('test-pay') !== '1');
       document.getElementById('plans-section').classList.add('hidden');
     }
     function cancelPay() {
@@ -1902,6 +1904,24 @@
         console.error('Robokassa:', e);
         toast(e?.message || 'Не удалось создать платёж.');
         if (btn) { btn.disabled = false; btn.textContent = 'Перейти к оплате'; }
+      }
+    }
+    async function confirmTestPay() {
+      if (getUser().role !== 'manager' || !pendingPlanId || new URLSearchParams(location.search).get('test-pay') !== '1') return;
+      const btn = document.getElementById('test-pay-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Создаём тестовый счёт…'; }
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('create-robokassa-test-invoice', { body: { planId: pendingPlanId } });
+        if (error) {
+          const detail = await error.context?.json?.().catch(() => null);
+          throw new Error(detail?.reason || detail?.error || error.message);
+        }
+        if (!data?.test || !/^https:\/\/[a-z0-9.-]*robokassa\.ru\//i.test(data?.payment_url || '')) throw new Error('Не получена безопасная тестовая ссылка.');
+        window.location.href = data.payment_url;
+      } catch (e) {
+        console.error('Robokassa test:', e);
+        toast(e?.message || 'Не удалось создать тестовый счёт.');
+        if (btn) { btn.disabled = false; btn.textContent = 'Тестовая оплата · без списания денег'; }
       }
     }
     function renewCurrentPlan() {
