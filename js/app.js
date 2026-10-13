@@ -790,7 +790,22 @@
       loginInProgress = true;
       setLoginLoading(true, 'Проверяем данные для входа…');
       try {
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const authRequest = supabaseClient.auth.signInWithPassword({ email, password });
+        // A network request may hang indefinitely on some Android networks/WebViews.
+        // Show an actionable error and always release the login button.
+        let timeoutHandle;
+        let authResult;
+        try {
+          authResult = await Promise.race([
+            authRequest,
+            new Promise((_, reject) => {
+              timeoutHandle = setTimeout(() => reject(new Error('Сервер авторизации не отвечает (20 секунд). Проверьте интернет, попробуйте другую сеть или VPN и повторите вход.')), 20000);
+            })
+          ]);
+        } finally {
+          clearTimeout(timeoutHandle);
+        }
+        const { error } = authResult;
         if (error) throw error;
 
         setLoginLoading(true, 'Загружаем вашу компанию и оборудование…');
