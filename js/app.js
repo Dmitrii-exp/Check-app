@@ -22,12 +22,12 @@
     const STORAGE_KEY = 'checkapp_v3';
 
     const PLANS = {
-      free:     { id:'free',     name:'Бесплатная', maxDepts:1,  maxEquip:5,  price:0,    days:0 },
-      lite:     { id:'lite',     name:'Лайт',       maxDepts:1,  maxEquip:10, price:490,  days:30 },
-      standard: { id:'standard', name:'Стандарт',   maxDepts:3,  maxEquip:10, price:1290, days:30 },
-      standard_plus: { id:'standard_plus', name:'Стандарт+', maxDepts:5, maxEquip:15, price:2090, days:30 },
-      premium:  { id:'premium',  name:'Премиум',    maxDepts:10, maxEquip:20, price:3690, days:30 },
-      ultra:    { id:'ultra',    name:'Ультра',     maxDepts:20, maxEquip:25, price:6490, days:30 }
+      free:     { id:'free', name:'Бесплатная', maxDepts:1, maxEquip:5, price:0, days:0 },
+      lite:     { id:'lite', name:'Лайт', maxDepts:1, maxEquip:15, price:490, days:30 },
+      standard: { id:'standard', name:'Стандарт', maxDepts:3, maxEquip:25, price:990, days:30 },
+      standard_plus: { id:'standard_plus', name:'Стандарт+', maxDepts:5, maxEquip:25, price:1790, days:30 },
+      premium:  { id:'premium', name:'Премиум', maxDepts:10, maxEquip:25, price:2990, days:30 },
+      ultra:    { id:'ultra', name:'Ультра', maxDepts:20, maxEquip:25, price:4990, days:30 }
     };
 
     let db = loadDB();
@@ -1634,20 +1634,26 @@
       return false;
     }
     async function prepareCompletionPhoto(file) {
-      // iPhone photos may be multi-megabyte HEIC/JPEG images. Compress on-device
-      // before upload to reduce cellular transfer time and avoid HEIC previews.
-      if (!file || !file.type.startsWith('image/')) return file;
+      if (!file || !file.type.startsWith('image/')) throw new Error('Выберите фотографию');
       const bitmap = await createImageBitmap(file);
       try {
-        const maxSide = 1600;
-        const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-        canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.78));
-        if (!blob) return file;
-        return new File([blob], 'maintenance-photo.jpg', {type:'image/jpeg'});
+        let maxSide = 1600;
+        let quality = 0.78;
+        for (let attempt = 0; attempt < 9; attempt++) {
+          const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+          canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Не удалось обработать фотографию');
+          ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+          if (!blob) throw new Error('Не удалось сжать фотографию');
+          if (blob.size <= 300 * 1024) return new File([blob], 'maintenance-photo.jpg', {type:'image/jpeg'});
+          if (quality > 0.52) quality -= 0.09;
+          else maxSide = Math.max(600, Math.round(maxSide * 0.8));
+        }
+        throw new Error('Не удалось уменьшить фотографию до 300 КБ. Выберите другое фото.');
       } finally {
         bitmap.close?.();
       }
@@ -1723,7 +1729,7 @@
             setCompletionSaveState(true, 'Подготавливаем фотографию…');
             uploadFile = await prepareCompletionPhoto(currentPhotoFile);
           } catch (photoError) {
-            console.warn('Photo compression unavailable, uploading original', photoError);
+            throw new Error('Не удалось сжать фотографию: ' + (photoError?.message || 'ошибка обработки'));
           }
           path = c.id + '/' + task.departmentId + '/' + task.id + '/' + Date.now() + '.' + (uploadFile.type === 'image/jpeg' ? 'jpg' : ((uploadFile.name.split('.').pop() || 'jpg').toLowerCase()));
           setCompletionSaveState(true, 'Загружаем фотографию (' + Math.max(1, Math.ceil(uploadFile.size / 1024)) + ' КБ)…');
