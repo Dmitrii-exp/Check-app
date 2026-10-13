@@ -40,31 +40,12 @@ jobs:
               exit 1
             fi
           done
-      - name: Install secure FTP client
-        run: sudo apt-get update -qq && sudo apt-get install -y lftp
-      - name: Upload website over explicit FTPS
+      - name: Upload website over verified FTPS
         env:
-          FTP_HOST: ${{ secrets.REG_FTP_HOST }}
-          FTP_USER: ${{ secrets.REG_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.REG_FTP_PASSWORD }}
-        run: |
-          set -euo pipefail
-          # The dedicated FTP user's home directory is /www/app-check.ru.
-          # Its FTP-visible root is /; never target the account-wide /www directory.
-          cat > "$RUNNER_TEMP/ftps.lftp" <<'EOF'
-          set ftp:ssl-force true
-          set ftp:ssl-protect-data true
-          set ssl:verify-certificate true
-          set net:max-retries 2
-          set net:timeout 25
-          set cmd:fail-exit true
-          open --env-password --user "$FTP_USER" "ftp://$FTP_HOST"
-          pwd
-          mirror --reverse --verbose --parallel=2 --no-perms --exclude-glob .DS_Store dist-mobile/ /
-          bye
-          EOF
-          chmod 600 "$RUNNER_TEMP/ftps.lftp"
-          lftp -f "$RUNNER_TEMP/ftps.lftp"
+          REG_FTP_HOST: ${{ secrets.REG_FTP_HOST }}
+          REG_FTP_USER: ${{ secrets.REG_FTP_USER }}
+          REG_FTP_PASSWORD: ${{ secrets.REG_FTP_PASSWORD }}
+        run: python3 scripts/deploy-reg-ru.py
       - name: Summary
         run: |
           echo 'Uploaded Check App files to dedicated REG.RU FTP root.' >> "$GITHUB_STEP_SUMMARY"
