@@ -927,7 +927,7 @@
       document.getElementById('manager-nav').classList.remove('hidden');
       // Employees need the Today, Consumables and Cabinet tabs too.
       document.querySelectorAll('.nav-btn').forEach(btn => {
-        if (['today','consumables','cabinet'].includes(btn.dataset.page)) return;
+        if (['today','consumables','cabinet','one-time'].includes(btn.dataset.page)) return;
         if (btn.dataset.page === 'super-admin') return;
         btn.classList.toggle('hidden', !isStaff);
       });
@@ -993,6 +993,108 @@
       document.getElementById('invite-code-display').textContent = dept ? dept.inviteCode : '—';
     }
 
+    let oneTimeTasks = [];
+    let oneTimeBusy = false;
+    async function loadOneTimeTasks() {
+      const c = getCompany();
+      if (!c) return;
+      const {data,error} = await supabaseClient.from('one_time_tasks').select('*').eq('company_id',c.id).order('created_at',{ascending:false}).limit(500);
+      if (error) { console.error('Разовые задачи:',error); toast('Не удалось загрузить разовые задачи'); return; }
+      oneTimeTasks = data || [];
+      renderOneTimeTasks();
+    }
+    function renderOneTimeTasks() {
+      const c = getCompany(), user = getUser(), list = document.getElementById('one-time-list');
+      if (!c || !user || !list) return;
+      const canAssign = user.role === 'manager' || user.role === 'responsible';
+      document.getElementById('one-time-create').classList.toggle('hidden',!canAssign);
+      const deptSelect = document.getElementById('one-time-dept');
+      const depts = user.role === 'manager' ? c.departments : c.departments.filter(d=>d.id===user.departmentId);
+      const selected = deptSelect.value;
+      deptSelect.innerHTML = depts.map(d=>'<option value="'+esc(d.id)+'">'+esc(d.name)+'</option>').join('');
+      if (depts.some(d=>d.id===selected)) deptSelect.value=selected;
+      deptSelect.disabled=user.role!=='manager';
+      updateOneTimeEmployees();
+      const visible = oneTimeTasks.filter(t => user.role==='manager' || (user.role==='responsible' && t.department_id===user.departmentId) || t.assigned_user_id===user.id);
+      list.innerHTML = visible.length ? visible.map(t=>{
+        const assignee=c.users.find(u=>u.id===t.assigned_user_id);
+        const dept=c.departments.find(d=>d.id===t.department_id);
+        const canComplete=t.assigned_user_id===user.id && t.status==='pending';
+        return '<article class="bg-[#131e2d] border border-[#263448] rounded-2xl p-4 space-y-2">'+
+          '<div class="flex justify-between gap-2"><div class="font-medium whitespace-pre-wrap break-words">'+esc(t.description)+'</div><span class="text-xs shrink-0 '+(t.status==='done'?'text-emerald-400':'text-amber-400')+'">'+(t.status==='done'?'Выполнено':'Ожидает')+'</span></div>'+
+          '<div class="text-xs text-[#a8b5c8]">'+esc(dept?.name||'')+' · '+esc(assignee?.name||'')+' · Срок: '+esc(t.due_date)+'</div>'+
+          (t.report_comment?'<p class="text-sm text-slate-300 whitespace-pre-wrap">'+esc(t.report_comment)+'</p>':'')+
+          (t.photo_path?'<button class="text-primary-400 text-sm underline" onclick="viewOneTimePhoto(\''+t.id+'\')">Посмотреть фотоотчёт</button>':'')+
+          (canComplete?'<div><button onclick="openOneTimeReport(\''+t.id+'\')" class="bg-primary-600 px-4 py-2 rounded-xl text-sm">Сдать фотоотчёт</button></div>':'')+
+          '</article>';
+      }).join(''):'<p class="text-sm text-[#8191a8]">Разовых задач пока нет</p>';
+    }
+    function updateOneTimeEmployees() {
+      const c=getCompany(), user=getUser();
+      const dept=document.getElementById('one-time-dept').value;
+      const users=c.users.filter(u=>u.departmentId===dept && u.role==='employee');
+      document.getElementById('one-time-employee').innerHTML=users.map(u=>'<option value="'+esc(u.id)+'">'+esc(u.name)+'</option>').join('');
+    }
+    async function createOneTimeTask() {
+      if (oneTimeBusy) return;
+      const c=getCompany(), user=getUser();
+      if (!['manager','responsible'].includes(user.role)) return toast('Нет прав назначать задачи');
+      const departmentId=document.getElementById('one-time-dept').value;
+      const employeeId=document.getElementById('one-time-employee').value;
+      const description=document.getElementById('one-time-description').value.trim();
+      const dueDate=document.getElementById('one-time-date').value;
+      if (!c.departments.some(d=>d.id===departmentId) || (user.role==='responsible' && departmentId!==user.departmentId)) return toast('Недоступное подразделение');
+      if (!c.users.some(u=>u.id===employeeId && u.departmentId===departmentId && u.role==='employee')) return toast('Выберите сотрудника');
+      if (!description || description.length>4000 || !/^\\d{4}-\\d{2}-\\d{2}$/.test(dueDate)) return toast('Заполните описание и дату задачи');
+      oneTimeBusy=true;
+      try {
+        const {error}=await supabaseClient.from('one_time_tasks').insert({company_id:c.id,department_id:departmentId,assigned_user_id:employeeId,created_by:user.id,description,due_date:dueDate});
+        if(error) throw error;
+        document.getElementById('one-time-description').value='';
+        toast('Разовая задача назначена');
+        await loadOneTimeTasks();
+      } catch(e) { console.error(e);toast('Не удалось назначить задачу: '+e.message); }
+      finally {oneTimeBusy=false;}
+    }
+    let oneTimeReportId=null;
+    function openOneTimeReport(id) {
+      const t=oneTimeTasks.find(x=>x.id===id);
+      if(!t || t.assigned_user_id!==getUser().id || t.status!=='pending')return;
+      oneTimeReportId=id;
+      document.getElementById('one-time-report-title').textContent=t.description;
+      document.getElementById('one-time-report-photo').value='';
+      document.getElementById('one-time-report-comment').value='';
+      document.getElementById('one-time-report-modal').classList.remove('hidden');
+    }
+    function closeOneTimeReport(){document.getElementById('one-time-report-modal').classList.add('hidden');oneTimeReportId=null;}
+    async function submitOneTimeReport(){
+      if(oneTimeBusy)return;
+      const t=oneTimeTasks.find(x=>x.id===oneTimeReportId),user=getUser(),c=getCompany();
+      const file=document.getElementById('one-time-report-photo').files[0];
+      if(!t||t.assigned_user_id!==user.id||t.status!=='pending')return toast('Задача недоступна');
+      if(!file)return toast('Для выполнения нужен фотоотчёт');
+      oneTimeBusy=true;
+      try{
+        const compressed=await prepareCompletionPhoto(file);
+        const path=c.id+'/'+t.department_id+'/one-time/'+t.id+'/'+Date.now()+'.jpg';
+        await uploadCompletionPhoto(path,compressed);
+        const {data,error}=await supabaseClient.from('one_time_tasks').update({status:'done',photo_path:path,report_comment:document.getElementById('one-time-report-comment').value.trim(),completed_at:new Date().toISOString()}).eq('id',t.id).eq('assigned_user_id',user.id).eq('status','pending').select('id');
+        if(error)throw error;
+        if(!data?.length)throw new Error('Задача уже обработана');
+        closeOneTimeReport();
+        toast('Фотоотчёт сохранён');
+        await loadOneTimeTasks();
+      }catch(e){console.error(e);toast('Не удалось сохранить отчёт: '+e.message);}
+      finally{oneTimeBusy=false;}
+    }
+    async function viewOneTimePhoto(id){
+      const t=oneTimeTasks.find(x=>x.id===id);
+      if(!t?.photo_path)return;
+      const {data,error}=await supabaseClient.storage.from('equipment-photos').createSignedUrl(t.photo_path,300);
+      if(error||!data?.signedUrl)return toast('Не удалось открыть фотоотчёт');
+      window.open(data.signedUrl,'_blank','noopener,noreferrer');
+    }
+
     function showPage(page) {
       const user = getUser();
       if (page === 'super-admin' && !isSuperAdmin) {
@@ -1008,6 +1110,7 @@
         btn.classList.toggle('border-transparent', !isActive);
         btn.classList.toggle('text-[#a8b5c8]', !isActive);
       });
+      if (page === 'one-time') void loadOneTimeTasks();
       if (page === 'dashboard') renderDashboard();
       if (page === 'today') renderToday();
       if (page === 'equipment') renderEquipment();
