@@ -10,7 +10,12 @@ for (const item of ['index.html', 'assets', 'css', 'js', 'public', 'docs']) {
   fs.cpSync(path.join(root, item), path.join(output, item), { recursive: true });
 }
 
+// Bundle Supabase locally: Android WebView must not depend on a third-party CDN for login.
+const supabaseUmd = path.join(root, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js');
+if (!fs.existsSync(supabaseUmd)) throw new Error('Missing local Supabase UMD bundle: ' + supabaseUmd);
+fs.copyFileSync(supabaseUmd, path.join(output, 'js', 'supabase.js'));
 let html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
+html = html.replace('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/dist/umd/supabase.js', 'js/supabase.js');
 html = html.replace(/\s*<script src="https:\/\/cdn\.tailwindcss\.com"><\/script>/, '');
 html = html.replace(/\s*<script>\s*tailwind\.config\s*=\s*\{[\s\S]*?<\/script>/, '');
 // Always load the locally compiled Tailwind stylesheet before custom styles.
