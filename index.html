@@ -196,6 +196,7 @@
       <div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin">
         <button onclick="showPage('dashboard')" data-page="dashboard" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-400">Главная</button>
         <button onclick="showPage('today')" data-page="today" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Сегодня</button>
+        <button onclick="showPage('one-time')" data-page="one-time" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Разовые задачи</button>
         <button onclick="showPage('equipment')" data-page="equipment" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Оборудование</button>
         <button onclick="showPage('actions')" data-page="actions" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Действия</button>
         <button onclick="showPage('consumables')" data-page="consumables" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#a8b5c8] hover:text-white">Расходники <span id="consumables-nav-count" class="hidden ml-1 text-xs rounded-full bg-blue-600 text-white px-1.5 py-0.5"></span></button>
@@ -245,6 +246,19 @@
         <div id="today-empty" class="hidden text-center py-16 text-[#8191a8]">
           <p>На сегодня задач нет</p>
         </div>
+      </div>
+
+      <div id="page-one-time" class="page hidden space-y-4 fade-in">
+        <h1 class="text-2xl font-bold">Разовые задачи</h1>
+        <section id="one-time-create" class="hidden bg-[#131e2d] border border-[#263448] rounded-2xl p-4 space-y-3">
+          <h2 class="font-semibold">Назначить сотруднику</h2>
+          <label class="block text-sm">Подразделение<select id="one-time-dept" onchange="updateOneTimeEmployees()" class="block w-full mt-1 bg-[#1c2a3d] border border-[#354359] rounded-xl p-3"></select></label>
+          <label class="block text-sm">Сотрудник<select id="one-time-employee" class="block w-full mt-1 bg-[#1c2a3d] border border-[#354359] rounded-xl p-3"></select></label>
+          <label class="block text-sm">Задача<textarea id="one-time-description" maxlength="4000" rows="3" placeholder="Опишите, что нужно сделать" class="block w-full mt-1 bg-[#1c2a3d] border border-[#354359] rounded-xl p-3"></textarea></label>
+          <label class="block text-sm">Срок выполнения<input id="one-time-date" type="date" class="block w-full mt-1 bg-[#1c2a3d] border border-[#354359] rounded-xl p-3"></label>
+          <button type="button" onclick="createOneTimeTask()" class="bg-primary-600 rounded-xl px-5 py-3 text-sm font-medium">Назначить задачу</button>
+        </section>
+        <div id="one-time-list" class="space-y-3"></div>
       </div>
 
       <div id="page-equipment" class="page hidden space-y-4 fade-in">
@@ -514,6 +528,15 @@
   </div>
 
   <!-- Complete Modal -->
+  <div id="one-time-report-modal" class="fixed inset-0 z-50 hidden bg-black/70 flex items-center justify-center p-4">
+    <div class="bg-[#131e2d] border border-[#354359] rounded-2xl p-5 w-full max-w-md space-y-3">
+      <h2 class="font-bold text-lg">Фотоотчёт по разовой задаче</h2>
+      <p id="one-time-report-title" class="text-sm text-slate-300 whitespace-pre-wrap"></p>
+      <label class="block text-sm">Фотография (обязательно)<input id="one-time-report-photo" type="file" accept="image/*" capture="environment" class="block w-full mt-2 text-sm"></label>
+      <label class="block text-sm">Комментарий<textarea id="one-time-report-comment" rows="3" maxlength="2000" class="block w-full mt-1 bg-[#1c2a3d] border border-[#354359] rounded-xl p-3"></textarea></label>
+      <div class="flex gap-3"><button type="button" onclick="submitOneTimeReport()" class="bg-primary-600 rounded-xl px-4 py-3 text-sm">Отправить отчёт</button><button type="button" onclick="closeOneTimeReport()" class="bg-[#354359] rounded-xl px-4 py-3 text-sm">Отмена</button></div>
+    </div>
+  </div>
   <div id="modal-complete" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
     <div class="bg-[#131e2d] rounded-2xl w-full max-w-md border border-[#354359] p-6 space-y-4 fade-in">
       <h3 class="text-lg font-bold">Выполнить задачу</h3>
@@ -614,7 +637,7 @@
   <script src="js/update-center.js?v=20261010-android-release"></script>
   <script src="js/photo-attachments.js?v=20261010-02"></script>
   <script src="js/consumables.js?v=20261010-03"></script>
-  <script src="js/app.js?v=20261013-pricing-photo2"></script>
+  <script src="js/app.js?v=20261013-one-time1"></script>
   <script src="js/calendar.js?v=20260918-03"></script>
 </body>
 </html>
