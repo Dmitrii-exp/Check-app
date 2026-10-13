@@ -1,0 +1,71 @@
+name: Deploy Check App to REG.RU
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-app-reg-ru-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build production website
+        run: npm run build:mobile
+      - name: Audit JavaScript
+        run: node scripts/audit-js.mjs
+      - name: Check deploy credentials
+        env:
+          FTP_HOST: ${{ secrets.REG_FTP_HOST }}
+          FTP_USER: ${{ secrets.REG_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.REG_FTP_PASSWORD }}
+        run: |
+          for value in "$FTP_HOST" "$FTP_USER" "$FTP_PASSWORD"; do
+            if [ -z "$value" ]; then
+              echo "::error::REG_FTP_HOST, REG_FTP_USER and REG_FTP_PASSWORD are required"
+              exit 1
+            fi
+          done
+      - name: Install secure FTP client
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+      - name: Upload website over explicit FTPS
+        env:
+          FTP_HOST: ${{ secrets.REG_FTP_HOST }}
+          FTP_USER: ${{ secrets.REG_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.REG_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # The dedicated FTP user's home directory is /www/app-check.ru.
+          # Its FTP-visible root is /; never target the account-wide /www directory.
+          cat > "$RUNNER_TEMP/ftps.lftp" <<'EOF'
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate true
+          set net:max-retries 2
+          set net:timeout 25
+          set cmd:fail-exit true
+          open --env-password --user "$FTP_USER" "ftp://$FTP_HOST"
+          pwd
+          mirror --reverse --verbose --parallel=2 --no-perms --exclude-glob .DS_Store dist-mobile/ /
+          bye
+          EOF
+          chmod 600 "$RUNNER_TEMP/ftps.lftp"
+          lftp -f "$RUNNER_TEMP/ftps.lftp"
+      - name: Summary
+        run: |
+          echo 'Uploaded Check App files to dedicated REG.RU FTP root.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'DNS was not changed. Verify site and Supabase before switching DNS.' >> "$GITHUB_STEP_SUMMARY"
