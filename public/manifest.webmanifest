@@ -2,7 +2,7 @@
   "name": "Check App",
   "short_name": "Check App",
   "description": "Система контроля технического обслуживания оборудования",
-  "start_url": "/",
+  "start_url": "/app/",
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#020617",
@@ -15,5 +15,5 @@
       "purpose": "any maskable"
     }
   ],
-  "scope": "/"
+  "scope": "/app/"
 }
