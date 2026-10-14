@@ -285,12 +285,17 @@
     }
 
 
+    // Open the registration tab from the public landing page without affecting native login.
+    if (window.location.hash === '#register') {
+      window.addEventListener('load', () => switchAuthTab('register'), { once: true });
+    }
+
     let pendingEmail = null;
     let isSuperAdmin = false;
     let isUnlimitedCompany = false;
     let adminCompanies = [];
 
-    const AUTH_PUBLIC_URL = 'https://www.app-check.ru/';
+    const AUTH_PUBLIC_URL = 'https://app-check.ru/app/';
     const AUTH_MOBILE_RECOVERY_URL = 'ru.checkapp.mobile://recovery';
     const isNativeCheckApp = () => !!(window.Capacitor?.isNativePlatform?.());
 
