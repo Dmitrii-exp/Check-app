@@ -2046,6 +2046,19 @@
       const sub = c.subscription || { planId: 'free', expiresAt: null };
       const plan = getPlan();
       const days = getDaysLeft();
+      const expiryDateEl = document.getElementById('cab-expiry-date');
+      const expiryWarningEl = document.getElementById('cab-expiry-warning');
+      if (expiryDateEl) expiryDateEl.textContent = sub.planId !== 'free' && sub.expiresAt
+        ? 'Действует до: ' + new Date(sub.expiresAt).toLocaleString('ru-RU', {day:'2-digit',month:'long',year:'numeric'})
+        : 'Бесплатный тариф — без срока окончания';
+      if (expiryWarningEl) {
+        const warn = sub.planId !== 'free' && days !== null && days <= 3;
+        expiryWarningEl.classList.toggle('hidden', !warn);
+        expiryWarningEl.textContent = warn
+          ? (days === 0 ? 'Подписка закончилась. Автоматические задачи ТО приостановлены. Продлите подписку, чтобы возобновить работу.'
+            : 'До окончания подписки осталось ' + days + ' дн. Продлите заранее — оставшиеся дни сохранятся.')
+          : '';
+      }
       document.getElementById('cab-plan-name').textContent = plan.name;
       const daysEl = document.getElementById('cab-days-left');
       if (plan.id === 'free') {
