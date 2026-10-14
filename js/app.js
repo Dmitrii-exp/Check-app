@@ -1972,6 +1972,67 @@
 
     let pendingPlanId = null;
 
+    let changingPassword = false;
+    function changePasswordMessage(message, isError = false) {
+      const el = document.getElementById('change-password-message');
+      if (!el) return;
+      el.textContent = message;
+      el.className = 'text-sm min-h-[20px] ' + (isError ? 'text-rose-400' : 'text-emerald-400');
+    }
+    function openChangePassword() {
+      const modal = document.getElementById('change-password-modal');
+      if (!modal) return;
+      document.getElementById('change-password-form').reset();
+      changePasswordMessage('');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('change-password-current').focus();
+    }
+    function closeChangePassword() {
+      if (changingPassword) return;
+      const modal = document.getElementById('change-password-modal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.getElementById('change-password-form').reset();
+      changePasswordMessage('');
+    }
+    async function saveChangedPassword() {
+      if (changingPassword || !ensureSupabase()) return;
+      const current = document.getElementById('change-password-current').value;
+      const next = document.getElementById('change-password-new').value;
+      const repeat = document.getElementById('change-password-repeat').value;
+      if (!current) return changePasswordMessage('Введите текущий пароль.', true);
+      if (next.length < 8) return changePasswordMessage('Новый пароль должен содержать минимум 8 символов.', true);
+      if (next !== repeat) return changePasswordMessage('Новые пароли не совпадают.', true);
+      if (current === next) return changePasswordMessage('Новый пароль должен отличаться от текущего.', true);
+      changingPassword = true;
+      const btn = document.getElementById('change-password-save');
+      btn.disabled = true;
+      btn.textContent = 'Проверяем пароль…';
+      try {
+        const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+        if (userError) throw userError;
+        const email = userData?.user?.email;
+        if (!email) throw new Error('Не удалось определить email текущего пользователя.');
+        const { error: signInError } = await supabaseClient.auth.signInWithPassword({ email, password: current });
+        if (signInError) throw new Error('Текущий пароль указан неверно.');
+        btn.textContent = 'Сохраняем новый пароль…';
+        const { error: updateError } = await supabaseClient.auth.updateUser({ password: next });
+        if (updateError) throw updateError;
+        document.getElementById('change-password-form').reset();
+        changePasswordMessage('Пароль успешно изменён. Используйте новый пароль при следующем входе.');
+        toast('Пароль успешно изменён');
+      } catch (error) {
+        console.error('[Check App] change password:', error);
+        changePasswordMessage(error?.message || 'Не удалось изменить пароль. Повторите попытку.', true);
+      } finally {
+        changingPassword = false;
+        btn.disabled = false;
+        btn.textContent = 'Сохранить новый пароль';
+      }
+    }
+
     function renderCabinet() {
       const notificationToggle = document.getElementById('cab-notifications-toggle');
       if (notificationToggle) notificationToggle.checked = maintenanceNotificationsEnabled();
