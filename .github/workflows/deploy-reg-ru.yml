@@ -33,12 +33,7 @@ jobs:
         run: |
           mkdir -p dist-mobile/app dist-mobile/downloads "$RUNNER_TEMP/check-app-apk"
           cp dist-mobile/index.html dist-mobile/app/index.html
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('dist-mobile/app/index.html')
-          html = path.read_text(encoding='utf-8')
-          path.write_text(html.replace('<head>', '<head>\\n  <base href="/" />', 1), encoding='utf-8')
-          PY
+          python3 -c 'from pathlib import Path; p=Path("dist-mobile/app/index.html"); s=p.read_text(encoding="utf-8"); p.write_text(s.replace("<head>", "<head>\\n  <base href=\\"/\\" />", 1), encoding="utf-8")'
           cp index.html dist-mobile/index.html
           gh release download v1.2.1 --repo "${{ github.repository }}" --pattern '*.apk' --dir "$RUNNER_TEMP/check-app-apk"
           APK_FILE=$(find "$RUNNER_TEMP/check-app-apk" -maxdepth 1 -type f -name '*.apk' -print -quit)
