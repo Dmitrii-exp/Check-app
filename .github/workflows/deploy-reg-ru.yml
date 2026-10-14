@@ -35,6 +35,8 @@ jobs:
           cp dist-mobile/index.html dist-mobile/app/index.html
           sed -i 's|<head>|<head><base href="/" />|' dist-mobile/app/index.html
           cp index.html dist-mobile/index.html
+          cp robots.txt sitemap.xml dist-mobile/
+          sed -i 's|<head>|<head><meta name="robots" content="noindex,nofollow" />|' dist-mobile/app/index.html
           gh release download v1.2.1 --repo "${{ github.repository }}" --pattern '*.apk' --dir "$RUNNER_TEMP/check-app-apk"
           APK_FILE=$(find "$RUNNER_TEMP/check-app-apk" -maxdepth 1 -type f -name '*.apk' -print -quit)
           test -n "$APK_FILE" || { echo '::error::No signed APK found in v1.2.1 release'; exit 1; }
