@@ -206,6 +206,8 @@
     }
     function getDeptActions() { return getCompany().actions.filter(a => a.departmentId === getActiveDeptId()); }
     function getDeptTasks(date) {
+      // An expired paid subscription pauses the task calendar, but never deletes stored tasks.
+      if (isPaidSubscriptionExpired()) return [];
       return getCompany().tasks.filter(t => {
         if ((t.date !== date && !(t.date < date && t.status !== 'done')) || t.departmentId !== getActiveDeptId()) return false;
         // hide pending tasks for frozen equipment
@@ -228,6 +230,13 @@
         }
       }
       return PLANS[sub.planId] || PLANS.free;
+    }
+
+    function isPaidSubscriptionExpired() {
+      if (isUnlimitedCompany) return false;
+      const sub = getCompany()?.subscription;
+      if (!sub || sub.planId === 'free') return false;
+      return !sub.expiresAt || new Date(sub.expiresAt).getTime() < Date.now();
     }
 
     function isSubActive() {
@@ -898,6 +907,8 @@
       const previous = JSON.parse(localStorage.getItem(MAINTENANCE_NOTIFICATION_IDS_KEY) || '[]');
       if (previous.length) await localNotifications.cancel({ notifications: previous.map(id => ({ id })) });
       localStorage.removeItem(MAINTENANCE_NOTIFICATION_IDS_KEY);
+      // Previously scheduled notifications were cancelled above; do not schedule new ones.
+      if (isPaidSubscriptionExpired()) return;
       const user = getUser();
       if (!user || !maintenanceNotificationsEnabled()) return;
       const permissions = await localNotifications.checkPermissions();
@@ -1237,6 +1248,8 @@
     }
 
     function generateTodayTasks() {
+      // Pause recurring work after expiry. Do not prune or rewrite existing tasks.
+      if (isPaidSubscriptionExpired()) return;
       const c = getCompany(); const today = todayStr();
       // Preserve overdue tasks until they are actually completed.
       c.tasks = c.tasks.filter(t => t.status === 'done' || t.date <= today);
