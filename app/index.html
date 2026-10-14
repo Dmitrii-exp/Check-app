@@ -356,6 +356,23 @@
           <ul id="app-update-changes" class="list-disc pl-5 text-sm text-slate-300 space-y-2"><li>Нажмите «Проверить обновления», чтобы посмотреть список изменений.</li></ul>
         </section>
 
+        <section class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5 space-y-3" aria-label="Безопасность аккаунта">
+          <h2 class="font-semibold text-lg">Безопасность аккаунта</h2>
+          <p class="text-sm text-[#a8b5c8]">Измените пароль для входа в Check App.</p>
+          <button type="button" onclick="openChangePassword()" class="bg-[#1c2a3d] hover:bg-slate-700 text-white text-sm font-medium px-5 py-3 rounded-2xl">Сменить пароль</button>
+        </section>
+        <div id="change-password-modal" class="fixed inset-0 bg-[#090e19]/95 z-[110] hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="change-password-title">
+          <form id="change-password-form" onsubmit="event.preventDefault(); saveChangedPassword()" class="w-full max-w-md bg-[#131e2d] border border-[#354359] rounded-2xl p-6 space-y-4">
+            <h2 id="change-password-title" class="text-xl font-bold">Смена пароля</h2>
+            <label class="block text-sm">Текущий пароль<input id="change-password-current" type="password" autocomplete="current-password" required class="block w-full mt-2 bg-[#090e19] border border-[#354359] rounded-2xl px-4 py-3"></label>
+            <label class="block text-sm">Новый пароль<input id="change-password-new" type="password" autocomplete="new-password" minlength="8" required class="block w-full mt-2 bg-[#090e19] border border-[#354359] rounded-2xl px-4 py-3"></label>
+            <label class="block text-sm">Повторите новый пароль<input id="change-password-repeat" type="password" autocomplete="new-password" minlength="8" required class="block w-full mt-2 bg-[#090e19] border border-[#354359] rounded-2xl px-4 py-3"></label>
+            <p id="change-password-message" role="status" aria-live="polite" class="text-sm min-h-[20px] text-[#a8b5c8]"></p>
+            <button id="change-password-save" type="submit" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-2xl">Сохранить новый пароль</button>
+            <button type="button" onclick="closeChangePassword()" class="w-full py-2 text-[#a8b5c8]">Отмена</button>
+          </form>
+        </div>
+
         <div class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5">
           <label for="cab-notifications-toggle" class="flex items-center justify-between gap-4 cursor-pointer">
             <span>
