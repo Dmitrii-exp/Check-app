@@ -16,3 +16,9 @@ local.properties
 # IDE
 .idea/
 *.iml
+
+# Build and local tooling output
+node_modules/
+dist-mobile/
+css/tailwind.css
+supabase/.temp/

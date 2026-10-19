@@ -77,7 +77,10 @@
         .from('profiles').select('*').eq('id', authUser.id).maybeSingle();
 
       if (profileError) throw profileError;
-      if (!profile) return false;
+      if (!profile) {
+        if (typeof restorePendingCompanyDeletion === 'function') await restorePendingCompanyDeletion();
+        return false;
+      }
 
       const { data: company, error: companyError } = await supabaseClient
         .from('companies').select('*').eq('id', profile.company_id).single();
@@ -130,6 +133,7 @@
     }
 
     async function syncCurrentCompany() {
+      if (typeof companyDeletionState !== 'undefined' && companyDeletionState?.pending) return;
       if (cloudSyncBusy) return;
       const companyId = db.currentUser?.company;
       const c = companyId ? db.companies[companyId] : null;
@@ -824,6 +828,7 @@
 
         setLoginLoading(true, 'Загружаем вашу компанию и оборудование…');
         let ok = await hydrateCurrentUser();
+        if (typeof companyDeletionState !== 'undefined' && companyDeletionState?.pending) return;
 
         // Если регистрация проходила с подтверждением email, сессия появилась
         // только после входа. В этом случае создаём компанию/профиль из
@@ -2037,6 +2042,7 @@
       const notificationToggle = document.getElementById('cab-notifications-toggle');
       if (notificationToggle) notificationToggle.checked = maintenanceNotificationsEnabled();
       const manager = getUser().role === 'manager';
+      document.getElementById('cab-delete-company')?.classList.toggle('hidden', !manager);
       document.getElementById('cab-subscription-details').classList.toggle('hidden', !manager);
       document.getElementById('cab-choose-plan').classList.toggle('hidden', !manager);
       document.getElementById('plans-section').classList.add('hidden');

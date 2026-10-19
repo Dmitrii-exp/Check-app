@@ -1,3 +1,7 @@
 [functions.robokassa-result]
 # Robokassa sends a signed webhook rather than a Supabase user JWT.
 verify_jwt = false
+
+[functions.delete-company]
+# Verify the current user with Auth inside the handler; public API keys are not user credentials.
+verify_jwt = false

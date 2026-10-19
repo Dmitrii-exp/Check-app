@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const CURRENT_VERSION = '1.2.1';
+  const CURRENT_VERSION = '1.2.2';
   const MANIFEST_URL = 'public/app-updates.json';
   const isNative = () => !!window.Capacitor?.isNativePlatform?.();
   const el = id => document.getElementById(id);

@@ -21,7 +21,7 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=20261010-redesign1" />
+  <link rel="stylesheet" href="css/styles.css?v=20261019-company-deletion" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/dist/umd/supabase.js"></script>
   <link rel="manifest" href="public/manifest.webmanifest" />
 </head>
@@ -345,7 +345,7 @@
         <h1 class="text-2xl font-bold">Личный кабинет</h1>
         <section class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5 space-y-3" aria-label="Обновления Check App">
           <h2 class="font-semibold text-lg">Обновления Check App</h2>
-          <p id="app-update-current" class="text-sm text-[#a8b5c8]">Версия приложения: 1.2.1</p>
+          <p id="app-update-current" class="text-sm text-[#a8b5c8]">Версия приложения: 1.2.2</p>
           <p id="app-update-latest" class="text-sm text-[#a8b5c8]">Информация о последней версии ещё не загружена</p>
           <p id="app-update-status" class="text-sm text-slate-300" role="status">Нажмите «Проверить обновления»</p>
           <div class="flex flex-wrap gap-2">
@@ -414,6 +414,12 @@
             <button onclick="openInfoModal('about')" class="w-full bg-[#1c2a3d] hover:bg-slate-700 text-white text-sm font-medium px-5 py-2.5 rounded-2xl transition">О приложении</button>
           </div>
         </div>
+
+        <section id="cab-delete-company" class="hidden bg-[#131e2d] rounded-2xl border border-rose-500/30 p-5 space-y-3" aria-labelledby="delete-company-section-title">
+          <h2 id="delete-company-section-title" class="font-semibold text-lg">Удаление компании</h2>
+          <p class="text-sm text-[#a8b5c8]">Безвозвратное удаление компании, её данных, фотографий и аккаунтов всех участников.</p>
+          <button id="delete-company-open" type="button" onclick="openCompanyDeletion()" class="delete-company-button">Удалить компанию</button>
+        </section>
 
         <div id="plans-section" class="hidden space-y-4">
           <h2 class="font-semibold text-lg">Тарифы</h2>
@@ -660,10 +666,26 @@
     </div>
   </div>
   <script src="js/onboarding.js?v=20261009-01"></script>
-  <script src="js/update-center.js?v=20261010-android-release"></script>
+  <script src="js/update-center.js?v=20261019-1.2.2"></script>
   <script src="js/photo-attachments.js?v=20261010-02"></script>
   <script src="js/consumables.js?v=20261010-03"></script>
-  <script src="js/app.js?v=20261013-one-time1"></script>
+  <dialog id="delete-company-dialog" class="check-danger-dialog" aria-labelledby="delete-company-title" aria-describedby="delete-company-description">
+    <form id="delete-company-form" novalidate onsubmit="event.preventDefault(); submitCompanyDeletion()">
+      <h2 id="delete-company-title" class="text-xl font-bold">Удалить компанию?</h2>
+      <p id="delete-company-name" class="delete-company-name"></p>
+      <p id="delete-company-description">Будут удалены все подразделения, оборудование, задачи, история работ и оплат в Check App, фотографии, подписка и аккаунты всех участников, включая ваш. Восстановить их не получится.</p>
+      <label for="delete-company-confirmation">Для подтверждения введите <strong>УДАЛИТЬ</strong></label>
+      <input id="delete-company-confirmation" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-describedby="delete-company-help delete-company-status" oninput="updateCompanyDeletionConfirmation()">
+      <p id="delete-company-help" class="delete-company-help">Кнопка станет доступна после ввода слова заглавными буквами.</p>
+      <p id="delete-company-status" class="delete-company-status" role="status" aria-live="polite"></p>
+      <div class="delete-company-actions">
+        <button id="delete-company-cancel" type="button" onclick="closeCompanyDeletion()" autofocus>Отмена</button>
+        <button id="delete-company-submit" type="submit" class="delete-company-button delete-company-solid" disabled>Удалить компанию</button>
+      </div>
+    </form>
+  </dialog>
+  <script src="js/company-deletion.js?v=20261019-01"></script>
+  <script src="js/app.js?v=20261019-company-deletion"></script>
   <script src="js/calendar.js?v=20260918-03"></script>
 </body>
 </html>

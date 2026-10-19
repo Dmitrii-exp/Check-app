@@ -25,6 +25,26 @@ button, a, select, input[type="checkbox"] { -webkit-tap-highlight-color: transpa
 button:not(:disabled) { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .55; }
 :focus-visible { outline: 2px solid var(--check-focus); outline-offset: 3px; }
+.delete-company-button { color: #fda4af; border: 1px solid #9f2547; background: transparent; border-radius: 1rem; padding: .75rem 1.25rem; font-weight: 600; min-height: 48px; }
+.delete-company-button:hover:not(:disabled) { background: #4c1426; }
+.delete-company-button:active:not(:disabled) { background: #6d1633; }
+.check-danger-dialog { color: var(--check-text); background: var(--check-surface); border: 1px solid #9f2547; border-radius: 1rem; padding: 1.5rem; width: min(32rem,calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; margin: auto; }
+.check-danger-dialog::backdrop { background: rgb(9 14 25 / .92); }
+.check-danger-dialog form { display: grid; gap: 1rem; }
+.check-danger-dialog label { font-size: .875rem; }
+.check-danger-dialog input { width: 100%; background: #090e19; border: 1px solid var(--check-border); border-radius: .75rem; padding: .75rem; }
+.check-danger-dialog input[aria-invalid="true"] { border-color: #fb7185; }
+.delete-company-name { font-weight: 600; overflow-wrap: anywhere; }
+#delete-company-description { color: var(--check-muted); font-size: .875rem; line-height: 1.6; }
+.delete-company-help { color: var(--check-muted); font-size: .75rem; }
+.delete-company-status { min-height: 3rem; font-size: .875rem; line-height: 1.5; }
+.delete-company-status[data-error="true"] { color: #fda4af; }
+.delete-company-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.delete-company-actions button { min-height: 48px; border-radius: 1rem; padding: .75rem; }
+#delete-company-cancel { background: var(--check-surface-raised); }
+#delete-company-cancel:hover:not(:disabled) { background: #354359; }
+.delete-company-solid { background: #be123c; border-color: #be123c; color: white; }
+.delete-company-solid:hover:not(:disabled) { background: #9f1239; }
 input, textarea, select { min-width: 0; }
 input::placeholder, textarea::placeholder { color: #8191a8; opacity: 1; }
 .fade-in { animation: checkFadeIn .22s ease-out both; }

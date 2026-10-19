@@ -37,9 +37,10 @@ jobs:
           cp index.html dist-mobile/index.html
           cp robots.txt sitemap.xml dist-mobile/
           sed -i 's|<head>|<head><meta name="robots" content="noindex,nofollow" />|' dist-mobile/app/index.html
-          gh release download v1.2.1 --repo "${{ github.repository }}" --pattern '*.apk' --dir "$RUNNER_TEMP/check-app-apk"
+          VERSION=$(node -p "require('./package.json').version")
+          gh release download "v$VERSION" --repo "${{ github.repository }}" --pattern '*.apk' --dir "$RUNNER_TEMP/check-app-apk"
           APK_FILE=$(find "$RUNNER_TEMP/check-app-apk" -maxdepth 1 -type f -name '*.apk' -print -quit)
-          test -n "$APK_FILE" || { echo '::error::No signed APK found in v1.2.1 release'; exit 1; }
+          test -n "$APK_FILE" || { echo "::error::No signed APK found in v$VERSION release"; exit 1; }
           cp "$APK_FILE" dist-mobile/downloads/Check-App.apk
           test -s dist-mobile/downloads/Check-App.apk
       - name: Check deploy credentials
