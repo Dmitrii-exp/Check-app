@@ -1,0 +1,10 @@
+# Always revalidate the application entry point so it selects current versioned scripts.
+<IfModule mod_expires.c>
+  ExpiresActive Off
+</IfModule>
+<IfModule mod_headers.c>
+  <FilesMatch "\\.html$">
+    Header unset Cache-Control
+    Header always set Cache-Control "no-store, max-age=0"
+  </FilesMatch>
+</IfModule>

@@ -1,0 +1,8 @@
+# Public application code must be checked for updates on each page load.
+<IfModule mod_expires.c>
+  ExpiresActive Off
+</IfModule>
+<IfModule mod_headers.c>
+  Header unset Cache-Control
+  Header always set Cache-Control "no-cache, must-revalidate"
+</IfModule>

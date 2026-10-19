@@ -12,6 +12,9 @@ for (const item of ['assets', 'css', 'js', 'public', 'docs']) {
 
 // The Android APK must always package the application, never the public landing page.
 fs.copyFileSync(path.join(root, 'app', 'index.html'), path.join(output, 'index.html'));
+// REG.RU serves /app/ separately; keep its HTML cache policy in the web bundle.
+fs.mkdirSync(path.join(output, 'app'), { recursive: true });
+fs.copyFileSync(path.join(root, 'app', '.htaccess'), path.join(output, 'app', '.htaccess'));
 
 // Bundle Supabase locally: Android WebView must not depend on a third-party CDN for login.
 const supabaseUmd = path.join(root, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js');
