@@ -750,7 +750,7 @@
     async function sendPasswordRecovery() {
       if (!ensureSupabase()) return;
       const email = document.getElementById('recovery-email').value.trim().toLowerCase();
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return recoveryMessage('Введите корректный Email.', true);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return recoveryMessage('Введите корректный Email.', true);
       const btn = document.getElementById('recovery-send');
       btn.disabled = true;
       try {
