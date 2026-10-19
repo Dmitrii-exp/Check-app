@@ -829,6 +829,32 @@
     }
     void initMobileRecoveryLinks();
 
+    async function handlePasswordRecoveryLink() {
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const tokenHash = params.get('token_hash');
+      if (params.get('type') !== 'recovery' || !tokenHash || !ensureSupabase()) return;
+      // Do not restore a different saved account while verifying the recovery link.
+      passwordRecoveryActive = true;
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+      openPasswordRecovery();
+      recoveryMessage('Проверяем ссылку восстановления…');
+      const button = document.getElementById('recovery-send');
+      button.disabled = true;
+      try {
+        await withAuthDeadline(async signal => {
+          const { error } = await supabaseClient.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+          checkAuthAttempt(signal);
+          if (error) throw error;
+          openPasswordRecovery(true);
+        });
+      } catch (error) {
+        passwordRecoveryActive = false;
+        openPasswordRecovery();
+        recoveryMessage('Ссылка восстановления недействительна или истекла. Запросите новое письмо.', true);
+      } finally { button.disabled = false; }
+    }
+
+
     if (supabaseClient) {
       supabaseClient.auth.onAuthStateChange((event) => {
         if (event === 'PASSWORD_RECOVERY') {
@@ -2330,6 +2356,7 @@
       return restoringWebsiteSession;
     }
     void restoreWebsiteSession();
+    void handlePasswordRecoveryLink();
     window.addEventListener('pageshow', event => {
       if (event.persisted) void restoreWebsiteSession();
     });

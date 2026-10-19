@@ -5,3 +5,7 @@ verify_jwt = false
 [functions.delete-company]
 # Verify the current user with Auth inside the handler; public API keys are not user credentials.
 verify_jwt = false
+
+[functions.send-auth-email]
+# Supabase Auth authenticates this hook with a Standard Webhooks signature.
+verify_jwt = false

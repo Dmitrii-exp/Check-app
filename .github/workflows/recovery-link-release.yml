@@ -1,0 +1,68 @@
+name: Deploy password recovery links
+
+on:
+  push:
+    branches: [codex/recovery-link-release]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-app-reg-ru-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+      - name: Build production website
+        run: npm run build:mobile
+      - name: Audit JavaScript
+        run: node scripts/audit-js.mjs
+      - name: Prepare public landing, web application and direct APK download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist-mobile/app dist-mobile/downloads "$RUNNER_TEMP/check-app-apk"
+          cp dist-mobile/index.html dist-mobile/app/index.html
+          sed -i 's|<head>|<head><base href="/" />|' dist-mobile/app/index.html
+          cp index.html dist-mobile/index.html
+          cp robots.txt sitemap.xml dist-mobile/
+          sed -i 's|<head>|<head><meta name="robots" content="noindex,nofollow" />|' dist-mobile/app/index.html
+          VERSION=$(node -p "require('./package.json').version")
+          gh release download "v$VERSION" --repo "${{ github.repository }}" --pattern '*.apk' --dir "$RUNNER_TEMP/check-app-apk"
+          APK_FILE=$(find "$RUNNER_TEMP/check-app-apk" -maxdepth 1 -type f -name '*.apk' -print -quit)
+          test -n "$APK_FILE" || { echo "::error::No signed APK found in v$VERSION release"; exit 1; }
+          cp "$APK_FILE" dist-mobile/downloads/Check-App.apk
+          test -s dist-mobile/downloads/Check-App.apk
+      - name: Check deploy credentials
+        env:
+          FTP_HOST: ${{ secrets.REG_FTP_HOST }}
+          FTP_USER: ${{ secrets.REG_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.REG_FTP_PASSWORD }}
+        run: |
+          for value in "$FTP_HOST" "$FTP_USER" "$FTP_PASSWORD"; do
+            if [ -z "$value" ]; then
+              echo "::error::REG_FTP_HOST, REG_FTP_USER and REG_FTP_PASSWORD are required"
+              exit 1
+            fi
+          done
+      - name: Upload website over verified FTPS
+        env:
+          REG_FTP_HOST: ${{ secrets.REG_FTP_HOST }}
+          REG_FTP_USER: ${{ secrets.REG_FTP_USER }}
+          REG_FTP_PASSWORD: ${{ secrets.REG_FTP_PASSWORD }}
+        run: python3 scripts/deploy-reg-ru.py
+      - name: Summary
+        run: |
+          echo 'Uploaded Check App files to dedicated REG.RU FTP root.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'DNS was not changed. Verify site and Supabase before switching DNS.' >> "$GITHUB_STEP_SUMMARY"
