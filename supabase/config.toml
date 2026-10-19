@@ -1,0 +1,3 @@
+[functions.robokassa-result]
+# Robokassa sends a signed webhook rather than a Supabase user JWT.
+verify_jwt = false
