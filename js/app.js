@@ -3,8 +3,51 @@
     // =========================
     const SUPABASE_URL = 'https://qaxoufarhpagcjkhptga.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ZMXWb57L46oreSiZJvCe5Q_JXG-IC-u';
+    // Bound actual network I/O, including session refresh and profile requests.
+    async function fetchWithTimeout(input, options = {}) {
+      const controller = new AbortController();
+      const upstream = options.signal || input?.signal;
+      const abort = () => controller.abort();
+      if (upstream?.aborted) abort();
+      upstream?.addEventListener('abort', abort, { once: true });
+      const url = typeof input === 'string' ? input : input.url;
+      const timer = setTimeout(abort, /\/(auth|rest)\/v1\//.test(url) ? 20000 : 60000);
+      try {
+        return await fetch(input, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+        upstream?.removeEventListener('abort', abort);
+      }
+    }
+    function checkAuthAttempt(signal) {
+      if (signal?.aborted) throw signal.reason || new Error('Время ожидания входа истекло. Повторите вход.');
+    }
+    let activeAuthAttempt = null;
+    async function withAuthDeadline(operation, milliseconds = 30000) {
+      if (activeAuthAttempt) {
+        const superseded = new Error('Вход заменён новой попыткой.');
+        superseded.code = 'AUTH_SUPERSEDED';
+        activeAuthAttempt.abort(superseded);
+      }
+      const controller = new AbortController();
+      activeAuthAttempt = controller;
+      let timer;
+      try {
+        return await Promise.race([
+          Promise.resolve().then(() => operation(controller.signal)),
+          new Promise((_, reject) => {
+            controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true });
+            timer = setTimeout(() => controller.abort(new Error('Не удалось завершить вход за 30 секунд. Проверьте соединение, смените Wi-Fi на мобильную сеть и повторите вход.')), milliseconds);
+          })
+        ]);
+      } finally {
+        clearTimeout(timer);
+        if (activeAuthAttempt === controller) activeAuthAttempt = null;
+      }
+    }
     const supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
       ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+          global: { fetch: fetchWithTimeout },
           auth: {
             persistSession: true,
             autoRefreshToken: true,
@@ -68,14 +111,17 @@
       return false;
     }
 
-    async function hydrateCurrentUser() {
+    async function hydrateCurrentUser(signal) {
+      checkAuthAttempt(signal);
       const { data: authData } = await supabaseClient.auth.getUser();
+      checkAuthAttempt(signal);
       const authUser = authData?.user;
       if (!authUser) return false;
 
       const { data: profile, error: profileError } = await supabaseClient
         .from('profiles').select('*').eq('id', authUser.id).maybeSingle();
 
+      checkAuthAttempt(signal);
       if (profileError) throw profileError;
       if (!profile) {
         if (typeof restorePendingCompanyDeletion === 'function') await restorePendingCompanyDeletion();
@@ -84,6 +130,7 @@
 
       const { data: company, error: companyError } = await supabaseClient
         .from('companies').select('*').eq('id', profile.company_id).single();
+      checkAuthAttempt(signal);
       if (companyError) throw companyError;
 
       const [
@@ -103,6 +150,7 @@
         supabaseClient.from('subscriptions').select('*').eq('company_id', company.id).maybeSingle(),
         supabaseClient.from('profiles').select('*').eq('company_id', company.id).order('created_at')
       ]);
+      checkAuthAttempt(signal);
       const firstError = [dErr,eErr,aErr,tErr,cErr,sErr,pErr].find(Boolean);
       if (firstError) throw firstError;
 
@@ -120,12 +168,15 @@
       db.currentUser = { company: company.id, email: authUser.email || '', role: profile.role, id: authUser.id };
       try {
         const { data: adminData, error: adminError } = await supabaseClient.rpc('is_super_admin');
+        checkAuthAttempt(signal);
         isSuperAdmin = !adminError && adminData === true;
-      } catch (_) { isSuperAdmin = false; }
+      } catch (_) { checkAuthAttempt(signal); isSuperAdmin = false; }
       try {
         const { data: unlimitedData, error: unlimitedError } = await supabaseClient.rpc('current_company_is_unlimited');
+        checkAuthAttempt(signal);
         isUnlimitedCompany = !unlimitedError && unlimitedData === true;
-      } catch (_) { isUnlimitedCompany = false; }
+      } catch (_) { checkAuthAttempt(signal); isUnlimitedCompany = false; }
+      checkAuthAttempt(signal);
       currentDeptId = profile.role === 'manager'
         ? ((departments || [])[0]?.id || null)
         : profile.department_id;
@@ -808,43 +859,33 @@
       loginInProgress = true;
       setLoginLoading(true, 'Проверяем данные для входа…');
       try {
-        const authRequest = supabaseClient.auth.signInWithPassword({ email, password });
-        // A network request may hang indefinitely on some Android networks/WebViews.
-        // Show an actionable error and always release the login button.
-        let timeoutHandle;
-        let authResult;
-        try {
-          authResult = await Promise.race([
-            authRequest,
-            new Promise((_, reject) => {
-              timeoutHandle = setTimeout(() => reject(new Error('Сервер авторизации не отвечает (20 секунд). Проверьте интернет, попробуйте другую сеть или VPN и повторите вход.')), 20000);
-            })
-          ]);
-        } finally {
-          clearTimeout(timeoutHandle);
-        }
-        const { error } = authResult;
-        if (error) throw error;
+        await withAuthDeadline(async (signal) => {
+          const authRequest = supabaseClient.auth.signInWithPassword({ email, password });
+          const authResult = await authRequest;
+          checkAuthAttempt(signal);
+          const { error } = authResult;
+          if (error) throw error;
 
-        setLoginLoading(true, 'Загружаем вашу компанию и оборудование…');
-        let ok = await hydrateCurrentUser();
-        if (typeof companyDeletionState !== 'undefined' && companyDeletionState?.pending) return;
+          setLoginLoading(true, 'Загружаем вашу компанию и оборудование…');
+          let ok = await hydrateCurrentUser(signal);
+          if (typeof companyDeletionState !== 'undefined' && companyDeletionState?.pending) return;
 
-        // Если регистрация проходила с подтверждением email, сессия появилась
-        // только после входа. В этом случае создаём компанию/профиль из
-        // user_metadata, сохранённых при signUp().
-        if (!ok) {
-          const { data: userData, error: userError } = await supabaseClient.auth.getUser();
-          if (userError) throw userError;
+          // Если регистрация проходила с подтверждением email, сессия появилась
+          // только после входа. В этом случае создаём компанию/профиль из
+          // user_metadata, сохранённых при signUp().
+          if (!ok) {
+            const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+            checkAuthAttempt(signal);
+            if (userError) throw userError;
 
-          const meta = userData.user?.user_metadata || {};
-          if (meta.signup_mode === 'register' && meta.company_name && meta.name) {
-            const { error: bootstrapError } = await supabaseClient.rpc('bootstrap_company', {
-              p_company_name: meta.company_name,
-              p_department_name: 'Основное',
-              p_invite_code: meta.invite_code || generateCode(),
-              p_name: meta.name,
-              p_phone: null
+            const meta = userData.user?.user_metadata || {};
+            if (meta.signup_mode === 'register' && meta.company_name && meta.name) {
+              const { error: bootstrapError } = await supabaseClient.rpc('bootstrap_company', {
+                p_company_name: meta.company_name,
+                p_department_name: 'Основное',
+                p_invite_code: meta.invite_code || generateCode(),
+                p_name: meta.name,
+                p_phone: null
             });
             if (bootstrapError) throw bootstrapError;
           } else if (meta.signup_mode === 'invite' && meta.invite_code && meta.name) {
@@ -856,8 +897,9 @@
             if (joinError) throw joinError;
           }
 
+          checkAuthAttempt(signal);
           setLoginLoading(true, 'Подключаем профиль к компании…');
-          ok = await hydrateCurrentUser();
+          ok = await hydrateCurrentUser(signal);
         }
 
         if (!ok) {
@@ -866,8 +908,11 @@
         }
 
         // Компания определяется по профилю пользователя в Supabase.
+        checkAuthAttempt(signal);
         enterApp();
+        });
       } catch (e) {
+        if (e.code === 'AUTH_SUPERSEDED') return;
         console.error(e);
         showError(e.message || 'Ошибка входа.');
       } finally {
@@ -2252,21 +2297,30 @@
           window.location.hash.includes('type=recovery') ||
           window.location.search.includes('type=recovery')) return;
       if (!document.getElementById('app-screen').classList.contains('hidden')) return;
+      if (loginInProgress) return;
       if (restoringWebsiteSession) return restoringWebsiteSession;
       restoringWebsiteSession = (async () => {
         try {
-          const { data, error } = await supabaseClient.auth.getSession();
-          if (error) throw error;
-          if (!data?.session) return;
-          // getUser validates and refreshes the current identity before restoring UI.
-          const { data: identity, error: identityError } = await supabaseClient.auth.getUser();
-          if (identityError || !identity?.user) return;
-          const ok = await hydrateCurrentUser();
-          if (ok && !passwordRecoveryActive) {
-            enterApp();
-            await handlePaymentReturn();
-          }
+          await withAuthDeadline(async (signal) => {
+            const { data, error } = await supabaseClient.auth.getSession();
+            checkAuthAttempt(signal);
+            if (loginInProgress) return;
+            if (error) throw error;
+            if (!data?.session) return;
+            // getUser validates and refreshes the current identity before restoring UI.
+            const { data: identity, error: identityError } = await supabaseClient.auth.getUser();
+            checkAuthAttempt(signal);
+            if (loginInProgress) return;
+            if (identityError || !identity?.user) return;
+            const ok = await hydrateCurrentUser(signal);
+            checkAuthAttempt(signal);
+            if (ok && !passwordRecoveryActive && !loginInProgress) {
+              enterApp();
+              await handlePaymentReturn();
+            }
+          });
         } catch (e) {
+          if (e.code === 'AUTH_SUPERSEDED') return;
           console.error('Check App session restoration error:', e);
           showError('Не удалось восстановить вход. Проверьте интернет и попробуйте снова.');
         } finally {
