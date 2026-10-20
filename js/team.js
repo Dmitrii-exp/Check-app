@@ -10,12 +10,19 @@ async function companyInvitationRequest(body){
  if(error){let message=data?.error;try{message=(await error.context.json()).error||message;}catch(_){}throw new Error(message||'Не удалось связаться с сервером. Повторите попытку.');}
  if(data?.error)throw new Error(data.error);return data;
 }
+function validateTeamFields(ids,statusId){
+ let first=null;
+ ids.forEach(id=>{const field=document.getElementById(id);field.removeAttribute('aria-invalid');field.setAttribute('aria-describedby',statusId);if(!field.validity.valid){field.setAttribute('aria-invalid','true');if(!first)first=field;}});
+ if(!first)return true;
+ const message=first.type==='email'?'Введите корректный email.':first.type==='password'?'Пароль должен содержать от 8 до 256 символов.':first.tagName==='SELECT'?'Выберите подразделение.':'Укажите имя.';
+ teamMessage(statusId,message,true);first.focus();return false;
+}
 function requireTeamOwner(){return getUser()?.role==='manager';}
 function setTeamInviteBusy(busy){teamInviteBusy=busy;['team-invite-email','invite-dept-select','team-invite-prepare','team-invite-send'].forEach(id=>document.getElementById(id).disabled=busy);document.getElementById('team-invite-form').setAttribute('aria-busy',String(busy));}
 function clearPreparedTeamInvitation(){if(teamInviteBusy)return;preparedTeamInvitation=null;document.getElementById('team-invite-prepared').classList.add('hidden');}
 async function prepareTeamInvitation(){
  if(!requireTeamOwner()||teamInviteBusy)return;
- const form=document.getElementById('team-invite-form');if(!form.reportValidity())return;
+ if(!validateTeamFields(['team-invite-email','invite-dept-select'],'team-invite-status'))return;
  clearPreparedTeamInvitation();setTeamInviteBusy(true);teamMessage('team-invite-status','Подготовка приглашения…');
  try{const response=await companyInvitationRequest({mode:'create',email:document.getElementById('team-invite-email').value.trim(),department_id:document.getElementById('invite-dept-select').value});preparedTeamInvitation=response.data;
  document.getElementById('team-invite-prepared-label').textContent='Приглашение подготовлено для '+preparedTeamInvitation.email+'. Подразделение: '+preparedTeamInvitation.department_name+'.';
@@ -68,7 +75,7 @@ function openTeamRole(id){
 function closeTeamRole(){if(!teamRoleBusy)document.getElementById('team-role-dialog').close();}
 async function saveTeamRole(){
  if(!requireTeamOwner()||!teamRoleTarget||teamRoleBusy)return;
- const dialog=document.getElementById('team-role-dialog');if(!dialog.querySelector('form').reportValidity())return;
+ const dialog=document.getElementById('team-role-dialog');if(document.getElementById('team-role').value!=='manager'&&!validateTeamFields(['team-role-dept'],'team-role-status'))return;
  teamRoleBusy=true;dialog.setAttribute('aria-busy','true');['team-role','team-role-dept','team-role-save','team-role-cancel'].forEach(id=>document.getElementById(id).disabled=true);teamMessage('team-role-status','Сохраняем роль…');
  try{const role=document.getElementById('team-role').value;const {error}=await supabaseClient.rpc('set_company_member_role',{p_user_id:teamRoleTarget,p_role:role,p_department_id:role==='manager'?null:document.getElementById('team-role-dept').value});if(error)throw error;
  await hydrateCurrentUser();dialog.close();enterApp();if(requireTeamOwner())showPage('team');toast('Роль обновлена');
@@ -88,9 +95,9 @@ async function initEmailInvitation(){
 function leaveEmailInvitation(){if(emailInvitationBusy)return;emailInvitationToken=null;emailInvitationInfo=null;window.emailInvitationActive=false;document.getElementById('email-invite-password').value='';document.getElementById('email-invite-repeat').value='';document.getElementById('email-invite-fields').classList.add('hidden');switchAuthTab('login');}
 async function acceptEmailInvitation(){
  if(emailInvitationBusy||!emailInvitationToken||!emailInvitationInfo)return;
- const form=document.getElementById('form-invite');if(!form.reportValidity())return;
+ const form=document.getElementById('form-invite');if(!validateTeamFields(['email-invite-name','email-invite-password',...(!emailInvitationInfo.existing_account?['email-invite-repeat']:[])],'email-invite-status'))return;
  const password=document.getElementById('email-invite-password').value,repeat=document.getElementById('email-invite-repeat').value;
- if(!emailInvitationInfo.existing_account&&password!==repeat)return teamMessage('email-invite-status','Пароли не совпадают',true);
+ if(!emailInvitationInfo.existing_account&&password!==repeat){teamMessage('email-invite-status','Пароли не совпадают',true);document.getElementById('email-invite-repeat').setAttribute('aria-invalid','true');document.getElementById('email-invite-repeat').focus();return;}
  emailInvitationBusy=true;form.setAttribute('aria-busy','true');form.querySelectorAll('button,input').forEach(b=>b.disabled=true);teamMessage('email-invite-status','Присоединяемся к компании…');
  try{const response=await companyInvitationRequest({mode:'accept',token:emailInvitationToken,name:document.getElementById('email-invite-name').value.trim(),password,password_repeat:repeat});
  emailInvitationToken=null;window.emailInvitationActive=false;document.getElementById('email-invite-password').value='';document.getElementById('email-invite-repeat').value='';

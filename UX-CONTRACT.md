@@ -38,3 +38,5 @@ Invitation and role feedback stays next to the action. No optimistic acceptance 
 role change. Failure preserves form values; busy states prevent duplicate submits.
 Invitation tokens stay in memory after removing the URL fragment; never store
 passwords or invitation links in localStorage. Legacy shared-code joining is revoked.
+
+Team and recipient forms use novalidate and inline Russian validation. Required, email and password constraints are checked without native bubbles; invalid fields reference live feedback and focus moves to the first invalid field.

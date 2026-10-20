@@ -1,4 +1,4 @@
-# Email invitations and roles — 1.2.5
+# Email invitations and roles — 1.2.6
 
 Implemented 2026-10-20 against Dmitrii-exp/K2-trener invitation behavior.
 
@@ -47,3 +47,5 @@ Supabase advisor flags private tables with RLS/no client policies (intentional
 server-only access) and authenticated SECURITY DEFINER RPCs (intentional, internal
 identity/scope/role checks). Existing leaked-password protection is disabled;
 no Auth security setting was changed by this release.
+
+Premium static audit: newly added forms declare app-owned inline validation; legacy date/select ownership, existing forms/textarea and update-button findings remain outside this change.

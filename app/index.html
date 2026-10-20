@@ -21,7 +21,7 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=20261020-1.2.5" />
+  <link rel="stylesheet" href="css/styles.css?v=20261020-1.2.6" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/dist/umd/supabase.js"></script>
   <link rel="manifest" href="public/manifest.webmanifest" />
 </head>
@@ -94,7 +94,7 @@
         <button onclick="doRegister()" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-semibold py-3.5 rounded-2xl transition shadow-lg shadow-primary-600/20">Зарегистрировать компанию</button>
       </div>
 
-      <form id="form-invite" class="space-y-4 hidden fade-in" onsubmit="event.preventDefault(); acceptEmailInvitation()">
+      <form novalidate id="form-invite" class="space-y-4 hidden fade-in" onsubmit="event.preventDefault(); acceptEmailInvitation()">
         <h1 class="text-xl font-bold">Приглашение в компанию</h1>
         <p id="email-invite-context" class="text-sm text-[#a8b5c8]">Откройте персональную ссылку из письма. Приглашение отправляет руководитель сети.</p>
         <div id="email-invite-fields" class="hidden space-y-4">
@@ -276,7 +276,7 @@
 
       <div id="page-team" class="page hidden space-y-6 fade-in">
         <h1 class="text-2xl font-bold">Команда</h1>
-        <form id="team-invite-form" class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5 space-y-3" onsubmit="event.preventDefault(); prepareTeamInvitation()">
+        <form novalidate id="team-invite-form" class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5 space-y-3" onsubmit="event.preventDefault(); prepareTeamInvitation()">
           <h2 class="font-semibold">Пригласить сотрудника</h2>
           <p class="text-sm text-[#a8b5c8]">Персональная ссылка придёт на email сотрудника и будет действовать 7 дней. По умолчанию приглашённый становится сотрудником.</p>
           <div><label for="team-invite-email" class="block text-sm mb-1">Email сотрудника</label><input id="team-invite-email" type="email" required maxlength="254" autocomplete="off" class="team-input" placeholder="employee@company.ru"></div>
@@ -334,7 +334,7 @@
         <h1 class="text-2xl font-bold">Личный кабинет</h1>
         <section class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5 space-y-3" aria-label="Обновления Check App">
           <h2 class="font-semibold text-lg">Обновления Check App</h2>
-          <p id="app-update-current" class="text-sm text-[#a8b5c8]">Версия приложения: 1.2.5</p>
+          <p id="app-update-current" class="text-sm text-[#a8b5c8]">Версия приложения: 1.2.6</p>
           <p id="app-update-latest" class="text-sm text-[#a8b5c8]">Информация о последней версии ещё не загружена</p>
           <p id="app-update-status" class="text-sm text-slate-300" role="status">Нажмите «Проверить обновления»</p>
           <div class="flex flex-wrap gap-2">
@@ -655,9 +655,9 @@
     </div>
   </div>
   <script src="js/onboarding.js?v=20261009-01"></script>
-  <script src="js/update-center.js?v=20261019-1.2.5"></script>
-  <script src="js/photo-attachments.js?v=20261020-1.2.5"></script>
-  <script src="js/consumables.js?v=20261020-1.2.5"></script>
+  <script src="js/update-center.js?v=20261019-1.2.6"></script>
+  <script src="js/photo-attachments.js?v=20261020-1.2.6"></script>
+  <script src="js/consumables.js?v=20261020-1.2.6"></script>
   <dialog id="delete-company-dialog" class="check-danger-dialog" aria-labelledby="delete-company-title" aria-describedby="delete-company-description">
     <form id="delete-company-form" novalidate onsubmit="event.preventDefault(); submitCompanyDeletion()">
       <h2 id="delete-company-title" class="text-xl font-bold">Удалить компанию?</h2>
@@ -675,7 +675,7 @@
   </dialog>
   <script src="js/company-deletion.js?v=20261019-01"></script>
   <dialog id="team-role-dialog" class="check-danger-dialog team-dialog" aria-labelledby="team-role-title">
-    <form onsubmit="event.preventDefault(); saveTeamRole()">
+    <form novalidate onsubmit="event.preventDefault(); saveTeamRole()">
       <h2 id="team-role-title" class="text-xl font-bold">Роль участника</h2><p id="team-role-name"></p>
       <label for="team-role">Роль</label><select id="team-role" class="team-input" onchange="updateTeamRoleFields()"><option value="employee">Сотрудник</option><option value="responsible">Руководитель подразделения</option><option value="manager">Руководитель сети</option></select>
       <div id="team-role-dept-wrap"><label for="team-role-dept">Подразделение</label><select id="team-role-dept" class="team-input"></select></div>
@@ -684,10 +684,10 @@
     </form>
   </dialog>
   <dialog id="team-remove-dialog" class="check-danger-dialog" aria-labelledby="team-remove-title">
-    <form onsubmit="event.preventDefault(); confirmTeamMemberRemoval()"><h2 id="team-remove-title" class="text-xl font-bold">Удалить участника из компании?</h2><p id="team-remove-name"></p><p class="text-sm text-[#a8b5c8]">Участник потеряет доступ к данным компании. История выполненных работ сохранится. Для повторного присоединения понадобится новое приглашение.</p><p id="team-remove-status" class="team-status" role="status" aria-live="polite"></p><div class="delete-company-actions"><button id="team-remove-cancel" type="button" onclick="closeTeamMemberRemoval()" autofocus>Отмена</button><button id="team-remove-confirm" type="submit" class="delete-company-button delete-company-solid">Удалить из компании</button></div></form>
+    <form novalidate onsubmit="event.preventDefault(); confirmTeamMemberRemoval()"><h2 id="team-remove-title" class="text-xl font-bold">Удалить участника из компании?</h2><p id="team-remove-name"></p><p class="text-sm text-[#a8b5c8]">Участник потеряет доступ к данным компании. История выполненных работ сохранится. Для повторного присоединения понадобится новое приглашение.</p><p id="team-remove-status" class="team-status" role="status" aria-live="polite"></p><div class="delete-company-actions"><button id="team-remove-cancel" type="button" onclick="closeTeamMemberRemoval()" autofocus>Отмена</button><button id="team-remove-confirm" type="submit" class="delete-company-button delete-company-solid">Удалить из компании</button></div></form>
   </dialog>
-  <script src="js/team.js?v=20261020-1.2.5"></script>
-  <script src="js/app.js?v=20261020-1.2.5"></script>
+  <script src="js/team.js?v=20261020-1.2.6"></script>
+  <script src="js/app.js?v=20261020-1.2.6"></script>
   <script src="js/calendar.js?v=20260918-03"></script>
 </body>
 </html>
