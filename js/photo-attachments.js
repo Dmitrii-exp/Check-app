@@ -93,10 +93,11 @@ function checkOpenReplacePhoto(kind,id){
   if(!company||!user||!['equipment','consumable'].includes(kind))return;
   let record;
   if(kind==='equipment'){
+    if(!canManageDepartment(getActiveDeptId()))return toast('Недостаточно прав');
     record=company.equipment.find(e=>e.id===id&&e.departmentId===getActiveDeptId());
   }else{
     record=consumablesRows.find(e=>e.id===id);
-    const allowed=record&&(user.role==='manager'||(record.created_by===user.id&&record.status==='needed'));
+    const allowed=record&&(user.role==='manager'||(user.role==='responsible'&&record.created_by===user.id&&record.status==='needed'));
     if(!allowed)record=null;
   }
   if(!record)return toast('Нет доступа к этой записи');
@@ -118,6 +119,8 @@ async function checkSaveReplacePhoto(){
   const file=document.getElementById('replace-photo-file').files?.[0];
   if(!file)return toast('Выберите фотографию');
   const target=checkReplacePhotoTarget;
+  if(target.kind==='equipment'&&!canManageDepartment(target.departmentId))return toast('Недостаточно прав');
+  if(target.kind==='consumable'&&getUser()?.role==='employee')return toast('Недостаточно прав');
   const scope=consumablesScope();
   if(scope.companyId!==target.companyId||scope.departmentId!==target.departmentId)return toast('Подразделение изменилось. Повторите операцию');
   const bucket=target.kind==='equipment'?'equipment-photos':'consumable-photos';

@@ -78,8 +78,6 @@
     let currentPhotoFile = null;
     let currentCompleteTaskId = null;
     let currentDeptId = null;
-    let cloudSyncTimer = null;
-    let cloudSyncBusy = false;
 
     function loadDB() {
       // Business data is now loaded from Supabase after authentication.
@@ -88,10 +86,7 @@
       return { companies: {}, currentUser: null };
     }
 
-    function saveDB() {
-      clearTimeout(cloudSyncTimer);
-      cloudSyncTimer = setTimeout(() => syncCurrentCompany().catch(console.error), 250);
-    }
+    // Each mutation is sent explicitly. Never bulk-upsert a stale client snapshot.
 
     function uid() {
       if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -133,6 +128,10 @@
       checkAuthAttempt(signal);
       if (companyError) throw companyError;
 
+      const {error: dueError} = await supabaseClient.rpc('ensure_due_maintenance_tasks');
+      if (dueError) throw dueError;
+      const {data: workLimits, error: limitsError} = await supabaseClient.rpc('get_current_work_limits');
+      if (limitsError) throw limitsError;
       const [
         { data: departments, error: dErr },
         { data: equipment, error: eErr },
@@ -147,7 +146,7 @@
         supabaseClient.from('maintenance_actions').select('*').eq('company_id', company.id).order('created_at'),
         supabaseClient.from('tasks').select('*').eq('company_id', company.id).order('date'),
         supabaseClient.from('completions').select('*').eq('company_id', company.id).order('date', { ascending:false }),
-        supabaseClient.from('subscriptions').select('*').eq('company_id', company.id).maybeSingle(),
+        profile.role === 'manager' ? supabaseClient.from('subscriptions').select('*').eq('company_id', company.id).maybeSingle() : Promise.resolve({data:null,error:null}),
         supabaseClient.from('profiles').select('*').eq('company_id', company.id).order('created_at')
       ]);
       checkAuthAttempt(signal);
@@ -163,7 +162,8 @@
         tasks: (tasks || []).map(t => ({id:t.id, actionId:t.action_id, equipmentId:t.equipment_id, assignedUserId:t.assigned_user_id, departmentId:t.department_id, date:t.date, status:t.status, title:t.title, equipName:t.equip_name || '', equipCode:t.equip_code || '', description:t.description || '', blockedComment:t.blocked_comment || '', blockedWorkerName:t.blocked_worker_name || '', blockedAt:t.blocked_at || null})),
         completions: (completions || []).map(c => ({id:c.id, taskId:c.task_id, actionId:c.action_id, equipmentId:c.equipment_id, departmentId:c.department_id, userId:c.user_id, title:c.title, equipName:c.equip_name || '', date:c.date, time:c.time || '', photoPath:c.photo_path || '', photo:'', comment:c.comment || '', workerName:c.worker_name || ''})),
         users: (profiles || []).map(u => ({id:u.id, name:u.name, email:(u.id === authUser.id ? (authUser.email || '') : ''), phone:u.phone || '', role:u.role, departmentId:u.department_id})),
-        subscription: subscriptions ? {planId:subscriptions.plan_id, startedAt:subscriptions.started_at, expiresAt:subscriptions.expires_at} : {planId:'free', expiresAt:null}
+        workLimits,
+        subscription: subscriptions ? {planId:subscriptions.plan_id, startedAt:subscriptions.started_at, expiresAt:subscriptions.expires_at} : null
       };
       db.currentUser = { company: company.id, email: authUser.email || '', role: profile.role, id: authUser.id };
       try {
@@ -172,9 +172,10 @@
         isSuperAdmin = !adminError && adminData === true;
       } catch (_) { checkAuthAttempt(signal); isSuperAdmin = false; }
       try {
+        if(profile.role !== 'manager') { isUnlimitedCompany=false; } else {
         const { data: unlimitedData, error: unlimitedError } = await supabaseClient.rpc('current_company_is_unlimited');
         checkAuthAttempt(signal);
-        isUnlimitedCompany = !unlimitedError && unlimitedData === true;
+        isUnlimitedCompany = !unlimitedError && unlimitedData === true; }
       } catch (_) { checkAuthAttempt(signal); isUnlimitedCompany = false; }
       checkAuthAttempt(signal);
       currentDeptId = profile.role === 'manager'
@@ -183,36 +184,6 @@
       return true;
     }
 
-    async function syncCurrentCompany() {
-      if (typeof companyDeletionState !== 'undefined' && companyDeletionState?.pending) return;
-      if (cloudSyncBusy) return;
-      const companyId = db.currentUser?.company;
-      const c = companyId ? db.companies[companyId] : null;
-      if (!c) return;
-      cloudSyncBusy = true;
-      try {
-        const operations = [
-          ['подразделения', c.departments?.length ? supabaseClient.from('departments').upsert(c.departments.map(d => ({id:d.id, company_id:c.id, name:d.name, invite_code:d.inviteCode})), {onConflict:'id'}) : null],
-          ['профили', c.users?.length ? supabaseClient.from('profiles').upsert(c.users.map(u => ({id:u.id, company_id:c.id, department_id:u.departmentId || null, name:u.name, phone:u.phone || null, role:u.role})), {onConflict:'id'}) : null],
-          ['оборудование', c.equipment?.length ? supabaseClient.from('equipment').upsert(c.equipment.map(e => ({id:e.id, company_id:c.id, department_id:e.departmentId, name:e.name, code:e.code || null, location:e.location || null})), {onConflict:'id'}) : null],
-          ['регламенты', c.actions?.length ? supabaseClient.from('maintenance_actions').upsert(c.actions.map(a => ({id:a.id, company_id:c.id, department_id:a.departmentId, equipment_id:a.equipmentId, name:a.name, description:a.description || null, frequency:a.frequency})), {onConflict:'id'}) : null],
-          ['задания', c.tasks?.length ? supabaseClient.from('tasks').upsert(c.tasks.map(t => ({id:t.id, company_id:c.id, department_id:t.departmentId, action_id:t.actionId || null, equipment_id:t.equipmentId || null, assigned_user_id:t.assignedUserId || null, date:t.date, status:t.status, title:t.title, equip_name:t.equipName || null, equip_code:t.equipCode || null, description:t.description || null, blocked_comment:t.blockedComment || null, blocked_worker_name:t.blockedWorkerName || null, blocked_at:t.blockedAt || null})), {onConflict:'id'}) : null],
-          ['выполнения', c.completions?.length ? supabaseClient.from('completions').upsert(c.completions.map(x => ({id:x.id, company_id:c.id, department_id:x.departmentId, task_id:x.taskId || null, action_id:x.actionId || null, equipment_id:x.equipmentId || null, user_id:x.userId, title:x.title, equip_name:x.equipName || null, date:x.date, time:x.time || null, photo_path:x.photoPath || null, comment:x.comment || null, worker_name:x.workerName || null})), {onConflict:'id'}) : null]
-        ];
-        for (const [label, promise] of operations) {
-          if (!promise) continue;
-          const { error } = await promise;
-          if (error) {
-            console.error('Ошибка синхронизации ' + label, error);
-            toast('Не удалось сохранить ' + label + ': ' + error.message);
-            return false;
-          }
-        }
-        return true;
-      } finally {
-        cloudSyncBusy = false;
-      }
-    }
     function todayStr() { return new Date().toISOString().slice(0, 10); }
     function formatDate(d) { return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }); }
     function showError(msg) {
@@ -255,9 +226,8 @@
     function getDeptEquipment() {
       const deptId = getActiveDeptId();
       const all = getCompany().equipment.filter(e => e.departmentId === deptId);
-      const plan = getPlan();
       // return all, but we'll mark which are active
-      return all.map((e, i) => ({ ...e, _active: i < plan.maxEquip, _index: i }));
+      return all.map((e, i) => ({ ...e, _active: isEquipmentActive(e.id), _index: i }));
     }
     function getDeptActions() { return getCompany().actions.filter(a => a.departmentId === getActiveDeptId()); }
     function getDeptTasks(date) {
@@ -275,6 +245,7 @@
 
     function getPlan() {
       const c = getCompany();
+      if(getUser()?.role !== 'manager' && c.workLimits) return {id:'work',name:'Доступ к работе',maxDepts:c.workLimits.max_departments,maxEquip:c.workLimits.max_equipment};
       if (isUnlimitedCompany) return { ...(PLANS.ultra || PLANS.free), maxDepts: 999999, maxEquip: 999999, name: 'OWNER — Безлимит' };
       const sub = c.subscription || { planId: 'free', expiresAt: null };
       // check expiry
@@ -288,6 +259,7 @@
     }
 
     function isPaidSubscriptionExpired() {
+      if(getUser()?.role !== 'manager' && getCompany()?.workLimits) return !getCompany().workLimits.work_active;
       if (isUnlimitedCompany) return false;
       const sub = getCompany()?.subscription;
       if (!sub || sub.planId === 'free') return false;
@@ -295,6 +267,7 @@
     }
 
     function isSubActive() {
+      if(getUser()?.role !== 'manager' && getCompany()?.workLimits) return getCompany().workLimits.work_active;
       const c = getCompany();
       const sub = c.subscription || { planId: 'free' };
       if (sub.planId === 'free') return true;
@@ -315,7 +288,7 @@
       const plan = getPlan();
       const all = c.equipment.filter(e => e.departmentId === deptId);
       // sort by creation order (id roughly), keep first maxEquip
-      return all.slice(0, plan.maxEquip);
+      return c.workLimits ? all.filter(e=>c.workLimits.active_equipment_ids.includes(e.id)) : all.slice(0, plan.maxEquip);
     }
 
     function isEquipmentActive(equipId) {
@@ -330,7 +303,7 @@
       const c = getCompany();
       const plan = getPlan();
       // first N departments stay active
-      return c.departments.slice(0, plan.maxDepts);
+      return c.workLimits ? c.departments.filter(d=>c.workLimits.active_department_ids.includes(d.id)) : c.departments.slice(0, plan.maxDepts);
     }
 
     function isDepartmentActive(deptId) {
@@ -362,20 +335,6 @@
     const AUTH_PUBLIC_URL = 'https://app-check.ru/app/';
     const AUTH_MOBILE_RECOVERY_URL = 'ru.checkapp.mobile://recovery';
     const isNativeCheckApp = () => !!(window.Capacitor?.isNativePlatform?.());
-
-    function inviteCodeFromUrl() {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        return String(
-          params.get('invite') ||
-          params.get('code') ||
-          document.getElementById('invite-code')?.value ||
-          ''
-        ).trim().toUpperCase();
-      } catch (_) {
-        return String(document.getElementById('invite-code')?.value || '').trim().toUpperCase();
-      }
-    }
 
     function savePendingRegistration(meta) {
       pendingEmail = meta;
@@ -445,13 +404,7 @@
       if (!existingProfile) {
         let rpcError = null;
 
-        if (meta.mode === 'invite' && meta.code && meta.name) {
-          ({ error: rpcError } = await supabaseClient.rpc('join_company_by_invite', {
-            p_invite_code: String(meta.code).trim().toUpperCase(),
-            p_name: String(meta.name).trim(),
-            p_phone: null
-          }));
-        } else if (meta.mode === 'register' && meta.company && meta.name) {
+        if (meta.mode === 'register' && meta.company && meta.name) {
           ({ error: rpcError } = await supabaseClient.rpc('bootstrap_company', {
             p_company_name: String(meta.company).trim(),
             p_department_name: 'Основное',
@@ -591,35 +544,23 @@
     async function doRegister() {
       if (!ensureSupabase()) return;
 
-      const inviteCode = inviteCodeFromUrl();
-      const inviteMode = !document.getElementById('form-invite')?.classList.contains('hidden');
-      const company = document.getElementById('reg-company')?.value.trim() || '';
-      const name = (inviteMode
-        ? document.getElementById('invite-name')?.value
-        : document.getElementById('reg-name')?.value)?.trim() || '';
-      const email = (inviteMode
-        ? document.getElementById('invite-email')?.value
-        : document.getElementById('reg-email')?.value)?.trim().toLowerCase() || '';
-      const password = (inviteMode
-        ? document.getElementById('invite-password')?.value
-        : document.getElementById('reg-password')?.value) || '';
-
-      if (!name || !email || password.length < 8 || (inviteMode && !inviteCode) || (!inviteMode && !inviteCode && !company)) {
-        return showError(inviteMode
-          ? 'Укажите код приглашения, имя, Email и пароль минимум из 8 символов.'
-          : 'Заполните название компании, имя, Email и пароль минимум из 8 символов.');
-      }
+      if (!document.getElementById('form-invite').classList.contains('hidden')) return acceptEmailInvitation();
+      const company = document.getElementById('reg-company').value.trim();
+      const name = document.getElementById('reg-name').value.trim();
+      const email = document.getElementById('reg-email').value.trim().toLowerCase();
+      const password = document.getElementById('reg-password').value;
+      if (!company || !name || !email || password.length<8) return showError('Заполните название компании, имя, Email и пароль минимум из 8 символов.');
 
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return showError('Введите корректный Email.');
       }
 
       const meta = {
-        mode: inviteCode ? 'invite' : 'register',
+        mode: 'register',
         email,
         name,
         company,
-        code: inviteCode || generateCode()
+        code: generateCode()
       };
 
       savePendingRegistration(meta);
@@ -914,13 +855,8 @@
                 p_phone: null
             });
             if (bootstrapError) throw bootstrapError;
-          } else if (meta.signup_mode === 'invite' && meta.invite_code && meta.name) {
-            const { error: joinError } = await supabaseClient.rpc('join_company_by_invite', {
-              p_invite_code: meta.invite_code,
-              p_name: meta.name,
-              p_phone: null
-            });
-            if (joinError) throw joinError;
+          } else if (meta.signup_mode === 'invite') {
+            throw new Error('Вход по общему коду отключён. Попросите руководителя прислать персональную ссылку на email.');
           }
 
           checkAuthAttempt(signal);
@@ -1020,13 +956,12 @@
       document.getElementById('app-screen').classList.remove('hidden');
       const c = getCompany(); const user = getUser();
       document.getElementById('header-company').textContent = c.name;
-      const roleLabel = user.role === 'manager' ? ' · Руководитель' : (user.role === 'responsible' ? ' · Ответственный' : ' · Сотрудник');
+      const roleLabel = user.role === 'manager' ? ' · Руководитель сети' : (user.role === 'responsible' ? ' · Руководитель подразделения' : ' · Сотрудник');
       document.getElementById('header-user').textContent = user.name + roleLabel;
       document.getElementById('header-email').textContent = db.currentUser?.email || user.email || '';
       // ensure subscription object exists
-      if (!c.subscription) {
+      if (user.role === 'manager' && !c.subscription) {
         c.subscription = { planId: 'free', expiresAt: null, startedAt: new Date().toISOString() };
-        saveDB();
       }
       const isManager = user.role === 'manager';
       const isResponsible = user.role === 'responsible';
@@ -1092,13 +1027,7 @@
       showPage(page);
     }
 
-    function updateInviteCodeDisplay() {
-      const c = getCompany();
-      const sel = document.getElementById('invite-dept-select');
-      if (!sel) return;
-      const dept = c.departments.find(d => d.id === sel.value);
-      document.getElementById('invite-code-display').textContent = dept ? dept.inviteCode : '—';
-    }
+    function updateInviteCodeDisplay() {}
 
     let oneTimeTasks = [];
     let oneTimeBusy = false;
@@ -1206,6 +1135,8 @@
 
     function showPage(page) {
       const user = getUser();
+      if(page==='team' && user?.role!=='manager') page='today';
+      if(user?.role==='employee' && !['today','consumables','cabinet','one-time'].includes(page)) page='today';
       if (page === 'super-admin' && !isSuperAdmin) {
         toast('Доступ только у SUPER ADMIN');
         page = 'dashboard';
@@ -1323,35 +1254,8 @@
       }
     }
 
-    function generateTodayTasks() {
-      // Pause recurring work after expiry. Do not prune or rewrite existing tasks.
-      if (isPaidSubscriptionExpired()) return;
-      const c = getCompany(); const today = todayStr();
-      // Preserve overdue tasks until they are actually completed.
-      c.tasks = c.tasks.filter(t => t.status === 'done' || t.date <= today);
-      c.actions.forEach(action => {
-        if (c.tasks.some(t => t.actionId === action.id && t.status !== 'done')) return;
-        if (c.tasks.some(t => t.actionId === action.id && t.date === today)) return;
-        const last = c.completions.filter(comp => comp.actionId === action.id).sort((a,b) => b.date.localeCompare(a.date))[0];
-        let shouldCreate = true;
-        if (last) {
-          const daysSince = Math.floor((new Date(today) - new Date(last.date)) / (1000*60*60*24));
-          shouldCreate = daysSince >= action.frequency;
-        }
-        if (shouldCreate) {
-          // only create if equipment is within plan limits
-          if (!isEquipmentActive(action.equipmentId)) return;
-          if (!isDepartmentActive(action.departmentId)) return;
-          const equip = c.equipment.find(e => e.id === action.equipmentId);
-          c.tasks.push({
-            id: uid(), actionId: action.id, equipmentId: action.equipmentId, departmentId: action.departmentId,
-            date: today, status: 'pending', title: action.name,
-            equipName: equip ? equip.name : '—', equipCode: equip ? equip.code : '', description: action.description || ''
-          });
-        }
-      });
-      saveDB();
-    }
+    // Due tasks are generated atomically on the server during hydration.
+    function generateTodayTasks() {}
 
     function renderDashboard() {
       const c = getCompany(); const today = todayStr();
@@ -1399,6 +1303,7 @@
     }
 
     function renderEquipment() {
+      document.querySelector('#page-equipment button[onclick="openEquipModal()"]')?.classList.toggle('hidden',!canManageDepartment(getActiveDeptId()));
       const items = getDeptEquipment();
       const list = document.getElementById('equip-list');
       const plan = getPlan();
@@ -1410,15 +1315,16 @@
             <div>
             <div class="font-semibold">${esc(e.name)} ${e._active ? '' : '<span class="text-xs text-rose-400 font-normal">· заморожено</span>'}</div>
             <div class="text-sm text-[#a8b5c8]">${esc(e.code||'—')} · ${esc(e.location||'—')}</div>
-            ${e._active ? `<button type="button" onclick="checkOpenReplacePhoto('equipment','${e.id}')" class="mt-2 text-xs text-primary-300 hover:text-primary-200">${e.photoPath ? 'Заменить фото' : 'Добавить фото'}</button>` : ''}
+            ${e._active && canManageDepartment(e.departmentId) ? `<button type="button" onclick="checkOpenReplacePhoto('equipment','${e.id}')" class="mt-2 text-xs text-primary-300 hover:text-primary-200">${e.photoPath ? 'Заменить фото' : 'Добавить фото'}</button>` : ''}
             </div>
           </div>
-          ${e._active ? `<button onclick="deleteEquipment('${e.id}')" class="text-[#8191a8] hover:text-rose-400 text-sm px-2 py-1">Удалить</button>` : '<span class="text-xs text-[#8191a8]">нет доступа</span>'}
+          ${e._active && canManageDepartment(e.departmentId) ? `<button onclick="deleteEquipment('${e.id}')" class="text-[#8191a8] hover:text-rose-400 text-sm px-2 py-1">Удалить</button>` : '<span class="text-xs text-[#8191a8]">нет доступа</span>'}
         </div>`).join('');
       void checkShowSignedPhotos(list);
     }
 
     function renderActions() {
+      document.querySelector('#page-actions button[onclick="openActionModal()"]')?.classList.toggle('hidden',!canManageDepartment(getActiveDeptId()));
       const items = getDeptActions();
       const list = document.getElementById('actions-list');
       const equipAll = getCompany().equipment;
@@ -1429,42 +1335,12 @@
         return `<div class="bg-[#131e2d] border border-[#263448] rounded-2xl p-4 flex items-center justify-between">
           <div><div class="font-semibold">${esc(a.name)}</div>
           <div class="text-sm text-[#a8b5c8]">${equip?esc(equip.name):'—'} · ${freqLabels[a.frequency]||a.frequency+' дн.'}</div></div>
-          <button onclick="deleteAction('${a.id}')" class="text-[#8191a8] hover:text-rose-400 text-sm px-2 py-1">Удалить</button>
+          ${canManageDepartment(a.departmentId) ? `<button onclick="deleteAction('${a.id}')" class="text-[#8191a8] hover:text-rose-400 text-sm px-2 py-1">Удалить</button>` : ''}
         </div>`;
       }).join('');
     }
 
-    function renderTeam() {
-      renderDeptSelect();
-      const users = getDeptUsers();
-      const me = getUser();
-      const list = document.getElementById('team-list');
-      if (!users.length) { list.innerHTML = '<p class="text-[#8191a8] text-sm py-4 text-center">Нет сотрудников в этом подразделении</p>'; return; }
-      list.innerHTML = users.map(u => {
-        const isResp = u.role === 'responsible';
-        const roleBadge = isResp
-          ? '<span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">Руководитель подразделения</span>'
-          : '<span class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">Сотрудник</span>';
-        let actions = '';
-        if (me.role === 'manager') {
-          if (isResp) {
-            actions = `<button onclick="setResponsible('${u.id}', false)" class="text-xs text-[#a8b5c8] hover:text-white px-3 py-1.5 rounded-xl hover:bg-[#1c2a3d]">Снять</button>`;
-          } else {
-            actions = `<button onclick="setResponsible('${u.id}', true)" class="text-xs text-primary-400 hover:text-primary-300 px-3 py-1.5 rounded-xl hover:bg-primary-500/10">Назначить руководителем подразделения</button>`;
-          }
-          actions += `<button onclick="removeEmployee('${u.id}')" class="text-xs text-rose-400 hover:text-rose-300 px-3 py-1.5 rounded-xl hover:bg-rose-500/10">Удалить</button>`;
-        }
-        return `<div class="bg-[#131e2d] border border-[#263448] rounded-2xl px-4 py-3">
-          <div class="flex items-center justify-between gap-2">
-            <div>
-              <div class="font-medium text-sm flex items-center gap-2 flex-wrap">${esc(u.name)} ${roleBadge}</div>
-              <div class="text-xs text-[#a8b5c8] mt-0.5">${esc(u.phone)}</div>
-            </div>
-          </div>
-          ${actions ? `<div class="flex flex-wrap gap-2 mt-3">${actions}</div>` : ''}
-        </div>`;
-      }).join('');
-    }
+    function renderTeam() { return renderCompanyTeam(); }
 
     let historyFilter = 'all';
 
@@ -1667,7 +1543,8 @@
       document.getElementById('modal-dept').classList.remove('hidden');
     }
     function closeDeptModal() { document.getElementById('modal-dept').classList.add('hidden'); }
-    function saveDepartment() {
+    async function saveDepartment() {
+      if(getUser()?.role!=='manager')return toast('Доступ только руководителю сети');
       const name = document.getElementById('dept-name').value.trim();
       if (!name) return toast('Укажите название');
       const c = getCompany();
@@ -1676,13 +1553,18 @@
         return toast('Лимит подразделений по тарифу «' + plan.name + '»: ' + plan.maxDepts + '. Перейдите в Кабинет для смены тарифа.');
       }
       const id = uid();
-      c.departments.push({ id, name, inviteCode: generateCode() });
-      currentDeptId = id; saveDB(); closeDeptModal();
+      const inviteCode=generateCode();
+      const {error}=await supabaseClient.from('departments').insert({id,company_id:c.id,name,invite_code:inviteCode});
+      if(error)return toast('Не удалось создать подразделение: '+error.message);
+      c.departments.push({id,name,inviteCode});
+      c.workLimits?.active_department_ids.push(id);
+      currentDeptId = id; closeDeptModal();
       renderDeptSelect(); generateTodayTasks(); showPage('dashboard');
       toast('Подразделение создано');
     }
 
     function openEquipModal() {
+      if(!canManageDepartment(getActiveDeptId()))return toast('Недостаточно прав в этом подразделении');
       if (!getActiveDeptId()) return toast('Сначала создайте подразделение');
       document.getElementById('equip-name').value = '';
       document.getElementById('equip-code').value = '';
@@ -1693,6 +1575,7 @@
     }
     function closeEquipModal() { document.getElementById('modal-equip').classList.add('hidden'); }
     async function saveEquipment() {
+      if(!canManageDepartment(getActiveDeptId()))return toast('Недостаточно прав в этом подразделении');
       const name = document.getElementById('equip-name').value.trim();
       if (!name) return toast('Укажите название');
       const plan = getPlan(), deptId = getActiveDeptId(), c = getCompany();
@@ -1709,6 +1592,7 @@
         });
         if(error)throw error;
         c.equipment.push(equipment);
+        c.workLimits?.active_equipment_ids.push(equipment.id);
         closeEquipModal();renderEquipment();toast('Оборудование сохранено');
       } catch(error) {
         if(equipment.photoPath)await checkRemovePhoto('equipment-photos',equipment.photoPath);
@@ -1716,6 +1600,7 @@
       }
     }
         async function deleteEquipment(id) {
+      if(!canManageDepartment(getCompany()?.equipment.find(e=>e.id===id)?.departmentId))return toast('Недостаточно прав');
       if (!confirm('Удалить оборудование и связанные регламенты?')) return;
       const c = getCompany();
       const actionIds = c.actions.filter(a => a.equipmentId === id).map(a => a.id);
@@ -1733,10 +1618,11 @@
       c.actions = c.actions.filter(a => a.equipmentId !== id);
       c.tasks = c.tasks.filter(t => t.equipmentId !== id);
       c.completions = c.completions.filter(x => x.equipmentId !== id);
-      saveDB(); renderEquipment(); toast('Оборудование удалено');
+      renderEquipment(); toast('Оборудование удалено');
     }
 
     function openActionModal() {
+      if(!canManageDepartment(getActiveDeptId()))return toast('Недостаточно прав в этом подразделении');
       const equip = getDeptEquipment();
       if (!equip.length) return toast('Сначала добавьте оборудование');
       document.getElementById('action-equip').innerHTML = equip.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
@@ -1747,6 +1633,7 @@
     }
     function closeActionModal() { document.getElementById('modal-action').classList.add('hidden'); }
     async function saveAction() {
+      if(!canManageDepartment(getActiveDeptId()))return toast('Недостаточно прав в этом подразделении');
       const name = document.getElementById('action-name').value.trim();
       if (!name) return toast('Укажите название');
       const company = getCompany();
@@ -1760,9 +1647,12 @@
       });
       if (error) return toast('Не удалось сохранить ТО: ' + error.message);
       company.actions.push(action);
-      generateTodayTasks(); closeActionModal(); renderActions(); toast('ТО сохранено');
+      closeActionModal(); renderActions();
+      try {await hydrateCurrentUser();renderActions();toast('ТО сохранено');}
+      catch(error){toast('ТО сохранено. Не удалось обновить задачи: '+error.message);}
     }
     async function deleteAction(id) {
+      if(!canManageDepartment(getCompany()?.actions.find(a=>a.id===id)?.departmentId))return toast('Недостаточно прав');
       if (!confirm('Удалить регламент и связанные задания?')) return;
       const c = getCompany();
       const { error: ce } = await supabaseClient.from('completions').delete().eq('action_id', id);
@@ -1774,7 +1664,7 @@
       c.actions = c.actions.filter(a => a.id !== id);
       c.tasks = c.tasks.filter(t => t.actionId !== id);
       c.completions = c.completions.filter(x => x.actionId !== id);
-      saveDB(); renderActions(); toast('Регламент удалён');
+      renderActions(); toast('Регламент удалён');
     }
 
     let completionStatus = 'done';
@@ -2008,42 +1898,6 @@
       showPage('today');
     }
 
-    function copyInviteCode() {
-      const code = document.getElementById('invite-code-display').textContent;
-      if (code && code !== '—') navigator.clipboard.writeText(code).then(() => toast('Скопировано'));
-    }
-    function regenerateInvite() {
-      const c = getCompany();
-      const sel = document.getElementById('invite-dept-select');
-      const dept = c.departments.find(d => d.id === sel.value);
-      if (!dept) return;
-      dept.inviteCode = generateCode(); saveDB(); updateInviteCodeDisplay(); toast('Новый код');
-    }
-    function setResponsible(userId, make) {
-      const c = getCompany();
-      const user = c.users.find(u => u.id === userId);
-      if (!user) return;
-      if (make) {
-        // only one responsible per department — demote previous
-        c.users.forEach(u => {
-          if (u.departmentId === user.departmentId && u.role === 'responsible') u.role = 'employee';
-        });
-        user.role = 'responsible';
-        toast(user.name + ' назначен ответственным');
-      } else {
-        user.role = 'employee';
-        toast('Ответственный снят');
-      }
-      saveDB();
-      renderTeam();
-    }
-    async function removeEmployee(userId) {
-      if (!confirm('Удалить сотрудника? Он больше не сможет войти в приложение.')) return;
-      const { error } = await supabaseClient.from('profiles').delete().eq('id', userId);
-      if (error) return toast('Ошибка удаления сотрудника: ' + error.message);
-      getCompany().users = getCompany().users.filter(u => u.id !== userId);
-      saveDB(); renderTeam(); toast('Сотрудник удалён');
-    }
 
 
     let pendingPlanId = null;
@@ -2118,7 +1972,7 @@
       document.getElementById('cab-choose-plan').classList.toggle('hidden', !manager);
       document.getElementById('plans-section').classList.add('hidden');
       document.getElementById('pay-confirm').classList.add('hidden');
-      if (!manager) return;
+      if (!manager) {document.getElementById('btn-renew').classList.add('hidden');return;}
       const c = getCompany();
       const sub = c.subscription || { planId: 'free', expiresAt: null };
       const plan = getPlan();
@@ -2319,7 +2173,7 @@
     // Supabase persists and refreshes the session; passwords are never stored here.
     let restoringWebsiteSession = null;
     async function restoreWebsiteSession() {
-      if (!supabaseClient || passwordRecoveryActive ||
+      if (!supabaseClient || passwordRecoveryActive || window.emailInvitationActive || window.location.hash.includes('invite_token=') ||
           window.location.hash.includes('type=recovery') ||
           window.location.search.includes('type=recovery')) return;
       if (!document.getElementById('app-screen').classList.contains('hidden')) return;
@@ -2357,6 +2211,7 @@
     }
     void restoreWebsiteSession();
     void handlePasswordRecoveryLink();
+    if(typeof initEmailInvitation==='function')void initEmailInvitation();
     window.addEventListener('pageshow', event => {
       if (event.persisted) void restoreWebsiteSession();
     });

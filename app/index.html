@@ -21,7 +21,7 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=20261019-company-deletion" />
+  <link rel="stylesheet" href="css/styles.css?v=20261020-1.2.5" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/dist/umd/supabase.js"></script>
   <link rel="manifest" href="public/manifest.webmanifest" />
 </head>
@@ -54,7 +54,7 @@
       <div class="flex bg-[#131e2d] rounded-2xl p-1 mb-6">
         <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-primary-600 text-white transition">Вход</button>
         <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 py-2.5 rounded-xl text-sm font-medium text-[#a8b5c8] transition">Регистрация</button>
-        <button id="tab-invite" onclick="switchAuthTab('invite')" class="flex-1 py-2.5 rounded-xl text-sm font-medium text-[#a8b5c8] transition">По коду</button>
+        <button id="tab-invite" onclick="switchAuthTab('invite')" class="flex-1 py-2.5 rounded-xl text-sm font-medium text-[#a8b5c8] transition">Приглашение</button>
       </div>
 
       <div id="form-login" class="space-y-4 fade-in">
@@ -94,25 +94,20 @@
         <button onclick="doRegister()" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-semibold py-3.5 rounded-2xl transition shadow-lg shadow-primary-600/20">Зарегистрировать компанию</button>
       </div>
 
-      <div id="form-invite" class="space-y-4 hidden fade-in">
-        <div>
-          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Код приглашения</label>
-          <input id="invite-code" type="text" placeholder="XXXX-XXXX" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 uppercase tracking-widest text-center text-lg" />
+      <form id="form-invite" class="space-y-4 hidden fade-in" onsubmit="event.preventDefault(); acceptEmailInvitation()">
+        <h1 class="text-xl font-bold">Приглашение в компанию</h1>
+        <p id="email-invite-context" class="text-sm text-[#a8b5c8]">Откройте персональную ссылку из письма. Приглашение отправляет руководитель сети.</p>
+        <div id="email-invite-fields" class="hidden space-y-4">
+          <div><label for="email-invite-email">Email приглашения</label><input id="email-invite-email" type="email" readonly autocomplete="username" class="team-input"></div>
+          <div><label for="email-invite-name">Ваше имя</label><input id="email-invite-name" required maxlength="100" autocomplete="name" class="team-input"></div>
+          <div><label for="email-invite-password" id="email-invite-password-label">Создайте пароль</label><input id="email-invite-password" type="password" required minlength="8" maxlength="256" autocomplete="new-password" class="team-input"></div>
+          <div id="email-invite-repeat-wrap"><label for="email-invite-repeat">Повторите пароль</label><input id="email-invite-repeat" type="password" minlength="8" maxlength="256" autocomplete="new-password" class="team-input"></div>
+          <p class="text-sm text-[#a8b5c8]">После принятия приглашения вы станете сотрудником. Изменить роль может руководитель сети.</p>
+          <button id="email-invite-submit" type="submit" class="team-primary">Присоединиться</button>
         </div>
-        <div>
-          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Ваше имя</label>
-          <input id="invite-name" type="text" placeholder="Пётр Петров" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Email</label>
-          <input id="invite-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-[#a8b5c8] mb-1.5">Пароль</label>
-          <input id="invite-password" type="password" placeholder="минимум 8 символов" class="w-full bg-[#131e2d] border border-[#354359] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
-        </div>
-        <button type="button" onclick="doRegister()" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-900 font-semibold py-3.5 rounded-2xl transition">Присоединиться</button>
-      </div>
+        <p id="email-invite-status" role="status" aria-live="polite" class="team-status"></p>
+        <button type="button" onclick="leaveEmailInvitation()" class="team-secondary">Вернуться ко входу</button>
+      </form>
 
       <div class="text-center mt-5"><a href="https://www.app-check.ru/docs/legal/index.html" target="_blank" rel="noopener noreferrer" class="text-sm text-[#a8b5c8] hover:text-primary-400 underline underline-offset-4 transition">Правовая информация</a></div>
 
@@ -281,23 +276,17 @@
 
       <div id="page-team" class="page hidden space-y-6 fade-in">
         <h1 class="text-2xl font-bold">Команда</h1>
-        <div class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5">
-          <h2 class="font-semibold mb-2">Пригласить сотрудника в подразделение</h2>
-          <p class="text-sm text-[#a8b5c8] mb-3">Код привязан к выбранному подразделению. Сотрудник увидит только его данные.</p>
-          <div class="mb-3">
-            <label class="block text-xs text-[#a8b5c8] mb-1">Подразделение для приглашения</label>
-            <select id="invite-dept-select" class="w-full bg-[#1c2a3d] border border-[#354359] rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"></select>
-          </div>
-          <div class="flex items-center gap-3">
-            <div id="invite-code-display" class="flex-1 bg-[#1c2a3d] rounded-2xl px-4 py-3 font-mono text-lg tracking-widest text-center text-primary-400">—</div>
-            <button onclick="copyInviteCode()" class="bg-[#1c2a3d] hover:bg-slate-700 px-4 py-3 rounded-2xl text-sm transition">Копировать</button>
-            <button onclick="regenerateInvite()" class="bg-primary-600 hover:bg-primary-500 px-4 py-3 rounded-2xl text-sm transition">Новый</button>
-          </div>
-        </div>
-        <div>
-          <h2 class="font-semibold mb-3">Сотрудники подразделения</h2>
-          <div id="team-list" class="space-y-2"></div>
-        </div>
+        <form id="team-invite-form" class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5 space-y-3" onsubmit="event.preventDefault(); prepareTeamInvitation()">
+          <h2 class="font-semibold">Пригласить сотрудника</h2>
+          <p class="text-sm text-[#a8b5c8]">Персональная ссылка придёт на email сотрудника и будет действовать 7 дней. По умолчанию приглашённый становится сотрудником.</p>
+          <div><label for="team-invite-email" class="block text-sm mb-1">Email сотрудника</label><input id="team-invite-email" type="email" required maxlength="254" autocomplete="off" class="team-input" placeholder="employee@company.ru"></div>
+          <div><label for="invite-dept-select" class="block text-sm mb-1">Подразделение</label><select id="invite-dept-select" required class="team-input"></select></div>
+          <button id="team-invite-prepare" type="submit" class="team-primary">Подготовить приглашение</button>
+          <div id="team-invite-prepared" class="hidden space-y-3"><p id="team-invite-prepared-label" class="text-sm break-words"></p><button id="team-invite-send" type="button" onclick="sendPreparedTeamInvitation()" class="team-primary">Отправить приглашение</button></div>
+          <p id="team-invite-status" class="team-status" role="status" aria-live="polite"></p>
+        </form>
+        <section aria-labelledby="team-members-title"><h2 id="team-members-title" class="font-semibold mb-3">Участники сети</h2><div id="team-list" class="space-y-2"></div></section>
+        <section aria-labelledby="team-invitations-title"><div class="flex items-center justify-between gap-3 mb-3"><h2 id="team-invitations-title" class="font-semibold">Приглашения</h2><button type="button" onclick="loadTeamInvitations()" class="team-secondary">Обновить</button></div><div id="team-invitations-list" class="space-y-2" aria-live="polite"></div></section>
       </div>
 
       <div id="page-consumables" class="page hidden space-y-5 fade-in">
@@ -345,7 +334,7 @@
         <h1 class="text-2xl font-bold">Личный кабинет</h1>
         <section class="bg-[#131e2d] rounded-2xl border border-[#263448] p-5 space-y-3" aria-label="Обновления Check App">
           <h2 class="font-semibold text-lg">Обновления Check App</h2>
-          <p id="app-update-current" class="text-sm text-[#a8b5c8]">Версия приложения: 1.2.4</p>
+          <p id="app-update-current" class="text-sm text-[#a8b5c8]">Версия приложения: 1.2.5</p>
           <p id="app-update-latest" class="text-sm text-[#a8b5c8]">Информация о последней версии ещё не загружена</p>
           <p id="app-update-status" class="text-sm text-slate-300" role="status">Нажмите «Проверить обновления»</p>
           <div class="flex flex-wrap gap-2">
@@ -666,9 +655,9 @@
     </div>
   </div>
   <script src="js/onboarding.js?v=20261009-01"></script>
-  <script src="js/update-center.js?v=20261019-1.2.4"></script>
-  <script src="js/photo-attachments.js?v=20261010-02"></script>
-  <script src="js/consumables.js?v=20261010-03"></script>
+  <script src="js/update-center.js?v=20261019-1.2.5"></script>
+  <script src="js/photo-attachments.js?v=20261020-1.2.5"></script>
+  <script src="js/consumables.js?v=20261020-1.2.5"></script>
   <dialog id="delete-company-dialog" class="check-danger-dialog" aria-labelledby="delete-company-title" aria-describedby="delete-company-description">
     <form id="delete-company-form" novalidate onsubmit="event.preventDefault(); submitCompanyDeletion()">
       <h2 id="delete-company-title" class="text-xl font-bold">Удалить компанию?</h2>
@@ -685,7 +674,20 @@
     </form>
   </dialog>
   <script src="js/company-deletion.js?v=20261019-01"></script>
-  <script src="js/app.js?v=20261020-recovery-link"></script>
+  <dialog id="team-role-dialog" class="check-danger-dialog team-dialog" aria-labelledby="team-role-title">
+    <form onsubmit="event.preventDefault(); saveTeamRole()">
+      <h2 id="team-role-title" class="text-xl font-bold">Роль участника</h2><p id="team-role-name"></p>
+      <label for="team-role">Роль</label><select id="team-role" class="team-input" onchange="updateTeamRoleFields()"><option value="employee">Сотрудник</option><option value="responsible">Руководитель подразделения</option><option value="manager">Руководитель сети</option></select>
+      <div id="team-role-dept-wrap"><label for="team-role-dept">Подразделение</label><select id="team-role-dept" class="team-input"></select></div>
+      <p id="team-role-help" class="text-sm text-[#a8b5c8]"></p><p id="team-role-status" class="team-status" role="status" aria-live="polite"></p>
+      <div class="delete-company-actions"><button id="team-role-cancel" type="button" onclick="closeTeamRole()" autofocus>Отмена</button><button id="team-role-save" type="submit" class="team-primary">Сохранить роль</button></div>
+    </form>
+  </dialog>
+  <dialog id="team-remove-dialog" class="check-danger-dialog" aria-labelledby="team-remove-title">
+    <form onsubmit="event.preventDefault(); confirmTeamMemberRemoval()"><h2 id="team-remove-title" class="text-xl font-bold">Удалить участника из компании?</h2><p id="team-remove-name"></p><p class="text-sm text-[#a8b5c8]">Участник потеряет доступ к данным компании. История выполненных работ сохранится. Для повторного присоединения понадобится новое приглашение.</p><p id="team-remove-status" class="team-status" role="status" aria-live="polite"></p><div class="delete-company-actions"><button id="team-remove-cancel" type="button" onclick="closeTeamMemberRemoval()" autofocus>Отмена</button><button id="team-remove-confirm" type="submit" class="delete-company-button delete-company-solid">Удалить из компании</button></div></form>
+  </dialog>
+  <script src="js/team.js?v=20261020-1.2.5"></script>
+  <script src="js/app.js?v=20261020-1.2.5"></script>
   <script src="js/calendar.js?v=20260918-03"></script>
 </body>
 </html>

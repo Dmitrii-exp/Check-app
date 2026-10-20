@@ -25,3 +25,11 @@ The visible company name is inserted as text. Buttons are at least 48px tall.
 ## Scope
 Existing unrelated modal and native confirmation behavior is not migrated by this
 change. The deletion feature follows `UX-CONTRACT.md` and server authorization.
+
+## Team management (2026-10-20)
+Email invitations and role editing preserve the existing cabinet palette and
+compact surfaces. Shared team controls live in css/styles.css and reuse --check-*
+tokens. The team list includes all network participants, with explicit role and
+department labels. At 390px cards wrap without horizontal scrolling. Native
+select popups remain platform-owned for mobile keyboard/accessibility behavior.
+The role confirmation is an app-styled native dialog with Cancel initially focused.

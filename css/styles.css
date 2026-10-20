@@ -63,3 +63,12 @@ input[type="file"] { display: none; }
   input, select, textarea { font-size: 16px; }
   .page { min-width: 0; }
 }
+
+/* Team controls follow the existing cabinet surfaces and native form behavior. */
+.team-input{display:block;width:100%;min-height:46px;margin-top:6px;padding:11px 14px;background:var(--check-surface-raised);border:1px solid #45536a;border-radius:16px;color:#f1f5f9;font:inherit;box-sizing:border-box}
+.team-input:focus-visible,.team-primary:focus-visible,.team-secondary:focus-visible{outline:2px solid var(--check-focus);outline-offset:3px}
+.team-primary,.team-secondary{min-height:44px;padding:10px 16px;border-radius:14px;font:inherit;font-size:14px;cursor:pointer}
+.team-primary{background:var(--check-primary);color:white;font-weight:600}.team-secondary{background:#1c2a3d;color:#e2e8f0;border:1px solid #354359}
+.team-primary:disabled,.team-secondary:disabled,.team-input:disabled{opacity:.6;cursor:wait}.team-status{min-height:24px;font-size:14px;overflow-wrap:anywhere;color:#a8b5c8}.team-error{color:#fca5a5}
+.team-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;background:var(--check-surface);border:1px solid var(--check-border);border-radius:16px;flex-wrap:wrap}.team-row-copy{min-width:0;flex:1 1 190px;overflow-wrap:anywhere}.team-row-copy p{font-size:13px;color:#a8b5c8;margin-top:4px}.team-row-actions{display:flex;flex-wrap:wrap;gap:8px}.team-dialog{border-color:var(--check-border)}#team-role-cancel{background:var(--check-surface-raised)}.team-dialog form{display:grid;gap:14px}.team-dialog select{font-size:16px}
+@media(max-width:420px){.team-row-actions{width:100%}.team-row-actions button{flex:1}.team-dialog .delete-company-actions{flex-wrap:wrap}.team-dialog .delete-company-actions button{flex:1 1 120px}}

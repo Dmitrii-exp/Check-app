@@ -61,7 +61,7 @@ set local role authenticated;
 select pg_temp.assert_true(public.current_role()='employee','Employee fixture context');
 select pg_temp.assert_true((select count(*)=0 from public.profiles where company_id=pg_temp.fixture('foreign_company')),'Cross-company profiles hidden');
 select pg_temp.assert_true((select count(*)=0 from public.equipment where company_id=pg_temp.fixture('foreign_company')),'Cross-company equipment hidden');
-select pg_temp.assert_true((select count(*)=1 from public.subscriptions where company_id=pg_temp.fixture('company')),'Worker can restore actual subscription');
+select pg_temp.assert_true((select count(*)=0 from public.subscriptions where company_id=pg_temp.fixture('company')),'Worker cannot read subscription');
 select pg_temp.expect_denied($q$update public.profiles set role='manager' where id=pg_temp.fixture('employee')$q$);
 select pg_temp.expect_denied($q$update public.subscriptions set plan_id='ultra' where company_id=pg_temp.fixture('company')$q$);
 select pg_temp.expect_denied($q$insert into public.super_admins(user_id) values(auth.uid())$q$);
@@ -76,8 +76,9 @@ select pg_temp.expect_denied($q$update public.tasks set status='blocked',blocked
 select pg_temp.expect_denied($q$insert into public.tasks(company_id,department_id,date,title) values(pg_temp.fixture('company'),pg_temp.fixture('department'),current_date,'forged')$q$);
 select pg_temp.expect_denied($q$insert into public.completions(company_id,department_id,task_id,equipment_id,action_id,user_id,title,date,worker_name)
   values(pg_temp.fixture('company'),pg_temp.fixture('department'),pg_temp.fixture('task'),pg_temp.fixture('equipment'),pg_temp.fixture('action'),auth.uid(),'Maintenance',current_date,'Worker')$q$);
-insert into public.tasks(company_id,department_id,equipment_id,action_id,date,title)
-  values(pg_temp.fixture('company'),pg_temp.fixture('department'),pg_temp.fixture('equipment2'),pg_temp.fixture('action2'),current_date,'Due maintenance');
+select pg_temp.assert_true(public.ensure_due_maintenance_tasks()=1,'Worker triggers server-controlled due task generation');
+select pg_temp.assert_true(public.ensure_due_maintenance_tasks()=0,'Due generation is idempotent');
+select pg_temp.assert_true((public.get_current_work_limits()->>'work_active')::boolean,'Worker can load operational permissions without billing');
 select pg_temp.expect_denied($q$insert into public.tasks(company_id,department_id,equipment_id,action_id,date,title)
   values(pg_temp.fixture('company'),pg_temp.fixture('department'),pg_temp.fixture('equipment2'),pg_temp.fixture('action2'),current_date,'Due maintenance')$q$);
 update public.tasks set status='blocked',blocked_comment='Reason',blocked_worker_name='Worker',blocked_at=now() where id=pg_temp.fixture('blocked_task');
@@ -134,8 +135,7 @@ select pg_temp.assert_true(public.current_role()='manager','Registration still c
 reset role;
 select set_config('request.jwt.claims',json_build_object('sub',pg_temp.fixture('new_joiner'),'role','authenticated')::text,true);
 set local role authenticated;
-select public.join_company_by_invite(pg_temp.fixture('department')::text,'New worker','');
-select pg_temp.assert_true(public.current_role()='employee','Invitation still creates worker');
+select pg_temp.expect_denied($q$select public.join_company_by_invite(pg_temp.fixture('department')::text,'New worker','')$q$);
 reset role;
 select 'PASS: role escalation, company isolation, quota/freeze, worker report, history/photo deletion, lead assignment, registration and invitations' as result;
 rollback;

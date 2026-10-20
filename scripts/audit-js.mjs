@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 
-const html = fs.readFileSync('index.html', 'utf8');
-const js = ['js/app.js', 'js/update-center.js', 'js/calendar-core.js', 'js/onboarding.js', 'js/consumables.js', 'js/photo-attachments.js'].map(file => fs.readFileSync(file, 'utf8')).join('\n');
+const html = ['index.html','app/index.html'].map(file=>fs.readFileSync(file,'utf8')).join('\n');
+const js = ['js/app.js', 'js/team.js', 'js/company-deletion.js', 'js/update-center.js', 'js/calendar-core.js', 'js/onboarding.js', 'js/consumables.js', 'js/photo-attachments.js'].map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
 const defined = new Set();
 for (const match of js.matchAll(/(?:^|\n)\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)) defined.add(match[1]);
@@ -26,7 +26,7 @@ if (missing.length) {
   console.error('Missing functions referenced by HTML:', missing.join(', '));
   process.exitCode = 1;
 } else {
-  console.log('OK: all inline handler function references are defined in js/app.js.');
+  console.log('OK: all inline handler function references are defined in application modules.');
 }
 
 const forbidden = ['service_role', 'SUPABASE_SERVICE_ROLE_KEY', 'secret_key'];

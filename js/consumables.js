@@ -96,7 +96,7 @@ function paintConsumables(){
   const rows=consumablesRows.filter(r=>consumablesFilter==='all'||(consumablesFilter==='active'?r.status!=='purchased':r.status===consumablesFilter));
   if(!rows.length){list.innerHTML='<p class="text-center text-[#a8b5c8] py-10">В этом списке пока нет заявок</p>';return;}
   list.innerHTML=rows.map(r=>{
-    const editable=scope.manager || (r.created_by===scope.userId && r.status==='needed');
+    const editable=scope.manager || (getUser()?.role==='responsible' && r.created_by===scope.userId && r.status==='needed');
     const colors={needed:'text-amber-400',ordered:'text-blue-400',purchased:'text-emerald-400'};
     const owner=getCompany()?.users?.find(u=>u.id===r.created_by);
     const statusControls=scope.manager?'<div class="flex flex-wrap gap-2 mt-3">'+

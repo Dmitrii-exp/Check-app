@@ -9,3 +9,7 @@ verify_jwt = false
 [functions.send-auth-email]
 # Supabase Auth authenticates this hook with a Standard Webhooks signature.
 verify_jwt = false
+
+[functions.company-invitations]
+# Owner routes verify Auth; recipient routes verify a one-time email capability.
+verify_jwt = false
