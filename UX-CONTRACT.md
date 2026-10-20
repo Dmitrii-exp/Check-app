@@ -48,3 +48,12 @@ Password visibility toggles are keyboard-accessible with changing label/state.
 Primary/busy button dimensions are stable. Mobile inputs are 16px to avoid iOS
 focus zoom. No fixed-height container traps focused fields behind the keyboard.
 The static auth-version label is populated from package.json by build-mobile.mjs.
+
+## Interface theme
+Exactly two explicit choices: Тёмная / Светлая. Dark remains the initial default.
+The shared button group uses aria-pressed, keyboard focus and a live status; both
+controls stay synchronized. LocalStorage persistence failure preserves the current
+choice in memory and announces that saving failed. Cross-tab storage events update
+the displayed choice. js/theme.js reads only a validated light/dark string before
+CSS paint, never user credentials. The preference is independent of Auth storage.
+All users can change their own device theme before or after login.

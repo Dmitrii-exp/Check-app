@@ -193,7 +193,7 @@
     }
     function toast(msg) {
       const t = document.createElement('div');
-      t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#1c2a3d] text-white text-sm px-5 py-3 rounded-2xl shadow-xl z-50 fade-in';
+      t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-raised text-ink text-sm px-5 py-3 rounded-2xl shadow-xl z-50 fade-in';
       t.textContent = msg; document.body.appendChild(t);
       setTimeout(() => t.remove(), 2500);
     }
@@ -325,8 +325,8 @@
       ['login', 'register', 'invite'].forEach(t => {
         document.getElementById('form-' + t).classList.toggle('hidden', t !== tab);
         const btn = document.getElementById('tab-' + t);
-        if (t === tab) { btn.classList.add('bg-primary-600', 'text-white'); btn.classList.remove('text-[#a8b5c8]'); }
-        else { btn.classList.remove('bg-primary-600', 'text-white'); btn.classList.add('text-[#a8b5c8]'); }
+        if (t === tab) { btn.classList.add('bg-primary-600', 'text-white'); btn.classList.remove('text-muted'); }
+        else { btn.classList.remove('bg-primary-600', 'text-white'); btn.classList.add('text-muted'); }
       });
     }
 
@@ -455,7 +455,7 @@
       const setStatus = (text, ok = false) => {
         if (!statusEl) return;
         statusEl.textContent = text || '';
-        statusEl.className = 'text-sm text-center mt-4 min-h-[20px] ' + (ok ? 'text-emerald-400' : 'text-red-400');
+        statusEl.className = 'text-sm text-center mt-4 min-h-[20px] ' + (ok ? 'text-success' : 'text-danger');
       };
 
       if (!email) return setStatus('Данные регистрации потеряны. Откройте ссылку приглашения заново.');
@@ -521,7 +521,7 @@
         const status = document.getElementById('otp-status');
         if (status) {
           status.textContent = 'Новый код отправлен.';
-          status.className = 'text-sm text-center mt-4 min-h-[20px] text-emerald-400';
+          status.className = 'text-sm text-center mt-4 min-h-[20px] text-success';
         }
       } catch (e) {
         console.error('[Check App] resendEmailOtp error:', e);
@@ -677,7 +677,7 @@
     function recoveryMessage(message, error = false) {
       const el = document.getElementById('recovery-message');
       el.textContent = message;
-      el.className = 'text-sm min-h-[20px] ' + (error ? 'text-red-400' : 'text-emerald-400');
+      el.className = 'text-sm min-h-[20px] ' + (error ? 'text-danger' : 'text-success');
     }
     function openPasswordRecovery(reset = false) {
       const modal = document.getElementById('password-recovery-modal');
@@ -1067,14 +1067,14 @@
         const assignee=c.users.find(u=>u.id===t.assigned_user_id);
         const dept=c.departments.find(d=>d.id===t.department_id);
         const canComplete=t.assigned_user_id===user.id && t.status==='pending';
-        return '<article class="bg-[#131e2d] border border-[#263448] rounded-2xl p-4 space-y-2">'+
-          '<div class="flex justify-between gap-2"><div class="font-medium whitespace-pre-wrap break-words">'+esc(t.description)+'</div><span class="text-xs shrink-0 '+(t.status==='done'?'text-emerald-400':'text-amber-400')+'">'+(t.status==='done'?'Выполнено':'Ожидает')+'</span></div>'+
-          '<div class="text-xs text-[#a8b5c8]">'+esc(dept?.name||'')+' · '+esc(assignee?.name||'')+' · Срок: '+esc(t.due_date)+'</div>'+
-          (t.report_comment?'<p class="text-sm text-slate-300 whitespace-pre-wrap">'+esc(t.report_comment)+'</p>':'')+
-          (t.photo_path?'<button class="text-primary-400 text-sm underline" onclick="viewOneTimePhoto(\''+t.id+'\')">Посмотреть фотоотчёт</button>':'')+
+        return '<article class="bg-surface border border-line rounded-2xl p-4 space-y-2">'+
+          '<div class="flex justify-between gap-2"><div class="font-medium whitespace-pre-wrap break-words">'+esc(t.description)+'</div><span class="text-xs shrink-0 '+(t.status==='done'?'text-success':'text-warning')+'">'+(t.status==='done'?'Выполнено':'Ожидает')+'</span></div>'+
+          '<div class="text-xs text-muted">'+esc(dept?.name||'')+' · '+esc(assignee?.name||'')+' · Срок: '+esc(t.due_date)+'</div>'+
+          (t.report_comment?'<p class="text-sm text-soft whitespace-pre-wrap">'+esc(t.report_comment)+'</p>':'')+
+          (t.photo_path?'<button class="text-brand text-sm underline" onclick="viewOneTimePhoto(\''+t.id+'\')">Посмотреть фотоотчёт</button>':'')+
           (canComplete?'<div><button onclick="openOneTimeReport(\''+t.id+'\')" class="bg-primary-600 px-4 py-2 rounded-xl text-sm">Сдать фотоотчёт</button></div>':'')+
           '</article>';
-      }).join(''):'<p class="text-sm text-[#8191a8]">Разовых задач пока нет</p>';
+      }).join(''):'<p class="text-sm text-subtle">Разовых задач пока нет</p>';
     }
     function updateOneTimeEmployees() {
       const c=getCompany(), user=getUser();
@@ -1155,9 +1155,9 @@
       document.querySelectorAll('.nav-btn').forEach(btn => {
         const isActive = btn.dataset.page === page;
         btn.classList.toggle('border-primary-500', isActive);
-        btn.classList.toggle('text-primary-400', isActive);
+        btn.classList.toggle('text-brand', isActive);
         btn.classList.toggle('border-transparent', !isActive);
-        btn.classList.toggle('text-[#a8b5c8]', !isActive);
+        btn.classList.toggle('text-muted', !isActive);
       });
       if (page === 'one-time') void loadOneTimeTasks();
       if (page === 'dashboard') renderDashboard();
@@ -1180,7 +1180,7 @@
     async function loadAdminCompanies() {
       if (!isSuperAdmin || !ensureSupabase()) return;
       const list = document.getElementById('admin-companies-list');
-      if (list) list.innerHTML = '<div class="text-center py-10 text-[#8191a8] text-sm">Загрузка компаний…</div>';
+      if (list) list.innerHTML = '<div class="text-center py-10 text-subtle text-sm">Загрузка компаний…</div>';
       try {
         const { data, error } = await supabaseClient.rpc('list_companies_for_super_admin');
         if (error) throw error;
@@ -1188,7 +1188,7 @@
         filterAdminCompanies();
       } catch (e) {
         console.error('[Check App] loadAdminCompanies:', e);
-        if (list) list.innerHTML = `<div class="bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-2xl p-4 text-sm">${esc(e?.message || 'Не удалось загрузить компании.')}</div>`;
+        if (list) list.innerHTML = `<div class="bg-rose-500/10 border border-rose-500/20 text-danger rounded-2xl p-4 text-sm">${esc(e?.message || 'Не удалось загрузить компании.')}</div>`;
       }
     }
 
@@ -1202,21 +1202,21 @@
         String(c.owner_email || '').toLowerCase().includes(q)
       );
       if (!rows.length) {
-        list.innerHTML = '<div class="text-center py-10 text-[#8191a8] text-sm">Компании не найдены</div>';
+        list.innerHTML = '<div class="text-center py-10 text-subtle text-sm">Компании не найдены</div>';
         return;
       }
       list.innerHTML = rows.map(c => {
         const active = c.is_unlimited === true;
         const plan = c.plan_id || 'free';
-        return `<div class="bg-[#131e2d] rounded-2xl border ${active ? 'border-amber-500/40' : 'border-[#263448]'} p-5">
+        return `<div class="bg-surface rounded-2xl border ${active ? 'border-amber-500/40' : 'border-line'} p-5">
           <div class="flex items-start justify-between gap-4 flex-wrap">
             <div class="min-w-0">
               <div class="font-semibold text-lg">${esc(c.company_name || 'Без названия')}</div>
-              <div class="text-sm text-[#a8b5c8] mt-1">${esc(c.owner_email || '—')}</div>
-              <div class="text-xs text-[#8191a8] mt-2 font-mono break-all">${esc(c.company_id)}</div>
+              <div class="text-sm text-muted mt-1">${esc(c.owner_email || '—')}</div>
+              <div class="text-xs text-subtle mt-2 font-mono break-all">${esc(c.company_id)}</div>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-xs px-2.5 py-1 rounded-full ${active ? 'bg-amber-500/15 text-amber-300' : 'bg-[#1c2a3d] text-[#a8b5c8]'}">
+              <span class="text-xs px-2.5 py-1 rounded-full ${active ? 'bg-amber-500/15 text-warning' : 'bg-raised text-muted'}">
                 ${active ? '♾ Безлимит' : 'Тариф: ' + esc(plan)}
               </span>
             </div>
@@ -1224,9 +1224,9 @@
           <div class="mt-4 flex flex-wrap items-center gap-3">
             ${active
               ? `<button onclick="revokeUnlimited('${c.company_id}')" class="bg-rose-600 hover:bg-rose-500 px-4 py-2.5 rounded-2xl text-sm font-medium">Отозвать безлимит</button>`
-              : `<button onclick="grantUnlimited('${c.company_id}')" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-2xl text-sm font-medium">Выдать безлимит</button>`}
+              : `<button onclick="grantUnlimited('${c.company_id}')" class="bg-amber-700 hover:bg-amber-800 text-white px-4 py-2.5 rounded-2xl text-sm font-medium">Выдать безлимит</button>`}
           </div>
-          ${active && c.note ? `<div class="text-xs text-[#8191a8] mt-3">Комментарий: ${esc(c.note)}</div>` : ''}
+          ${active && c.note ? `<div class="text-xs text-subtle mt-3">Комментарий: ${esc(c.note)}</div>` : ''}
         </div>`;
       }).join('');
     }
@@ -1276,11 +1276,11 @@
       document.getElementById('stat-done').textContent = tasks.filter(t => t.status === 'done').length;
       document.getElementById('stat-pending').textContent = tasks.filter(t => t.status === 'pending').length;
       const list = document.getElementById('dash-today-list');
-      if (!tasks.length) { list.innerHTML = '<p class="text-[#8191a8] text-sm">Задач нет</p>'; return; }
+      if (!tasks.length) { list.innerHTML = '<p class="text-subtle text-sm">Задач нет</p>'; return; }
       list.innerHTML = tasks.map(t => `
-        <div class="flex items-center justify-between bg-[#1c2a3d]/50 rounded-2xl px-4 py-3">
-          <div><div class="font-medium text-sm">${esc(t.title)}</div><div class="text-xs text-[#a8b5c8]">${esc(t.equipName)}</div></div>
-          <span class="text-xs px-2.5 py-1 rounded-full ${t.status==='done'?'bg-emerald-500/20 text-emerald-400':'bg-amber-500/20 text-amber-400'}">${t.status==='done'?'Выполнено':'Ожидает'}</span>
+        <div class="flex items-center justify-between bg-raised/50 rounded-2xl px-4 py-3">
+          <div><div class="font-medium text-sm">${esc(t.title)}</div><div class="text-xs text-muted">${esc(t.equipName)}</div></div>
+          <span class="text-xs px-2.5 py-1 rounded-full ${t.status==='done'?'bg-emerald-500/20 text-success':'bg-amber-500/20 text-warning'}">${t.status==='done'?'Выполнено':'Ожидает'}</span>
         </div>`).join('');
     }
 
@@ -1300,12 +1300,12 @@
       empty.classList.add('hidden');
       list.innerHTML = tasks.map(t => {
         const isDone = t.status === 'done';
-        return `<div class="bg-[#131e2d] border border-[#263448] rounded-2xl p-4 ${isDone?'opacity-60':''}">
+        return `<div class="bg-surface border border-line rounded-2xl p-4 ${isDone?'opacity-60':''}">
           <div class="flex items-start justify-between gap-3">
             <div class="flex-1"><div class="font-semibold">${esc(t.title)}</div>
-            <div class="text-sm text-[#a8b5c8] mt-0.5">${esc(t.equipName)}</div>
-            ${t.description?`<div class="text-xs text-[#8191a8] mt-2">${esc(t.description)}</div>`:''}</div>
-            ${isDone?`<span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400">✓ Выполнено</span>`
+            <div class="text-sm text-muted mt-0.5">${esc(t.equipName)}</div>
+            ${t.description?`<div class="text-xs text-subtle mt-2">${esc(t.description)}</div>`:''}</div>
+            ${isDone?`<span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-success">✓ Выполнено</span>`
               :`<button onclick="openCompleteModal('${t.id}')" class="bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-4 py-2 rounded-2xl">Выполнить</button>`}
           </div></div>`;
       }).join('');
@@ -1316,18 +1316,18 @@
       const items = getDeptEquipment();
       const list = document.getElementById('equip-list');
       const plan = getPlan();
-      if (!items.length) { list.innerHTML = '<p class="text-[#8191a8] text-sm py-8 text-center">Нет оборудования</p>'; return; }
+      if (!items.length) { list.innerHTML = '<p class="text-subtle text-sm py-8 text-center">Нет оборудования</p>'; return; }
       list.innerHTML = items.map(e => `
-        <div class="bg-[#131e2d] border border-[#263448] rounded-2xl p-4 flex items-center justify-between ${e._active ? '' : 'opacity-50'}">
+        <div class="bg-surface border border-line rounded-2xl p-4 flex items-center justify-between ${e._active ? '' : 'opacity-50'}">
           <div class="flex items-center gap-3">
             ${e.photoPath ? `<img class="hidden w-16 h-16 rounded-xl object-cover" data-check-photo-bucket="equipment-photos" data-check-photo-path="${esc(e.photoPath)}" alt="Фото оборудования">` : ''}
             <div>
-            <div class="font-semibold">${esc(e.name)} ${e._active ? '' : '<span class="text-xs text-rose-400 font-normal">· заморожено</span>'}</div>
-            <div class="text-sm text-[#a8b5c8]">${esc(e.code||'—')} · ${esc(e.location||'—')}</div>
-            ${e._active && canManageDepartment(e.departmentId) ? `<button type="button" onclick="checkOpenReplacePhoto('equipment','${e.id}')" class="mt-2 text-xs text-primary-300 hover:text-primary-200">${e.photoPath ? 'Заменить фото' : 'Добавить фото'}</button>` : ''}
+            <div class="font-semibold">${esc(e.name)} ${e._active ? '' : '<span class="text-xs text-danger font-normal">· заморожено</span>'}</div>
+            <div class="text-sm text-muted">${esc(e.code||'—')} · ${esc(e.location||'—')}</div>
+            ${e._active && canManageDepartment(e.departmentId) ? `<button type="button" onclick="checkOpenReplacePhoto('equipment','${e.id}')" class="mt-2 text-xs text-brand hover:text-brand">${e.photoPath ? 'Заменить фото' : 'Добавить фото'}</button>` : ''}
             </div>
           </div>
-          ${e._active && canManageDepartment(e.departmentId) ? `<button onclick="deleteEquipment('${e.id}')" class="text-[#8191a8] hover:text-rose-400 text-sm px-2 py-1">Удалить</button>` : '<span class="text-xs text-[#8191a8]">нет доступа</span>'}
+          ${e._active && canManageDepartment(e.departmentId) ? `<button onclick="deleteEquipment('${e.id}')" class="text-subtle hover:text-danger text-sm px-2 py-1">Удалить</button>` : '<span class="text-xs text-subtle">нет доступа</span>'}
         </div>`).join('');
       void checkShowSignedPhotos(list);
     }
@@ -1337,14 +1337,14 @@
       const items = getDeptActions();
       const list = document.getElementById('actions-list');
       const equipAll = getCompany().equipment;
-      if (!items.length) { list.innerHTML = '<p class="text-[#8191a8] text-sm py-8 text-center">Нет действий</p>'; return; }
+      if (!items.length) { list.innerHTML = '<p class="text-subtle text-sm py-8 text-center">Нет действий</p>'; return; }
       const freqLabels = {1:'Каждый день',2:'Раз в 2 дня',3:'Раз в 3 дня',7:'Раз в неделю',14:'Раз в 2 недели',30:'Раз в месяц'};
       list.innerHTML = items.map(a => {
         const equip = equipAll.find(e => e.id === a.equipmentId);
-        return `<div class="bg-[#131e2d] border border-[#263448] rounded-2xl p-4 flex items-center justify-between">
+        return `<div class="bg-surface border border-line rounded-2xl p-4 flex items-center justify-between">
           <div><div class="font-semibold">${esc(a.name)}</div>
-          <div class="text-sm text-[#a8b5c8]">${equip?esc(equip.name):'—'} · ${freqLabels[a.frequency]||a.frequency+' дн.'}</div></div>
-          ${canManageDepartment(a.departmentId) ? `<button onclick="deleteAction('${a.id}')" class="text-[#8191a8] hover:text-rose-400 text-sm px-2 py-1">Удалить</button>` : ''}
+          <div class="text-sm text-muted">${equip?esc(equip.name):'—'} · ${freqLabels[a.frequency]||a.frequency+' дн.'}</div></div>
+          ${canManageDepartment(a.departmentId) ? `<button onclick="deleteAction('${a.id}')" class="text-subtle hover:text-danger text-sm px-2 py-1">Удалить</button>` : ''}
         </div>`;
       }).join('');
     }
@@ -1392,17 +1392,17 @@
       const action = c.actions.find(a => a.id === item.actionId);
       const overdue = item.status !== 'done' ? Math.max(0, Math.floor((new Date(todayStr() + 'T12:00:00') - new Date(item.date + 'T12:00:00')) / 86400000)) : 0;
       return `<div class="space-y-3 text-sm">
-        <div><span class="text-[#a8b5c8]">Статус:</span> <span class="${item.status === 'done' ? 'text-emerald-400' : 'text-amber-400'}">${item.status === 'done' ? 'Выполнено' : 'Не выполнено'}</span></div>
-        ${item.status !== 'done' ? `<div class="text-amber-400">Просрочка: ${overdue} дн.</div>` : ''}
-        <div><span class="text-[#a8b5c8]">Вид ТО:</span> ${esc(fields.maintenance)}</div>
-        <div><span class="text-[#a8b5c8]">Подразделение:</span> ${esc(fields.department)}</div>
-        <div><span class="text-[#a8b5c8]">Помещение:</span> ${esc(fields.room)}</div>
-        <div><span class="text-[#a8b5c8]">Вид оборудования:</span> ${esc(fields.equipment)}</div>
-        ${equip?.code ? `<div><span class="text-[#a8b5c8]">Код:</span> ${esc(equip.code)}</div>` : ''}
-        <div><span class="text-[#a8b5c8]">Дата и время:</span> ${esc(fields.dateTime)}</div>
-        <div><span class="text-[#a8b5c8]">${item.status === 'done' ? 'Выполнил:' : 'Назначен:'}</span> ${esc(item.workerName || user?.name || '—')}</div>
-        ${action?.description ? `<div><span class="text-[#a8b5c8]">Описание:</span> ${esc(action.description)}</div>` : ''}
-        <div class="bg-[#1c2a3d]/60 rounded-xl p-3"><span class="text-[#a8b5c8]">Комментарий:</span> ${esc(fields.comment)}</div>
+        <div><span class="text-muted">Статус:</span> <span class="${item.status === 'done' ? 'text-success' : 'text-warning'}">${item.status === 'done' ? 'Выполнено' : 'Не выполнено'}</span></div>
+        ${item.status !== 'done' ? `<div class="text-warning">Просрочка: ${overdue} дн.</div>` : ''}
+        <div><span class="text-muted">Вид ТО:</span> ${esc(fields.maintenance)}</div>
+        <div><span class="text-muted">Подразделение:</span> ${esc(fields.department)}</div>
+        <div><span class="text-muted">Помещение:</span> ${esc(fields.room)}</div>
+        <div><span class="text-muted">Вид оборудования:</span> ${esc(fields.equipment)}</div>
+        ${equip?.code ? `<div><span class="text-muted">Код:</span> ${esc(equip.code)}</div>` : ''}
+        <div><span class="text-muted">Дата и время:</span> ${esc(fields.dateTime)}</div>
+        <div><span class="text-muted">${item.status === 'done' ? 'Выполнил:' : 'Назначен:'}</span> ${esc(item.workerName || user?.name || '—')}</div>
+        ${action?.description ? `<div><span class="text-muted">Описание:</span> ${esc(action.description)}</div>` : ''}
+        <div class="bg-raised/60 rounded-xl p-3"><span class="text-muted">Комментарий:</span> ${esc(fields.comment)}</div>
         ${item.status !== 'done' ? `<button type="button" onclick="closeHistoryDetails();openCompleteModal('${item.taskId}')" class="w-full py-3 rounded-2xl bg-primary-600 font-medium">Выполнить задачу</button>` : ''}
         <div id="history-detail-photo">${item.photoPath ? 'Загрузка фото…' : item.status === 'done' ? 'Фото не прикреплено' : 'Фото появится после выполнения'}</div>
       </div>`;
@@ -1416,7 +1416,7 @@
         modal = document.createElement('div');
         modal.id = 'history-detail-modal';
         modal.className = 'fixed inset-0 z-[100] bg-black/75 flex items-center justify-center p-4 hidden';
-        modal.innerHTML = '<div role="dialog" aria-modal="true" aria-labelledby="history-detail-title" class="bg-[#131e2d] border border-[#354359] rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-5"><div class="flex justify-between items-start gap-3 mb-4"><h2 id="history-detail-title" class="text-xl font-bold">Информация о работе</h2><button type="button" onclick="closeHistoryDetails()" class="px-3 py-1.5 rounded-xl bg-[#1c2a3d]">Закрыть</button></div><div id="history-detail-body"></div></div>';
+        modal.innerHTML = '<div role="dialog" aria-modal="true" aria-labelledby="history-detail-title" class="bg-surface border border-control rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-5"><div class="flex justify-between items-start gap-3 mb-4"><h2 id="history-detail-title" class="text-xl font-bold">Информация о работе</h2><button type="button" onclick="closeHistoryDetails()" class="px-3 py-1.5 rounded-xl bg-raised">Закрыть</button></div><div id="history-detail-body"></div></div>';
         document.body.appendChild(modal);
       }
       document.getElementById('history-detail-title').textContent = item.title || 'Информация о работе';
@@ -1463,19 +1463,19 @@
       list.innerHTML = items.map(item => {
         const user = getCompany().users.find(u => u.id === item.userId);
         const fields = historyDisplayFields(item);
-        return `<button type="button" onclick="openHistoryDetails('${item.id}', '${item.status}')" class="block w-full text-left bg-[#131e2d] border border-[#263448] rounded-2xl p-4 hover:border-primary-500 transition">
-          <div class="flex justify-between items-start gap-2"><div class="font-semibold">${esc(item.title || '—')}</div><span class="text-xs shrink-0 ${item.status === 'done' ? 'text-emerald-400' : 'text-amber-400'}">${item.status === 'done' ? 'Выполнено' : 'Не выполнено'}</span></div>
-          <div class="text-sm text-slate-300 mt-2 space-y-1">
-            <div><span class="text-[#a8b5c8]">Дата и время:</span> ${esc(fields.dateTime)}</div>
-            <div><span class="text-[#a8b5c8]">Подразделение:</span> ${esc(fields.department)}</div>
-            <div><span class="text-[#a8b5c8]">Помещение:</span> ${esc(fields.room)}</div>
-            <div><span class="text-[#a8b5c8]">Вид оборудования:</span> ${esc(fields.equipment)}</div>
-            <div><span class="text-[#a8b5c8]">Вид ТО:</span> ${esc(fields.maintenance)}</div>
-            <div class="bg-[#1c2a3d]/60 rounded-xl px-3 py-2 mt-2"><span class="text-[#a8b5c8]">Комментарий:</span> ${esc(fields.comment)}</div>
+        return `<button type="button" onclick="openHistoryDetails('${item.id}', '${item.status}')" class="block w-full text-left bg-surface border border-line rounded-2xl p-4 hover:border-primary-500 transition">
+          <div class="flex justify-between items-start gap-2"><div class="font-semibold">${esc(item.title || '—')}</div><span class="text-xs shrink-0 ${item.status === 'done' ? 'text-success' : 'text-warning'}">${item.status === 'done' ? 'Выполнено' : 'Не выполнено'}</span></div>
+          <div class="text-sm text-soft mt-2 space-y-1">
+            <div><span class="text-muted">Дата и время:</span> ${esc(fields.dateTime)}</div>
+            <div><span class="text-muted">Подразделение:</span> ${esc(fields.department)}</div>
+            <div><span class="text-muted">Помещение:</span> ${esc(fields.room)}</div>
+            <div><span class="text-muted">Вид оборудования:</span> ${esc(fields.equipment)}</div>
+            <div><span class="text-muted">Вид ТО:</span> ${esc(fields.maintenance)}</div>
+            <div class="bg-raised/60 rounded-xl px-3 py-2 mt-2"><span class="text-muted">Комментарий:</span> ${esc(fields.comment)}</div>
           </div>
-          <div class="text-xs text-[#8191a8] mt-2">${item.status === 'done' ? 'Выполнил' : 'Назначен'}: ${esc(item.workerName || user?.name || '—')}</div>
-          ${item.status !== 'done' ? `<div class="text-xs text-amber-400 mt-2">Просрочка: ${Math.max(0,Math.floor((new Date(todayStr() + 'T12:00:00') - new Date(item.date + 'T12:00:00'))/86400000))} дн.</div>` : ''}
-          <div class="text-xs text-primary-400 mt-3">Открыть задачу →</div>
+          <div class="text-xs text-subtle mt-2">${item.status === 'done' ? 'Выполнил' : 'Назначен'}: ${esc(item.workerName || user?.name || '—')}</div>
+          ${item.status !== 'done' ? `<div class="text-xs text-warning mt-2">Просрочка: ${Math.max(0,Math.floor((new Date(todayStr() + 'T12:00:00') - new Date(item.date + 'T12:00:00'))/86400000))} дн.</div>` : ''}
+          <div class="text-xs text-brand mt-3">Открыть задачу →</div>
         </button>`;
       }).join('');
     }
@@ -1504,11 +1504,11 @@
       else {
         overdueEmpty.classList.add('hidden');
         overdueList.innerHTML = overdue.map(item => `
-          <div class="bg-[#1c2a3d]/60 rounded-2xl px-4 py-3 flex justify-between gap-3">
+          <div class="bg-raised/60 rounded-2xl px-4 py-3 flex justify-between gap-3">
             <div><div class="font-medium text-sm">${esc(item.actionName)}</div>
-            <div class="text-xs text-[#a8b5c8]">${esc(item.equipName)}</div>
-            <div class="text-xs text-[#8191a8] mt-1">${item.statusText}</div></div>
-            <div class="text-right"><div class="text-sm font-semibold text-rose-400">${item.daysOverdue} дн.</div></div>
+            <div class="text-xs text-muted">${esc(item.equipName)}</div>
+            <div class="text-xs text-subtle mt-1">${item.statusText}</div></div>
+            <div class="text-right"><div class="text-sm font-semibold text-danger">${item.daysOverdue} дн.</div></div>
           </div>`).join('');
       }
       const employees = getDeptUsers();
@@ -1522,10 +1522,10 @@
       else {
         statsEmpty.classList.add('hidden');
         statsEl.innerHTML = stats.map(s => `
-          <div class="bg-[#1c2a3d]/60 rounded-2xl px-4 py-3 flex justify-between">
+          <div class="bg-raised/60 rounded-2xl px-4 py-3 flex justify-between">
             <div><div class="font-medium text-sm">${esc(s.user.name)}</div>
-            <div class="text-xs text-[#a8b5c8]">${s.lastDate?'последний: '+formatDate(s.lastDate):'нет работ'}</div></div>
-            <div class="text-lg font-bold text-primary-400">${s.total}</div>
+            <div class="text-xs text-muted">${s.lastDate?'последний: '+formatDate(s.lastDate):'нет работ'}</div></div>
+            <div class="text-lg font-bold text-brand">${s.total}</div>
           </div>`).join('');
       }
       const comps = [...deptComps].sort((a,b) => b.date.localeCompare(a.date));
@@ -1536,11 +1536,11 @@
         tasksEmpty.classList.add('hidden');
         tasksList.innerHTML = comps.map(comp => {
           const user = c.users.find(u => u.id === comp.userId);
-          return `<div class="bg-[#1c2a3d]/60 rounded-2xl px-4 py-3">
+          return `<div class="bg-raised/60 rounded-2xl px-4 py-3">
             <div class="font-medium text-sm">${esc(comp.title)}</div>
-            <div class="text-xs text-[#a8b5c8]">${esc(comp.equipName)}</div>
-            <div class="text-xs text-[#8191a8] mt-1"><span class="text-primary-400">${user?esc(user.name):'—'}</span> · ${formatDate(comp.date)}</div>
-            ${comp.comment ? `<div class="text-xs text-slate-300 mt-2">💬 ${esc(comp.comment)}</div>` : ''}
+            <div class="text-xs text-muted">${esc(comp.equipName)}</div>
+            <div class="text-xs text-subtle mt-1"><span class="text-brand">${user?esc(user.name):'—'}</span> · ${formatDate(comp.date)}</div>
+            ${comp.comment ? `<div class="text-xs text-soft mt-2">💬 ${esc(comp.comment)}</div>` : ''}
           </div>`;
         }).join('');
       }
@@ -1680,8 +1680,10 @@
     function setCompletionStatus(status) {
       completionStatus = status === 'blocked' ? 'blocked' : 'done';
       document.getElementById('complete-photo-section').classList.toggle('hidden', completionStatus === 'blocked');
-      document.getElementById('complete-status-done').className = 'rounded-2xl py-3 text-sm ' + (completionStatus === 'done' ? 'bg-emerald-600' : 'bg-[#1c2a3d]');
-      document.getElementById('complete-status-blocked').className = 'rounded-2xl py-3 text-sm ' + (completionStatus === 'blocked' ? 'bg-amber-600' : 'bg-[#1c2a3d]');
+      document.getElementById('complete-status-done').setAttribute('aria-pressed',String(completionStatus==='done'));
+      document.getElementById('complete-status-blocked').setAttribute('aria-pressed',String(completionStatus==='blocked'));
+      document.getElementById('complete-status-done').className = 'rounded-2xl py-3 text-sm ' + (completionStatus === 'done' ? 'bg-emerald-700 text-white' : 'bg-raised text-ink');
+      document.getElementById('complete-status-blocked').className = 'rounded-2xl py-3 text-sm ' + (completionStatus === 'blocked' ? 'bg-amber-700 text-white' : 'bg-raised text-ink');
     }
     function openCompleteModal(taskId) {
       currentCompleteTaskId = taskId; currentPhotoBase64 = null; currentPhotoFile = null;
@@ -1809,8 +1811,8 @@
       if (btn) { btn.disabled = busy; btn.textContent = busy ? 'Сохраняем…' : 'Сохранить'; }
       if (status) {
         status.classList.toggle('hidden', !message);
-        status.classList.toggle('text-rose-400', isError);
-        status.classList.toggle('text-slate-300', !isError);
+        status.classList.toggle('text-danger', isError);
+        status.classList.toggle('text-soft', !isError);
         status.textContent = message;
       }
     }
@@ -1916,7 +1918,7 @@
       const el = document.getElementById('change-password-message');
       if (!el) return;
       el.textContent = message;
-      el.className = 'text-sm min-h-[20px] ' + (isError ? 'text-rose-400' : 'text-emerald-400');
+      el.className = 'text-sm min-h-[20px] ' + (isError ? 'text-danger' : 'text-success');
     }
     function openChangePassword() {
       const modal = document.getElementById('change-password-modal');
@@ -2003,11 +2005,11 @@
       const daysEl = document.getElementById('cab-days-left');
       if (plan.id === 'free') {
         daysEl.textContent = '∞';
-        daysEl.className = 'text-2xl font-bold text-[#a8b5c8]';
+        daysEl.className = 'text-2xl font-bold text-muted';
         document.getElementById('btn-renew').classList.add('hidden');
       } else {
         daysEl.textContent = days !== null ? days : '0';
-        daysEl.className = 'text-2xl font-bold ' + (days > 7 ? 'text-emerald-400' : days > 0 ? 'text-amber-400' : 'text-rose-400');
+        daysEl.className = 'text-2xl font-bold ' + (days > 7 ? 'text-success' : days > 0 ? 'text-warning' : 'text-danger');
         document.getElementById('btn-renew').classList.remove('hidden');
       }
       document.getElementById('cab-limits').textContent =
@@ -2018,14 +2020,14 @@
       const list = document.getElementById('plans-list');
       list.innerHTML = Object.values(PLANS).map(p => {
         const isCurrent = plan.id === p.id && isSubActive();
-        return `<div class="bg-[#131e2d] border ${isCurrent ? 'border-primary-500' : 'border-[#263448]'} rounded-2xl p-5">
+        return `<div class="bg-surface border ${isCurrent ? 'border-primary-500' : 'border-line'} rounded-2xl p-5">
           <div class="flex items-center justify-between mb-2">
             <div class="font-bold text-lg">${p.name}</div>
-            ${isCurrent ? '<span class="text-xs bg-primary-500/20 text-primary-400 px-2 py-1 rounded-full">текущий</span>' : ''}
+            ${isCurrent ? '<span class="text-xs bg-primary-500/20 text-brand px-2 py-1 rounded-full">текущий</span>' : ''}
           </div>
-          <div class="text-2xl font-bold mb-1">${p.price ? p.price + ' ₽' : '0 ₽'}<span class="text-sm font-normal text-[#a8b5c8]">${p.price ? '/мес' : ''}</span></div>
-          <div class="text-sm text-[#a8b5c8] mb-4">до ${p.maxDepts} ${p.maxDepts === 1 ? 'подразделения' : (p.maxDepts >= 2 && p.maxDepts <= 4 ? 'подразделения' : 'подразделений')}<br>до ${p.maxEquip} единиц оборудования в каждом</div>
-          ${p.id === 'free' ? '' : `<button onclick="startPay('${p.id}')" class="w-full py-2.5 rounded-2xl text-sm font-medium ${isCurrent ? 'bg-[#1c2a3d] text-[#a8b5c8]' : 'bg-primary-600 hover:bg-primary-500 text-white'} transition">${isCurrent ? 'Продлить на 30 дней' : 'Выбрать'}</button>`}
+          <div class="text-2xl font-bold mb-1">${p.price ? p.price + ' ₽' : '0 ₽'}<span class="text-sm font-normal text-muted">${p.price ? '/мес' : ''}</span></div>
+          <div class="text-sm text-muted mb-4">до ${p.maxDepts} ${p.maxDepts === 1 ? 'подразделения' : (p.maxDepts >= 2 && p.maxDepts <= 4 ? 'подразделения' : 'подразделений')}<br>до ${p.maxEquip} единиц оборудования в каждом</div>
+          ${p.id === 'free' ? '' : `<button onclick="startPay('${p.id}')" class="w-full py-2.5 rounded-2xl text-sm font-medium ${isCurrent ? 'bg-raised text-muted' : 'bg-primary-600 hover:bg-primary-500 text-white'} transition">${isCurrent ? 'Продлить на 30 дней' : 'Выбрать'}</button>`}
         </div>`;
       }).join('');
     }
@@ -2093,8 +2095,8 @@
 
 
     const INFO_HELP = `
-      <p class="font-semibold text-white">Быстрый старт</p>
-      <ol class="list-decimal list-inside space-y-2 text-slate-300">
+      <p class="font-semibold text-ink">Быстрый старт</p>
+      <ol class="list-decimal list-inside space-y-2 text-soft">
         <li>Создайте <b>подразделения</b> (кнопка «+ Создать» сверху).</li>
         <li>В каждом подразделении добавьте <b>оборудование</b>.</li>
         <li>Назначьте <b>действия ТО</b> и периодичность (раз в день, неделю и т.д.).</li>
@@ -2103,14 +2105,14 @@
         <li>При выполнении задачи сотрудник <b>обязательно прикрепляет фото</b>.</li>
         <li>В <b>Отчётах</b> и <b>Истории</b> смотрите, что сделано и что просрочено.</li>
       </ol>
-      <p class="text-[#a8b5c8] mt-3">Сотрудники не видят другие подразделения. Руководитель переключается между ними в верхней панели.</p>
+      <p class="text-muted mt-3">Сотрудники не видят другие подразделения. Руководитель переключается между ними в верхней панели.</p>
     `;
 
     const INFO_ABOUT = `
-      <p><b class="text-white">Check App</b> — приложение для контроля технического обслуживания оборудования.</p>
-      <p class="font-semibold text-white mt-3">Для кого</p>
+      <p><b class="text-ink">Check App</b> — приложение для контроля технического обслуживания оборудования.</p>
+      <p class="font-semibold text-ink mt-3">Для кого</p>
       <p>Для руководителей сервисных служб, мастерских, производств и сетей точек, где нужно следить, чтобы ТО выполнялось вовремя и с подтверждением.</p>
-      <p class="font-semibold text-white mt-3">Какие задачи закрывает</p>
+      <p class="font-semibold text-ink mt-3">Какие задачи закрывает</p>
       <ul class="list-disc list-inside space-y-1">
         <li>Планирование регулярных работ по оборудованию</li>
         <li>Выдача задач сотрудникам по подразделениям</li>
@@ -2118,9 +2120,9 @@
         <li>Контроль просрочек и дисциплины выполнения</li>
         <li>Разделение доступа: каждое подразделение видит только своё</li>
       </ul>
-      <p class="font-semibold text-white mt-3">Удалённый контроль</p>
+      <p class="font-semibold text-ink mt-3">Удалённый контроль</p>
       <p>Руководитель видит статус задач, историю и фото из любого места — без звонков и бумажных журналов. Сотрудник в поле отмечает работу с телефона и сразу прикладывает снимок.</p>
-      <p class="font-semibold text-white mt-3">Выгода</p>
+      <p class="font-semibold text-ink mt-3">Выгода</p>
       <ul class="list-disc list-inside space-y-1">
         <li>Прозрачность: видно, кто и когда выполнил работу</li>
         <li>Порядок в регламентах ТО по всем точкам</li>

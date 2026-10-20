@@ -43,3 +43,15 @@ column is 420px maximum with 20px mobile gutters, 52px fields/primary buttons,
 top-aligned and scrolls naturally when the keyboard reduces the viewport.
 Both compiled Tailwind and product CSS URLs are versioned. The build fills the
 version beneath the brand from package.json for website/APK consistency.
+
+## Themes (1.2.8)
+Runtime CSS variables in css/styles.css remain the canonical palette (Model B).
+Tailwind semantic colors adapt RGB tokens with alpha support; components use
+canvas/surface/raised/header/line/control/ink/soft/muted/subtle and status roles.
+Dark is the compatibility default. Light uses canvas #f4f6fb, surface #ffffff,
+raised #eef2f8, text #172438 and muted #56657b, retaining solid violet actions.
+Status foregrounds darken in light mode for contrast; image/SVG asset colors and
+solid-action white labels are not inverted. Native inputs/selects inherit the
+root color-scheme. js/theme.js applies the saved choice before first paint and
+mounts the same two-button control on login and cabinet. Preference is device-local
+and survives sign-out; switching themes does not change account/company state.

@@ -39,7 +39,7 @@
     if (!document.getElementById('invite-registration-note')) {
       const note = document.createElement('div');
       note.id = 'invite-registration-note';
-      note.className = 'mb-4 rounded-xl border border-primary-500/20 bg-primary-500/10 px-4 py-3 text-sm text-primary-200';
+      note.className = 'mb-4 rounded-xl border border-primary-500/20 bg-primary-500/10 px-4 py-3 text-sm text-brand';
       note.textContent = 'Вы приглашены в компанию. После подтверждения Email вы автоматически будете подключены к нужному подразделению.';
       form.insertBefore(note, form.firstElementChild);
     }

@@ -44,8 +44,8 @@
     let nav=document.getElementById('calendar-nav');
     if(!nav){
       nav=document.createElement('nav'); nav.id='calendar-nav';
-      nav.className='bg-slate-900 border-b border-slate-800';
-      nav.innerHTML='<div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin"><button type="button" data-calendar-open class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-400 hover:text-white transition">📅 Календарь</button></div>';
+      nav.className='bg-surface border-b border-line';
+      nav.innerHTML='<div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin"><button type="button" data-calendar-open class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-brand hover:text-ink transition">📅 Календарь</button></div>';
       const deptBar=document.getElementById('dept-bar');
       const manager=document.getElementById('manager-nav');
       if(deptBar?.parentNode===app) deptBar.insertAdjacentElement('afterend',nav);
@@ -60,9 +60,9 @@
     const main=document.querySelector('#app-screen main'); if(!main) return;
     if(document.getElementById('page-calendar')) return;
     const p=document.createElement('div'); p.id='page-calendar'; p.className='page hidden space-y-5 fade-in';
-    p.innerHTML=`<div class="flex items-center justify-between gap-3 flex-wrap"><div><h1 class="text-2xl sm:text-3xl font-bold">Календарь</h1><p class="text-sm text-slate-400 mt-1">Информационный календарь плановых работ и обслуживания</p></div><button type="button" id="calendar-today-btn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm">Сегодня</button></div>
-      <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-5 items-start"><section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5"><div class="flex items-center justify-between mb-5"><button type="button" id="calendar-prev" class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-xl">‹</button><div id="calendar-month-title" class="font-semibold"></div><button type="button" id="calendar-next" class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-xl">›</button></div><div class="grid grid-cols-7 gap-2 text-center text-xs font-medium text-slate-500 mb-2"><div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div></div><div id="calendar-grid" class="grid grid-cols-7 gap-2"></div><div class="flex flex-wrap gap-4 mt-5 pt-4 border-t border-slate-800 text-xs text-slate-400"><span class="flex items-center gap-2"><i class="w-5 h-5 rounded-md bg-white border border-slate-300"></i>Задач нет</span><span class="flex items-center gap-2"><i class="w-5 h-5 rounded-md bg-sky-500"></i>Есть задача</span></div></section>
-      <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5"><div class="flex items-center justify-between mb-4"><div><h2 id="calendar-selected-title" class="font-semibold text-lg">Выберите дату</h2><p class="text-xs text-slate-500 mt-1">Информация о работах</p></div><span id="calendar-selected-count" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">0</span></div><div id="calendar-task-list" class="space-y-3"></div><div id="calendar-empty" class="text-center py-10 text-slate-500 text-sm">На выбранную дату задач нет</div></section></div>`;
+    p.innerHTML=`<div class="flex items-center justify-between gap-3 flex-wrap"><div><h1 class="text-2xl sm:text-3xl font-bold">Календарь</h1><p class="text-sm text-muted mt-1">Информационный календарь плановых работ и обслуживания</p></div><button type="button" id="calendar-today-btn" class="px-4 py-2.5 rounded-xl bg-raised hover:bg-hover border border-control text-sm">Сегодня</button></div>
+      <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-5 items-start"><section class="bg-surface border border-line rounded-2xl p-4 sm:p-5"><div class="flex items-center justify-between mb-5"><button type="button" id="calendar-prev" class="w-10 h-10 rounded-xl bg-raised border border-control text-xl">‹</button><div id="calendar-month-title" class="font-semibold"></div><button type="button" id="calendar-next" class="w-10 h-10 rounded-xl bg-raised border border-control text-xl">›</button></div><div class="grid grid-cols-7 gap-2 text-center text-xs font-medium text-subtle mb-2"><div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div></div><div id="calendar-grid" class="grid grid-cols-7 gap-2"></div><div class="flex flex-wrap gap-4 mt-5 pt-4 border-t border-line text-xs text-muted"><span class="flex items-center gap-2"><i class="w-5 h-5 rounded-md bg-white border border-slate-300"></i>Задач нет</span><span class="flex items-center gap-2"><i class="w-5 h-5 rounded-md bg-blue-600"></i>Есть задача</span></div></section>
+      <section class="bg-surface border border-line rounded-2xl p-4 sm:p-5"><div class="flex items-center justify-between mb-4"><div><h2 id="calendar-selected-title" class="font-semibold text-lg">Выберите дату</h2><p class="text-xs text-subtle mt-1">Информация о работах</p></div><span id="calendar-selected-count" class="text-xs px-2.5 py-1 rounded-full bg-raised text-muted">0</span></div><div id="calendar-task-list" class="space-y-3"></div><div id="calendar-empty" class="text-center py-10 text-subtle text-sm">На выбранную дату задач нет</div></section></div>`;
     main.appendChild(p);
     bind();
   }
@@ -81,10 +81,10 @@
     const y=month.getFullYear(),m=month.getMonth(), days=new Date(y,m+1,0).getDate(), first=(new Date(y,m,1).getDay()+6)%7, today=todayStr();
     for(let i=0;i<first;i++){const x=document.createElement('div');x.className='aspect-square min-h-[42px]';grid.appendChild(x);}
     for(let d=1;d<=days;d++){
-      const ds=iso(y,m,d), has=tasks(ds).length, b=document.createElement('button'); b.type='button'; b.className='aspect-square min-h-[42px] rounded-xl border font-semibold text-sm flex items-center justify-center relative '+(has?'bg-sky-500 border-sky-400 text-white':'bg-white border-slate-300 text-slate-900')+(selected===ds?' ring-2 ring-primary-400 ring-offset-2 ring-offset-slate-900':''); b.textContent=d; if(ds===today)b.title='Сегодня'; b.onclick=()=>{selected=ds;render();}; grid.appendChild(b);
+      const ds=iso(y,m,d), has=tasks(ds).length, b=document.createElement('button'); b.type='button'; b.className='aspect-square min-h-[42px] rounded-xl border font-semibold text-sm flex items-center justify-center relative '+(has?'bg-blue-600 border-blue-500 text-white':'bg-white border-slate-300 text-slate-900')+(selected===ds?' ring-2 ring-primary-400 ring-offset-2 ring-offset-canvas':''); b.textContent=d; if(ds===today)b.title='Сегодня'; b.onclick=()=>{selected=ds;render();}; grid.appendChild(b);
     }
     if(!selected || parse(selected).getMonth()!==m || parse(selected).getFullYear()!==y) selected=today.startsWith(`${y}-${pad(m+1)}`)?today:iso(y,m,1);
-    const list=document.getElementById('calendar-task-list'), empty=document.getElementById('calendar-empty'), st=document.getElementById('calendar-selected-title'), count=document.getElementById('calendar-selected-count'); const ts=tasks(selected); st.textContent=formatDate(selected); count.textContent=ts.length; empty.classList.toggle('hidden',!!ts.length); list.innerHTML=ts.map(t=>`<div class="bg-slate-800/60 border border-slate-700 rounded-xl p-4"><div class="font-semibold">${esc(t.title)}</div><div class="text-sm text-slate-400 mt-1">${esc(t.equipName||'—')}</div>${t.equipCode?`<div class="text-xs text-slate-500 mt-1">${esc(t.equipCode)}</div>`:''}<div class="mt-3 text-[11px] px-2.5 py-1 rounded-full inline-block ${t.status==='done'?'bg-emerald-500/20 text-emerald-400':t.forecast?'bg-sky-500/15 text-sky-300':'bg-amber-500/20 text-amber-400'}">${t.status==='done'?'✓ Выполнено':t.forecast?'Запланировано':'Ожидает'}</div></div>`).join('');
+    const list=document.getElementById('calendar-task-list'), empty=document.getElementById('calendar-empty'), st=document.getElementById('calendar-selected-title'), count=document.getElementById('calendar-selected-count'); const ts=tasks(selected); st.textContent=formatDate(selected); count.textContent=ts.length; empty.classList.toggle('hidden',!!ts.length); list.innerHTML=ts.map(t=>`<div class="bg-raised/60 border border-control rounded-xl p-4"><div class="font-semibold">${esc(t.title)}</div><div class="text-sm text-muted mt-1">${esc(t.equipName||'—')}</div>${t.equipCode?`<div class="text-xs text-subtle mt-1">${esc(t.equipCode)}</div>`:''}<div class="mt-3 text-[11px] px-2.5 py-1 rounded-full inline-block ${t.status==='done'?'bg-emerald-500/20 text-success':t.forecast?'bg-sky-500/15 text-info':'bg-amber-500/20 text-warning'}">${t.status==='done'?'✓ Выполнено':t.forecast?'Запланировано':'Ожидает'}</div></div>`).join('');
   }
 
   function open(){
@@ -115,15 +115,15 @@
     if (!form || form.querySelector('button[onclick="openPasswordRecovery()"]') || document.getElementById('forgot-password-btn')) return;
     const b = document.createElement('button');
     b.id = 'forgot-password-btn'; b.type = 'button'; b.textContent = 'Забыли пароль?';
-    b.className = 'w-full mt-1 py-2 text-sm text-primary-400 hover:text-primary-300 transition';
+    b.className = 'w-full mt-1 py-2 text-sm text-brand hover:text-brand transition';
     b.onclick = openResetModal;
     form.appendChild(b);
   }
   function ensureModal() {
     if (document.getElementById('password-reset-modal')) return;
     const d = document.createElement('div');
-    d.id='password-reset-modal'; d.className='fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-[200] hidden items-center justify-center p-4';
-    d.innerHTML=`<div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl"><div class="text-center"><div id="password-reset-title" class="text-xl font-bold text-white">Восстановление пароля</div><p id="password-reset-message" class="text-slate-400 text-sm mt-2">Введите email, на который отправить ссылку для восстановления.</p></div><div id="password-reset-email-wrap" class="mt-6"><label class="block text-xs font-medium text-slate-400 mb-1.5">Email</label><input id="password-reset-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div id="password-reset-password-wrap" class="hidden mt-6 space-y-3"><div><label class="block text-xs font-medium text-slate-400 mb-1.5">Новый пароль</label><input id="password-reset-password" type="password" placeholder="минимум 8 символов" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div><label class="block text-xs font-medium text-slate-400 mb-1.5">Повторите пароль</label><input id="password-reset-password2" type="password" placeholder="повторите пароль" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div></div><p id="password-reset-status" class="text-sm text-center mt-4 min-h-[20px]"></p><div class="grid grid-cols-2 gap-3 mt-5"><button type="button" onclick="closePasswordResetModal()" class="py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition">Отмена</button><button id="password-reset-submit" type="button" onclick="submitPasswordReset()" class="py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold transition">Отправить</button></div></div>`;
+    d.id='password-reset-modal'; d.className='fixed inset-0 bg-canvas/90 backdrop-blur-sm z-[200] hidden items-center justify-center p-4';
+    d.innerHTML=`<div class="w-full max-w-md bg-surface border border-control rounded-2xl p-6 shadow-2xl"><div class="text-center"><div id="password-reset-title" class="text-xl font-bold text-ink">Восстановление пароля</div><p id="password-reset-message" class="text-muted text-sm mt-2">Введите email, на который отправить ссылку для восстановления.</p></div><div id="password-reset-email-wrap" class="mt-6"><label class="block text-xs font-medium text-muted mb-1.5">Email</label><input id="password-reset-email" type="email" autocomplete="email" placeholder="you@company.ru" class="w-full bg-canvas border border-control rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div id="password-reset-password-wrap" class="hidden mt-6 space-y-3"><div><label class="block text-xs font-medium text-muted mb-1.5">Новый пароль</label><input id="password-reset-password" type="password" placeholder="минимум 8 символов" class="w-full bg-canvas border border-control rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div><label class="block text-xs font-medium text-muted mb-1.5">Повторите пароль</label><input id="password-reset-password2" type="password" placeholder="повторите пароль" class="w-full bg-canvas border border-control rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div></div><p id="password-reset-status" class="text-sm text-center mt-4 min-h-[20px]"></p><div class="grid grid-cols-2 gap-3 mt-5"><button type="button" onclick="closePasswordResetModal()" class="py-3 rounded-xl border border-control text-soft hover:bg-raised transition">Отмена</button><button id="password-reset-submit" type="button" onclick="submitPasswordReset()" class="py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold transition">Отправить</button></div></div>`;
     document.body.appendChild(d);
   }
   function openResetModal() {
@@ -146,7 +146,7 @@
       if(p!==p2){status.textContent='Пароли не совпадают.';return;}
       const {error}=await supabaseClient.auth.updateUser({password:p});
       if(error){status.textContent=error.message||'Не удалось изменить пароль.';return;}
-      status.className='text-sm text-center mt-4 min-h-[20px] text-emerald-400'; status.textContent='Пароль изменён. Теперь можно войти.';
+      status.className='text-sm text-center mt-4 min-h-[20px] text-success'; status.textContent='Пароль изменён. Теперь можно войти.';
       setTimeout(()=>{window.closePasswordResetModal();window.location.hash='';window.location.reload();},1200); return;
     }
     const email=document.getElementById('password-reset-email').value.trim().toLowerCase();
@@ -155,10 +155,10 @@
     try {
       const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
       if(error) throw error;
-      status.className='text-sm text-center mt-4 min-h-[20px] text-emerald-400'; status.textContent='Если такой аккаунт существует, письмо отправлено. Проверьте почту и Спам.';
+      status.className='text-sm text-center mt-4 min-h-[20px] text-success'; status.textContent='Если такой аккаунт существует, письмо отправлено. Проверьте почту и Спам.';
     } catch (error) {
       console.error('[Check App] Password reset request failed:', error);
-      status.className='text-sm text-center mt-4 min-h-[20px] text-red-400';
+      status.className='text-sm text-center mt-4 min-h-[20px] text-danger';
       status.textContent=error?.message||'Не удалось отправить письмо.';
     }
   };

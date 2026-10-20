@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 
 const html = ['index.html','app/index.html'].map(file=>fs.readFileSync(file,'utf8')).join('\n');
-const js = ['js/app.js', 'js/team.js', 'js/company-deletion.js', 'js/update-center.js', 'js/calendar-core.js', 'js/onboarding.js', 'js/consumables.js', 'js/photo-attachments.js'].map(file => fs.readFileSync(file, 'utf8')).join('\n');
+const js = ['js/app.js', 'js/theme.js', 'js/team.js', 'js/company-deletion.js', 'js/update-center.js', 'js/calendar-core.js', 'js/onboarding.js', 'js/consumables.js', 'js/photo-attachments.js'].map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
 const defined = new Set();
 for (const match of js.matchAll(/(?:^|\n)\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)) defined.add(match[1]);

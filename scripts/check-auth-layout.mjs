@@ -17,7 +17,7 @@ try{
  for(const viewport of [{width:390,height:844},{width:320,height:568},{width:1440,height:900},{width:390,height:360}]){
   await page.setViewportSize(viewport);await page.locator('#login-email').focus();
   const geometry=await page.evaluate(()=>{const box=id=>{const b=document.getElementById(id).getBoundingClientRect();return{x:b.x,y:b.y,w:b.width,h:b.height,bottom:b.bottom}};const logo=document.querySelector('.auth-logo').getBoundingClientRect();return{logoCenter:logo.x+logo.width/2,panelCenter:document.querySelector('.auth-panel').getBoundingClientRect().x+document.querySelector('.auth-panel').getBoundingClientRect().width/2,button:box('login-submit'),email:box('login-email'),password:box('login-password'),version:document.getElementById('auth-version').textContent,overflow:document.documentElement.scrollWidth>innerWidth};});
-  assert.ok(Math.abs(geometry.logoCenter-geometry.panelCenter)<1);assert.equal(geometry.button.h,52);assert.equal(geometry.email.h,52);assert.equal(geometry.password.h,52);assert.equal(geometry.overflow,false);assert.match(geometry.version,/Версия 1\.2\.7/);
+  assert.ok(Math.abs(geometry.logoCenter-geometry.panelCenter)<1);assert.equal(geometry.button.h,52);assert.equal(geometry.email.h,52);assert.equal(geometry.password.h,52);assert.equal(geometry.overflow,false);assert.match(geometry.version,/Версия 1\.2\.8/);
   await page.locator('#login-submit').scrollIntoViewIfNeeded();assert.equal(await page.locator('#login-submit').isVisible(),true);
   if(viewport.width===390&&viewport.height===844){await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:'/tmp/check-auth-mobile.png'});}
   if(viewport.width===1440)await page.screenshot({path:'/tmp/check-auth-desktop.png'});

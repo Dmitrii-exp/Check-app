@@ -16,8 +16,8 @@ function setConsumablesFilter(filter) {
   document.querySelectorAll('[data-consumables-filter]').forEach(el=>{
     const selected=el.dataset.consumablesFilter===filter;
     el.classList.toggle('border-blue-500',selected);
-    el.classList.toggle('border-[#354359]',!selected);
-    el.classList.toggle('text-blue-300',selected);
+    el.classList.toggle('border-control',!selected);
+    el.classList.toggle('text-info',selected);
   });
   paintConsumables();
 }
@@ -69,8 +69,8 @@ async function renderConsumables() {
   const list=document.getElementById('consumables-list');
   if(!list)return;
   const version=++consumablesRequestVersion;
-  if(!scope.companyId || !scope.departmentId){list.innerHTML='<p class="text-center text-[#a8b5c8] py-8">Выберите подразделение</p>';return;}
-  list.innerHTML='<p class="text-center text-[#a8b5c8] py-8">Загрузка заявок…</p>';
+  if(!scope.companyId || !scope.departmentId){list.innerHTML='<p class="text-center text-muted py-8">Выберите подразделение</p>';return;}
+  list.innerHTML='<p class="text-center text-muted py-8">Загрузка заявок…</p>';
   try{
     const {data,error}=await supabaseClient.from('consumable_requests')
       .select('id,item_name,quantity,unit,comment,status,created_by,created_at,department_id,photo_path')
@@ -94,20 +94,20 @@ function paintConsumables(){
   const badge=document.getElementById('consumables-nav-count');
   if(badge){badge.textContent=counts.needed;badge.classList.toggle('hidden',counts.needed===0);}
   const rows=consumablesRows.filter(r=>consumablesFilter==='all'||(consumablesFilter==='active'?r.status!=='purchased':r.status===consumablesFilter));
-  if(!rows.length){list.innerHTML='<p class="text-center text-[#a8b5c8] py-10">В этом списке пока нет заявок</p>';return;}
+  if(!rows.length){list.innerHTML='<p class="text-center text-muted py-10">В этом списке пока нет заявок</p>';return;}
   list.innerHTML=rows.map(r=>{
     const editable=scope.manager || (getUser()?.role==='responsible' && r.created_by===scope.userId && r.status==='needed');
-    const colors={needed:'text-amber-400',ordered:'text-blue-400',purchased:'text-emerald-400'};
+    const colors={needed:'text-warning',ordered:'text-info',purchased:'text-success'};
     const owner=getCompany()?.users?.find(u=>u.id===r.created_by);
     const statusControls=scope.manager?'<div class="flex flex-wrap gap-2 mt-3">'+
-      Object.entries(consumablesLabels).map(([status,label])=>'<button type="button" data-consumable-id="'+consumablesEscape(r.id)+'" data-new-status="'+status+'" '+(r.status===status?'disabled ':'')+'class="px-3 py-1.5 rounded-xl border text-xs '+(r.status===status?'border-blue-500 bg-blue-600/20 text-blue-300':'border-slate-600 text-slate-300')+'">'+label+'</button>').join('')+'</div>':'';
-    return '<article class="bg-[#131e2d] rounded-2xl border border-[#263448] p-4 space-y-2"><div class="flex items-start justify-between gap-2"><h3 class="font-semibold break-words">'+consumablesEscape(r.item_name)+'</h3><span class="text-xs whitespace-nowrap '+(colors[r.status]||'text-[#a8b5c8]')+'">'+consumablesEscape(consumablesLabels[r.status]||r.status)+'</span></div>'+
+      Object.entries(consumablesLabels).map(([status,label])=>'<button type="button" data-consumable-id="'+consumablesEscape(r.id)+'" data-new-status="'+status+'" '+(r.status===status?'disabled ':'')+'class="px-3 py-1.5 rounded-xl border text-xs '+(r.status===status?'border-blue-500 bg-blue-600/20 text-info':'border-slate-600 text-soft')+'">'+label+'</button>').join('')+'</div>':'';
+    return '<article class="bg-surface rounded-2xl border border-line p-4 space-y-2"><div class="flex items-start justify-between gap-2"><h3 class="font-semibold break-words">'+consumablesEscape(r.item_name)+'</h3><span class="text-xs whitespace-nowrap '+(colors[r.status]||'text-muted')+'">'+consumablesEscape(consumablesLabels[r.status]||r.status)+'</span></div>'+
       (r.photo_path?'<img class="hidden w-24 h-24 rounded-xl object-cover" alt="Фото расходника" data-check-photo-bucket="consumable-photos" data-check-photo-path="'+consumablesEscape(r.photo_path)+'">':'')+
-      (editable?'<button type="button" data-consumable-replace-photo="'+consumablesEscape(r.id)+'" class="text-xs text-primary-300 hover:text-primary-200">'+(r.photo_path?'Заменить фото':'Добавить фото')+'</button>':'')+
-      '<div class="text-sm text-slate-300">'+consumablesEscape(r.quantity)+' '+consumablesEscape(r.unit)+'</div>'+
-      (r.comment?'<p class="text-sm text-[#a8b5c8] whitespace-pre-wrap break-words">'+consumablesEscape(r.comment)+'</p>':'')+
-      '<div class="text-xs text-[#8191a8]">'+consumablesEscape(owner?.name||'Сотрудник')+' · '+new Date(r.created_at).toLocaleDateString('ru-RU')+'</div>'+
-      statusControls+(scope.manager?'<button type="button" data-consumable-delete="'+consumablesEscape(r.id)+'" class="text-xs text-rose-400 mt-2">Удалить заявку</button>':'')+'</article>';
+      (editable?'<button type="button" data-consumable-replace-photo="'+consumablesEscape(r.id)+'" class="text-xs text-brand hover:text-brand">'+(r.photo_path?'Заменить фото':'Добавить фото')+'</button>':'')+
+      '<div class="text-sm text-soft">'+consumablesEscape(r.quantity)+' '+consumablesEscape(r.unit)+'</div>'+
+      (r.comment?'<p class="text-sm text-muted whitespace-pre-wrap break-words">'+consumablesEscape(r.comment)+'</p>':'')+
+      '<div class="text-xs text-subtle">'+consumablesEscape(owner?.name||'Сотрудник')+' · '+new Date(r.created_at).toLocaleDateString('ru-RU')+'</div>'+
+      statusControls+(scope.manager?'<button type="button" data-consumable-delete="'+consumablesEscape(r.id)+'" class="text-xs text-danger mt-2">Удалить заявку</button>':'')+'</article>';
   }).join('');
   void checkShowSignedPhotos(list);
   list.querySelectorAll('[data-consumable-replace-photo]').forEach(btn=>btn.addEventListener('click',()=>checkOpenReplacePhoto('consumable',btn.dataset.consumableReplacePhoto)));
