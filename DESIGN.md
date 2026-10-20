@@ -33,3 +33,13 @@ tokens. The team list includes all network participants, with explicit role and
 department labels. At 390px cards wrap without horizontal scrolling. Native
 select popups remain platform-owned for mobile keyboard/accessibility behavior.
 The role confirmation is an app-styled native dialog with Cancel initially focused.
+
+## Authentication layout (1.2.7)
+The auth screen uses one centered brand stack: existing equipment logo, Check App,
+small version label, then the product tagline. css/styles.css owns auth geometry
+through .auth-* selectors; the primary palette remains unchanged. The content
+column is 420px maximum with 20px mobile gutters, 52px fields/primary buttons,
+44px tabs/secondary targets and consistent 16–18px field gaps. Mobile layout is
+top-aligned and scrolls naturally when the keyboard reduces the viewport.
+Both compiled Tailwind and product CSS URLs are versioned. The build fills the
+version beneath the brand from package.json for website/APK consistency.

@@ -40,3 +40,11 @@ Invitation tokens stay in memory after removing the URL fragment; never store
 passwords or invitation links in localStorage. Legacy shared-code joining is revoked.
 
 Team and recipient forms use novalidate and inline Russian validation. Required, email and password constraints are checked without native bubbles; invalid fields reference live feedback and focus moves to the first invalid field.
+
+## Authentication geometry and version
+Auth forms share .auth-* controls in css/styles.css. Forms submit through the
+existing handlers with novalidate; input values/autofill/paste remain supported.
+Password visibility toggles are keyboard-accessible with changing label/state.
+Primary/busy button dimensions are stable. Mobile inputs are 16px to avoid iOS
+focus zoom. No fixed-height container traps focused fields behind the keyboard.
+The static auth-version label is populated from package.json by build-mobile.mjs.

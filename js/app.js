@@ -312,6 +312,15 @@
 
 
 
+    function toggleAuthPassword(id,button) {
+      const input=document.getElementById(id);
+      const visible=input.type==='password';
+      input.type=visible?'text':'password';
+      button.textContent=visible?'Скрыть':'Показать';
+      button.setAttribute('aria-pressed',String(visible));
+      button.setAttribute('aria-label',visible?'Скрыть пароль':'Показать пароль');
+    }
+
     function switchAuthTab(tab) {
       ['login', 'register', 'invite'].forEach(t => {
         document.getElementById('form-' + t).classList.toggle('hidden', t !== tab);

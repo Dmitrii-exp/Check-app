@@ -20,7 +20,9 @@ fs.copyFileSync(path.join(root, 'app', '.htaccess'), path.join(output, 'app', '.
 const supabaseUmd = path.join(root, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js');
 if (!fs.existsSync(supabaseUmd)) throw new Error('Missing local Supabase UMD bundle: ' + supabaseUmd);
 fs.copyFileSync(supabaseUmd, path.join(output, 'js', 'supabase.js'));
+const version = JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version;
 let html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
+html=html.replace(/(<p\s+id="auth-version"[^>]*>)[^<]*(<\/p>)/, '$1Версия '+version+'$2');
 html = html.replace('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/dist/umd/supabase.js', 'js/supabase.js');
 html = html.replace(/\s*<base href="\/"\s*\/>/, '');
 html = html.replace(/\s*<script src="https:\/\/cdn\.tailwindcss\.com"><\/script>/, '');
@@ -33,7 +35,8 @@ if (!/<link\s+rel="stylesheet"\s+href="css\/tailwind\.css(?:\?[^"]*)?"\s*\/>/.te
     '  <link rel="stylesheet" href="css/tailwind.css" />\n  $1'
   );
 }
-if (!html.includes('href="css/tailwind.css"')) {
+html=html.replace(/href="css\/tailwind\.css(?:\?[^"]*)?"/g, 'href="css/tailwind.css?v='+version+'"');
+if (!html.includes('href="css/tailwind.css?v='+version+'"')) {
   throw new Error('Production build is missing the locally compiled Tailwind CSS link');
 }
 if (!fs.existsSync(path.join(output, 'css', 'tailwind.css'))) {
