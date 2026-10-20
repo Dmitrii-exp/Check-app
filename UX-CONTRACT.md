@@ -57,3 +57,11 @@ choice in memory and announces that saving failed. Cross-tab storage events upda
 the displayed choice. js/theme.js reads only a validated light/dark string before
 CSS paint, never user credentials. The preference is independent of Auth storage.
 All users can change their own device theme before or after login.
+
+## Dashboard department selector (1.2.9)
+The network manager sees every existing company department in a native select next
+to Главная. Native popup geometry is platform-owned. Both dashboard/top selectors
+share renderDeptSelect/onDeptChange and update the same currentDeptId; metrics and
+tasks follow that selection. Frozen departments stay visible and disabled under
+existing tariff policy. Staff retain their assigned department and cannot switch.
+Long names fit within the mobile viewport; no department yields a disabled control.

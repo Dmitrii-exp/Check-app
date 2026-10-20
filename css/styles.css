@@ -182,3 +182,18 @@ input[type="file"] { display: none; }
 .theme-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 
 [data-theme-status]:not(.theme-sr-only){display:block;width:100%;margin-top:8px;font-size:12px;line-height:18px;color:var(--check-muted)}
+
+/* Department navigation shares the global active department with the top bar. */
+.dashboard-heading { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dashboard-heading h1 { flex-shrink: 0; }
+.dashboard-dept-control { flex: 0 1 320px; min-width: 0; max-width: 100%; }
+.dashboard-dept-select {
+  width: 100%; min-height: 44px; padding: 8px 32px 8px 12px;
+  background-color: var(--check-surface-raised); color: var(--check-text);
+  border: 1px solid var(--check-control); border-radius: 12px;
+  font: inherit; font-size: 16px; cursor: pointer;
+}
+.dashboard-dept-select:hover { border-color: rgb(var(--check-brand-rgb)); }
+.dashboard-dept-select:focus-visible { outline: 2px solid rgb(var(--check-brand-rgb)); outline-offset: 2px; }
+.dashboard-dept-select:disabled { opacity: .6; cursor: default; }
+@media (max-width: 480px) { .dashboard-dept-control { flex: 1 1 160px; } }

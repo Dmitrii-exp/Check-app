@@ -9,9 +9,9 @@
   <meta name="description" content="Check App — контроль технического обслуживания оборудования." />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <meta name="theme-color" content="#090e19" />
-  <script src="js/theme.js?v=1.2.8"></script>
-  <link rel="stylesheet" href="css/tailwind.css?v=1.2.8" />
-  <link rel="stylesheet" href="css/styles.css?v=20261020-1.2.8" />
+  <script src="js/theme.js?v=1.2.9"></script>
+  <link rel="stylesheet" href="css/tailwind.css?v=1.2.9" />
+  <link rel="stylesheet" href="css/styles.css?v=20261020-1.2.9" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/dist/umd/supabase.js"></script>
   <link rel="manifest" href="public/manifest.webmanifest" />
 </head>
@@ -37,7 +37,7 @@
           </svg>
           <div>
             <h1 class="auth-title">Check App</h1>
-            <p id="auth-version" class="auth-version" data-check-version>Версия 1.2.8</p>
+            <p id="auth-version" class="auth-version" data-check-version>Версия 1.2.9</p>
             <p class="auth-tagline">Оборудование под контролем</p>
           </div>
         </div>
@@ -174,8 +174,8 @@
 
     <div id="dept-bar" class="bg-surface/50 border-b border-line hidden">
       <div class="max-w-5xl mx-auto px-4 py-2 flex items-center gap-3 overflow-x-auto scroll-thin">
-        <span class="text-xs text-subtle flex-shrink-0">Подразделение:</span>
-        <select id="dept-select" onchange="onDeptChange()" class="bg-raised border border-control rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-[160px]"></select>
+        <label for="dept-select" class="text-xs text-subtle flex-shrink-0">Подразделение:</label>
+        <select id="dept-select" onchange="onDeptChange(this.value)" class="bg-raised border border-control rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-[160px]"></select>
         <button onclick="openDeptModal()" class="text-xs text-brand hover:text-brand flex-shrink-0 px-2 py-1">+ Создать</button>
       </div>
     </div>
@@ -199,7 +199,13 @@
     <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
 
       <div id="page-dashboard" class="page hidden space-y-6 fade-in">
-        <h1 class="text-2xl font-bold">Главная <span id="dash-dept-name" class="text-brand text-lg font-normal"></span></h1>
+        <div class="dashboard-heading">
+          <h1 class="text-2xl font-bold">Главная <span id="dash-dept-name" class="text-brand text-lg font-normal"></span></h1>
+          <div id="dashboard-dept-control" class="dashboard-dept-control hidden">
+            <label for="dashboard-dept-select" class="sr-only">Подразделение на главной</label>
+            <select id="dashboard-dept-select" class="dashboard-dept-select" onchange="onDeptChange(this.value)"></select>
+          </div>
+        </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="bg-surface rounded-2xl p-4 border border-line">
             <div class="text-3xl font-bold text-brand" id="stat-equipment">0</div>
@@ -327,7 +333,7 @@
         <section class="bg-surface rounded-2xl border border-line p-5 space-y-3" aria-labelledby="theme-settings-title"><h2 id="theme-settings-title" class="font-semibold text-lg">Тема интерфейса</h2><p class="text-sm text-muted">Выберите удобное оформление. Настройка сохранится на этом устройстве.</p><div data-theme-control></div></section>
         <section class="bg-surface rounded-2xl border border-line p-5 space-y-3" aria-label="Обновления Check App">
           <h2 class="font-semibold text-lg">Обновления Check App</h2>
-          <p id="app-update-current" class="text-sm text-muted">Версия приложения: 1.2.8</p>
+          <p id="app-update-current" class="text-sm text-muted">Версия приложения: 1.2.9</p>
           <p id="app-update-latest" class="text-sm text-muted">Информация о последней версии ещё не загружена</p>
           <p id="app-update-status" class="text-sm text-soft" role="status">Нажмите «Проверить обновления»</p>
           <div class="flex flex-wrap gap-2">
@@ -647,10 +653,10 @@
       </div>
     </div>
   </div>
-  <script src="js/onboarding.js?v=1.2.8"></script>
-  <script src="js/update-center.js?v=1.2.8"></script>
-  <script src="js/photo-attachments.js?v=1.2.8"></script>
-  <script src="js/consumables.js?v=1.2.8"></script>
+  <script src="js/onboarding.js?v=1.2.9"></script>
+  <script src="js/update-center.js?v=1.2.9"></script>
+  <script src="js/photo-attachments.js?v=1.2.9"></script>
+  <script src="js/consumables.js?v=1.2.9"></script>
   <dialog id="delete-company-dialog" class="check-danger-dialog" aria-labelledby="delete-company-title" aria-describedby="delete-company-description">
     <form id="delete-company-form" novalidate onsubmit="event.preventDefault(); submitCompanyDeletion()">
       <h2 id="delete-company-title" class="text-xl font-bold">Удалить компанию?</h2>
@@ -666,7 +672,7 @@
       </div>
     </form>
   </dialog>
-  <script src="js/company-deletion.js?v=1.2.8"></script>
+  <script src="js/company-deletion.js?v=1.2.9"></script>
   <dialog id="team-role-dialog" class="check-danger-dialog team-dialog" aria-labelledby="team-role-title">
     <form novalidate onsubmit="event.preventDefault(); saveTeamRole()">
       <h2 id="team-role-title" class="text-xl font-bold">Роль участника</h2><p id="team-role-name"></p>
@@ -679,8 +685,8 @@
   <dialog id="team-remove-dialog" class="check-danger-dialog" aria-labelledby="team-remove-title">
     <form novalidate onsubmit="event.preventDefault(); confirmTeamMemberRemoval()"><h2 id="team-remove-title" class="text-xl font-bold">Удалить участника из компании?</h2><p id="team-remove-name"></p><p class="text-sm text-muted">Участник потеряет доступ к данным компании. История выполненных работ сохранится. Для повторного присоединения понадобится новое приглашение.</p><p id="team-remove-status" class="team-status" role="status" aria-live="polite"></p><div class="delete-company-actions"><button id="team-remove-cancel" type="button" onclick="closeTeamMemberRemoval()" autofocus>Отмена</button><button id="team-remove-confirm" type="submit" class="delete-company-button delete-company-solid">Удалить из компании</button></div></form>
   </dialog>
-  <script src="js/team.js?v=1.2.8"></script>
-  <script src="js/app.js?v=1.2.8"></script>
-  <script src="js/calendar.js?v=1.2.8"></script>
+  <script src="js/team.js?v=1.2.9"></script>
+  <script src="js/app.js?v=1.2.9"></script>
+  <script src="js/calendar.js?v=1.2.9"></script>
 </body>
 </html>

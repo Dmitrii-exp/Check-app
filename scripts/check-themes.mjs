@@ -22,6 +22,36 @@ try{
  });
  for(const file of ['js/photo-attachments.js','js/consumables.js','js/team.js','js/app.js','js/calendar-core.js'])await page.addScriptTag({path:file});
  await page.evaluate(async()=>{await hydrateCurrentUser();enterApp();});
+ // Dashboard navigation uses the same scope as the global selector.
+ await page.evaluate(()=>{
+   const c=getCompany();c.subscription={planId:'standard',expiresAt:'2099-01-01'};c.workLimits.active_department_ids.push('dep2');c.workLimits.active_equipment_ids.push('machine2','machine3');
+   c.departments.push({id:'dep2',name:'Второе подразделение с очень длинным названием для мобильного экрана'});
+   c.equipment.push({id:'machine2',name:'Компрессор',departmentId:'dep2'},{id:'machine3',name:'Подъемник',departmentId:'dep2'});
+   c.tasks.push({id:'task2',title:'Проверить компрессор',date:todayStr(),departmentId:'dep2',equipmentId:'machine2',status:'pending'});
+   renderDashboard();
+ });
+ assert.equal(await page.locator('#dashboard-dept-select option').count(),2);
+ await page.locator('#dashboard-dept-select').selectOption('dep2');
+ assert.equal(await page.locator('#dept-select').inputValue(),'dep2');
+ assert.equal(await page.locator('#stat-equipment').textContent(),'2');
+ assert.match(await page.locator('#dash-today-list').textContent(),/Проверить компрессор/);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await page.locator('#dept-select').selectOption('dep');
+ assert.equal(await page.locator('#dashboard-dept-select').inputValue(),'dep');
+ assert.equal(await page.locator('#stat-equipment').textContent(),'1');
+ await page.locator('#dashboard-dept-select').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+ assert.equal(await page.locator('#dept-select').inputValue(),'dep2');
+ await page.evaluate(()=>{getCompany().subscription={planId:'free'};getCompany().workLimits.active_department_ids=['dep'];renderDashboard();});
+ assert.equal(await page.locator('#dashboard-dept-select option[value="dep2"]').isDisabled(),true);
+ assert.equal(await page.locator('#dashboard-dept-select').inputValue(),'dep');
+ await page.evaluate(()=>{
+   const u=getUser();u.role='responsible';u.departmentId='dep';renderDashboard();onDeptChange('dep2');
+ });
+ assert.equal(await page.locator('#dashboard-dept-control').isVisible(),false);
+ assert.equal(await page.evaluate(()=>getActiveDeptId()),'dep');
+ await page.evaluate(()=>{getUser().role='manager';const c=getCompany();const saved=c.departments;c.departments=[];renderDashboard();window.savedDepartments=saved;});
+ assert.equal(await page.locator('#dashboard-dept-select').isDisabled(),true);
+ await page.evaluate(()=>{getCompany().departments=window.savedDepartments;renderDashboard();});
  for(const theme of ['light','dark']){
   await page.evaluate(()=>showPage('cabinet'));await page.locator('#page-cabinet [data-theme-choice="'+theme+'"]').click();
   assert.equal(await page.locator('#auth-screen [data-theme-choice="'+theme+'"]').getAttribute('aria-pressed'),'true');
@@ -47,5 +77,5 @@ try{
  const second=await context.newPage();await second.route('https://fonts.googleapis.com/**',r=>r.abort());await second.goto(url);
  await page.evaluate(()=>{document.getElementById('app-screen').classList.add('hidden');document.getElementById('auth-screen').classList.remove('hidden');});await page.locator('#auth-screen [data-theme-choice="light"]').click();await second.waitForFunction(()=>document.documentElement.dataset.theme==='light');
  const blocked=await browser.newContext();await blocked.addInitScript(()=>{Storage.prototype.setItem=function(){throw new DOMException('Blocked','SecurityError');};});const blockedPage=await blocked.newPage();await blockedPage.route('https://fonts.googleapis.com/**',r=>r.abort());await blockedPage.goto(url);await blockedPage.locator('#auth-screen [data-theme-choice="light"]').click();assert.equal(await blockedPage.evaluate(()=>document.documentElement.dataset.theme),'light');assert.match(await blockedPage.locator('#auth-screen [data-theme-status]').textContent(),/Не удалось сохранить/);await blocked.close();
- console.log('PASS: theme persistence/reload, both controls synchronized, device preference survives logout, cross-tab changes, light/dark page matrix and dialogs, contrast-oriented semantic palette, no mobile overflow or JS errors (mocked data)');
+ console.log('PASS: dashboard department switching/synchronized counts/tasks, long names, frozen/empty/role guards; theme persistence/reload, both controls synchronized, device preference survives logout, cross-tab changes, light/dark page matrix and dialogs, contrast-oriented semantic palette, no mobile overflow or JS errors (mocked data)');
 }finally{if(browser)await browser.close();server.close();}

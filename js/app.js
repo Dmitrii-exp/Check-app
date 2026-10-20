@@ -1007,32 +1007,36 @@
 
     function renderDeptSelect() {
       const c = getCompany();
-      const plan = getPlan();
       const sel = document.getElementById('dept-select');
-      sel.innerHTML = c.departments.map((d, i) => {
-        const active = i < plan.maxDepts;
-        return `<option value="${d.id}" ${d.id === currentDeptId ? 'selected' : ''} ${!active ? 'disabled' : ''}>${esc(d.name)}${active ? '' : ' (заморожено)'}</option>`;
-      }).join('');
-      // if current is frozen, switch to first
-      if (currentDeptId && !isDepartmentActive(currentDeptId) && c.departments.length) {
-        currentDeptId = c.departments[0].id;
-        sel.value = currentDeptId;
+      // Both selectors use the same company data and tariff restrictions.
+      if (!c.departments.some(d => d.id === currentDeptId) || !isDepartmentActive(currentDeptId)) {
+        currentDeptId = c.departments.find(d => isDepartmentActive(d.id))?.id || null;
+      }
+      const options = c.departments.map(d => {
+        const active = isDepartmentActive(d.id);
+        return `<option value="${esc(d.id)}" ${d.id === currentDeptId ? 'selected' : ''} ${!active ? 'disabled' : ''}>${esc(d.name)}${active ? '' : ' (заморожено)'}</option>`;
+      }).join('') || '<option value="">Нет подразделений</option>';
+      for (const control of [sel, document.getElementById('dashboard-dept-select')]) {
+        if (!control) continue;
+        control.innerHTML = options;
+        control.value = currentDeptId || '';
+        control.disabled = !currentDeptId;
       }
       const invSel = document.getElementById('invite-dept-select');
       if (invSel) {
-        invSel.innerHTML = c.departments.map((d, i) => {
-          const active = i < plan.maxDepts;
-          return `<option value="${d.id}" ${d.id === currentDeptId ? 'selected' : ''} ${!active ? 'disabled' : ''}>${esc(d.name)}${active ? '' : ' (заморожено)'}</option>`;
-        }).join('');
+        invSel.innerHTML = options;
         invSel.onchange = updateInviteCodeDisplay;
       }
       updateInviteCodeDisplay();
     }
 
-    function onDeptChange() {
-      currentDeptId = document.getElementById('dept-select').value;
+    function onDeptChange(departmentId = document.getElementById('dept-select').value) {
+      const c = getCompany();
+      if (getUser()?.role !== 'manager' || !c.departments.some(d => d.id === departmentId) || !isDepartmentActive(departmentId)) return;
+      currentDeptId = departmentId;
+      renderDeptSelect();
       generateTodayTasks();
-      const page = document.querySelector('.nav-btn.border-primary-500')?.dataset?.page || 'dashboard';
+      const page = document.querySelector('.page:not(.hidden)')?.id.replace('page-', '') || 'dashboard';
       showPage(page);
     }
 
@@ -1268,8 +1272,13 @@
 
     function renderDashboard() {
       const c = getCompany(); const today = todayStr();
-      const dept = c.departments.find(d => d.id === currentDeptId);
-      document.getElementById('dash-dept-name').textContent = dept ? '· ' + dept.name : '';
+      const isManager = getUser()?.role === 'manager';
+      if (isManager) renderDeptSelect();
+      const dept = c.departments.find(d => d.id === getActiveDeptId());
+      document.getElementById('dashboard-dept-control').classList.toggle('hidden', !isManager);
+      const deptLabel = document.getElementById('dash-dept-name');
+      deptLabel.classList.toggle('hidden', isManager);
+      deptLabel.textContent = dept ? '· ' + dept.name : '';
       const tasks = getDeptTasks(today);
       document.getElementById('stat-equipment').textContent = getDeptEquipment().length;
       document.getElementById('stat-today').textContent = tasks.length;
@@ -2228,7 +2237,7 @@
     });
   
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' && pendingOtp && !document.getElementById('otp-modal').classList.contains('hidden')) {
+      if (event.key === 'Enter' && typeof pendingOtp !== 'undefined' && pendingOtp && !document.getElementById('otp-modal')?.classList.contains('hidden')) {
         event.preventDefault();
         verifyPendingOtp();
       }
