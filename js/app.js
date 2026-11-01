@@ -1493,6 +1493,7 @@
     }
 
     function renderReports() {
+      window.checkRenderReportExport?.();
       const c = getCompany(); const today = todayStr(); const todayDate = new Date(today);
       const deptActions = getDeptActions(); const deptComps = getDeptCompletions();
       const overdue = [];
