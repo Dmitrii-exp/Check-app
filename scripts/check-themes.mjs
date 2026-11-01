@@ -20,7 +20,7 @@ try{
  const from=table=>{const b={select(){return b},eq(){return b},order(){return b},limit(){return b},maybeSingle:async()=>({data:table==='profiles'?rows.profiles[0]:rows[table]}),single:async()=>({data:rows[table]}),then(resolve){return Promise.resolve({data:rows[table]||[]}).then(resolve)}};return b;};
  window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:null}}),getUser:async()=>({data:{user:{id:'owner',email:'owner@test.invalid'}}}),onAuthStateChange:()=>({}),signOut:async()=>({})},from,rpc:async(name)=>{themeCalls.push(name);return{data:name==='get_current_work_limits'?{max_departments:1,max_equipment:5,work_active:true,active_department_ids:['dep'],active_equipment_ids:['machine']}:name==='is_super_admin'||name==='current_company_is_unlimited'?false:0};},functions:{invoke:async()=>({data:{data:[]}})}})};
  });
- for(const file of ['js/photo-attachments.js','js/consumables.js','js/team.js','js/app.js','js/calendar-core.js'])await page.addScriptTag({path:file});
+ for(const file of ['js/photo-attachments.js','js/consumables.js','js/team.js','js/interface.js','js/app.js','js/calendar-core.js'])await page.addScriptTag({path:file});
  await page.evaluate(async()=>{await hydrateCurrentUser();enterApp();});
  // Dashboard navigation uses the same scope as the global selector.
  await page.evaluate(()=>{
@@ -31,7 +31,7 @@ try{
    renderDashboard();
  });
  assert.equal(await page.locator('#dashboard-dept-select option').count(),2);
- await page.locator('#dashboard-dept-select').selectOption('dep2');
+ await page.locator('#dept-select').selectOption('dep2');
  assert.equal(await page.locator('#dept-select').inputValue(),'dep2');
  assert.equal(await page.locator('#stat-equipment').textContent(),'2');
  assert.match(await page.locator('#dash-today-list').textContent(),/Проверить компрессор/);
@@ -39,7 +39,7 @@ try{
  await page.locator('#dept-select').selectOption('dep');
  assert.equal(await page.locator('#dashboard-dept-select').inputValue(),'dep');
  assert.equal(await page.locator('#stat-equipment').textContent(),'1');
- await page.locator('#dashboard-dept-select').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+ await page.locator('#dept-select').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
  assert.equal(await page.locator('#dept-select').inputValue(),'dep2');
  await page.evaluate(()=>{getCompany().subscription={planId:'free'};getCompany().workLimits.active_department_ids=['dep'];renderDashboard();});
  assert.equal(await page.locator('#dashboard-dept-select option[value="dep2"]').isDisabled(),true);

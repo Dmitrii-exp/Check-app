@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#090e19" />
   <script src="js/theme.js?v=1.2.9"></script>
   <link rel="stylesheet" href="css/tailwind.css?v=1.2.9" />
-  <link rel="stylesheet" href="css/styles.css?v=20261020-1.2.9" />
+  <link rel="stylesheet" href="css/styles.css?v=20261101-mobile-2" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/dist/umd/supabase.js"></script>
   <link rel="manifest" href="public/manifest.webmanifest" />
 </head>
@@ -162,13 +162,13 @@
             <rect x="74" y="94" width="14" height="2.5" rx="1" fill="#93c5fd"/>
           </svg>
           <div>
-            <div class="font-semibold text-sm" id="header-company">—</div>
+            <div class="mobile-brand-name">Check App</div><div class="font-semibold text-sm" id="header-company">—</div>
             <div class="text-xs text-muted" id="header-user">—</div>
             <div class="text-xs text-muted break-all" id="header-email"></div>
           </div>
           <span id="cloud-status" class="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 text-success border border-emerald-500/20">Облако</span>
         </div>
-        <button onclick="doLogout()" class="text-muted hover:text-ink text-sm px-3 py-1.5 rounded-xl hover:bg-raised transition">Выйти</button>
+        <button type="button" class="mobile-account" data-interface-route="cabinet" aria-label="Личный кабинет"><span id="mobile-initials">ЛК</span></button><button onclick="doLogout()" class="desktop-logout text-muted hover:text-ink text-sm px-3 py-1.5 rounded-xl hover:bg-raised transition">Выйти</button>
       </div>
     </header>
 
@@ -192,7 +192,7 @@
         <button onclick="showPage('history')" data-page="history" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-muted hover:text-ink">История</button>
         <button onclick="showPage('reports')" data-page="reports" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-muted hover:text-ink">Отчёты</button>
         <button onclick="showPage('cabinet')" data-page="cabinet" class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-muted hover:text-ink">Кабинет</button>
-        <button id="nav-super-admin" onclick="showPage('super-admin')" data-page="super-admin" class="nav-btn hidden flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-warning hover:text-warning">👑 Администрирование</button>
+        <button id="nav-super-admin" onclick="showPage('super-admin')" data-page="super-admin" class="nav-btn hidden flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-warning hover:text-warning">Администрирование</button>
       </div>
     </nav>
 
@@ -206,28 +206,14 @@
             <select id="dashboard-dept-select" class="dashboard-dept-select" onchange="onDeptChange(this.value)"></select>
           </div>
         </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="bg-surface rounded-2xl p-4 border border-line">
-            <div class="text-3xl font-bold text-brand" id="stat-equipment">0</div>
-            <div class="text-xs text-muted mt-1">Оборудования</div>
-          </div>
-          <div class="bg-surface rounded-2xl p-4 border border-line">
-            <div class="text-3xl font-bold text-warning" id="stat-today">0</div>
-            <div class="text-xs text-muted mt-1">Задач сегодня</div>
-          </div>
-          <div class="bg-surface rounded-2xl p-4 border border-line">
-            <div class="text-3xl font-bold text-success" id="stat-done">0</div>
-            <div class="text-xs text-muted mt-1">Выполнено</div>
-          </div>
-          <div class="bg-surface rounded-2xl p-4 border border-line">
-            <div class="text-3xl font-bold text-danger" id="stat-pending">0</div>
-            <div class="text-xs text-muted mt-1">Ожидают</div>
-          </div>
-        </div>
-        <div class="bg-surface rounded-2xl border border-line p-5">
-          <h2 class="font-semibold mb-4">Задачи на сегодня</h2>
-          <div id="dash-today-list" class="space-y-3"></div>
-        </div>
+        <p id="dashboard-date" class="dashboard-date"></p>
+        <section class="maintenance-summary" aria-label="Сводка обслуживания">
+          <div class="maintenance-summary-main"><div id="stat-today" class="summary-total">0</div><p>Задач на сегодня</p></div>
+          <div class="maintenance-summary-states"><div><span>Ожидают</span><strong id="stat-pending" class="text-warning">0</strong></div><div><span>Выполнено</span><strong id="stat-done">0</strong></div></div>
+          <div class="maintenance-summary-equipment"><span>Оборудование</span><strong id="stat-equipment">0</strong></div>
+        </section>
+        <section class="dashboard-tasks"><div class="dashboard-section-heading"><h2>Задачи на сегодня</h2><button type="button" data-interface-route="today">Все задачи →</button></div><div id="dash-today-list" class="task-card-list"></div></section>
+        <div class="dashboard-shortcuts"><button type="button" data-interface-route="equipment"><span data-interface-icon="tool"></span>Оборудование</button><button type="button" data-interface-route="history"><span data-interface-icon="history"></span>История работ</button></div>
       </div>
 
       <div id="page-today" class="page hidden space-y-4 fade-in">
@@ -429,7 +415,7 @@
       <div id="page-super-admin" class="page hidden space-y-6 fade-in">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 class="text-2xl font-bold">👑 Администрирование</h1>
+            <h1 class="text-2xl font-bold">Администрирование</h1>
             <p class="text-sm text-muted mt-1">Управление бесплатным безлимитным доступом компаний.</p>
           </div>
           <span class="text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-warning border border-amber-500/20">SUPER ADMIN</span>
@@ -472,7 +458,19 @@
       </div>
 
     </main>
+    <nav id="mobile-navigation" class="mobile-navigation" aria-label="Основная навигация">
+      <button type="button" data-mobile-slot="home" data-interface-route="dashboard"><span data-interface-icon="home"></span><span data-mobile-label>Главная</span></button>
+      <button type="button" data-mobile-slot="calendar" data-interface-route="calendar"><span data-interface-icon="calendar"></span><span data-mobile-label>Календарь</span></button>
+      <button type="button" data-mobile-slot="tasks" data-interface-route="today"><span data-interface-icon="tasks"></span><span data-mobile-label>Задачи</span></button>
+      <button id="mobile-more-open" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="mobile-more"><span data-interface-icon="more"></span><span>Ещё</span></button>
+    </nav>
   </div>
+  <dialog id="mobile-more" class="interface-menu" aria-labelledby="mobile-more-title">
+    <div class="interface-menu-heading"><h2 id="mobile-more-title">Разделы</h2><button id="mobile-more-close" type="button" aria-label="Закрыть меню" autofocus>×</button></div>
+    <div class="interface-menu-account"><p id="mobile-user-name"></p><p id="mobile-user-email"></p></div>
+    <div id="mobile-more-items" class="interface-menu-items"></div>
+    <button id="mobile-more-logout" class="interface-menu-logout" type="button">Выйти из аккаунта</button>
+  </dialog>
 
   <!-- Department Modal -->
   <div id="modal-dept" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
@@ -592,7 +590,7 @@
         <svg class="w-10 h-10 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
       </div>
       <div>
-        <h3 class="text-3xl font-bold text-ink tracking-wide">ГОТОВО</h3>
+        <h3 class="text-3xl font-bold text-ink tracking-wide">Выполнено</h3>
         <p class="text-muted text-sm mt-2">Задача успешно выполнена</p>
       </div>
       <button type="button" onclick="closeSuccessModal()" class="w-full py-3.5 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-base transition">OK</button>
@@ -686,7 +684,8 @@
     <form novalidate onsubmit="event.preventDefault(); confirmTeamMemberRemoval()"><h2 id="team-remove-title" class="text-xl font-bold">Удалить участника из компании?</h2><p id="team-remove-name"></p><p class="text-sm text-muted">Участник потеряет доступ к данным компании. История выполненных работ сохранится. Для повторного присоединения понадобится новое приглашение.</p><p id="team-remove-status" class="team-status" role="status" aria-live="polite"></p><div class="delete-company-actions"><button id="team-remove-cancel" type="button" onclick="closeTeamMemberRemoval()" autofocus>Отмена</button><button id="team-remove-confirm" type="submit" class="delete-company-button delete-company-solid">Удалить из компании</button></div></form>
   </dialog>
   <script src="js/team.js?v=1.2.9"></script>
-  <script src="js/app.js?v=1.2.9"></script>
-  <script src="js/calendar.js?v=1.2.9"></script>
+  <script src="js/interface.js?v=20261101-mobile-2"></script>
+  <script src="js/app.js?v=20261101-mobile-2"></script>
+  <script src="js/calendar.js?v=20261101-mobile-2"></script>
 </body>
 </html>

@@ -45,7 +45,7 @@
     if(!nav){
       nav=document.createElement('nav'); nav.id='calendar-nav';
       nav.className='bg-surface border-b border-line';
-      nav.innerHTML='<div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin"><button type="button" data-calendar-open class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-brand hover:text-ink transition">📅 Календарь</button></div>';
+      nav.innerHTML='<div class="max-w-5xl mx-auto px-2 flex overflow-x-auto scroll-thin"><button type="button" data-calendar-open class="nav-btn flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-brand hover:text-ink transition">Календарь</button></div>';
       const deptBar=document.getElementById('dept-bar');
       const manager=document.getElementById('manager-nav');
       if(deptBar?.parentNode===app) deptBar.insertAdjacentElement('afterend',nav);
@@ -88,7 +88,7 @@
   }
 
   function open(){
-    ensurePage(); ensureNav(); document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden')); document.getElementById('page-calendar')?.classList.remove('hidden'); render();
+    ensurePage(); ensureNav(); document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden')); document.getElementById('page-calendar')?.classList.remove('hidden'); render(); window.checkRefreshShell?.('calendar');
   }
 
   function boot(){

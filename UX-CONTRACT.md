@@ -65,3 +65,34 @@ share renderDeptSelect/onDeptChange and update the same currentDeptId; metrics a
 tasks follow that selection. Frozen departments stay visible and disabled under
 existing tariff policy. Staff retain their assigned department and cannot switch.
 Long names fit within the mobile viewport; no department yields a disabled control.
+
+
+## Approved mobile navigation and maintenance cards
+
+Source: explicit user approval of the second mobile preview on 2026-11-01.
+The stored role rules in enterApp/showPage and the existing data/permission
+contracts above remain authoritative; presentation does not grant capabilities.
+
+| Capability | Canonical owner | Source of truth | Allowed variants | Verification |
+| --- | --- | --- | --- | --- |
+| Select/Listbox | renderDeptSelect/onDeptChange | Existing role/tariff contract | Native popup; one visible selector on phones | check-themes.mjs |
+| Date | Existing native date inputs and calendar-core.js | Current stored dates and calendar task rules | Platform-owned date popup, unchanged | Existing calendar checks |
+| Form | Existing form handlers and dialogs | Existing validation and submit contracts | No new data-entry workflow | Auth/team/deletion regression scripts |
+| Scrollbar | css/styles.css | DESIGN.md runtime tokens | Global baseline, compact geometry exception | Both-theme/narrow viewport checks |
+| CRUD | Existing js/app.js/team.js/consumables.js | Existing service and permission contracts | Same mutations, new navigation triggers | Existing mocked regressions |
+
+The More menu is a native dialog. Initial focus is Close. Tab stays inside,
+Escape closes and returns focus to the opener. Navigation closes the dialog and
+focuses the new page heading, then resets document scroll. Switching to desktop
+closes an open menu. Logout closes the menu and invokes the same logout handler.
+
+For managers/leads, bottom Tasks means Today; one-time tasks remain in More.
+For employees, Home means Today, with One-time and Consumables as separate bottom
+items. Other routes are derived from enterApp-filtered buttons; More never
+unhides the original navigation or rewrites roles. Create department remains
+network-manager-only; super administration retains its original eligibility.
+
+Maintenance cards show the same title, equipment, description and done/pending
+state. A completion button only delegates a still-visible unfinished task to
+openCompleteModal; the previous required-worker/photo/status flow is unchanged.
+Opening the dialog must not write a result. Calendar remains informational.

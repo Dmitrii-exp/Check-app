@@ -893,6 +893,7 @@
     }
 
     async function doLogout() {
+      window.checkCloseInterfaceMenu?.();
       await supabaseClient.auth.signOut();
       db = loadDB();
       currentDeptId = null;
@@ -1028,6 +1029,7 @@
         invSel.onchange = updateInviteCodeDisplay;
       }
       updateInviteCodeDisplay();
+      window.checkRefreshShell?.();
     }
 
     function onDeptChange(departmentId = document.getElementById('dept-select').value) {
@@ -1174,6 +1176,7 @@
       if (page === 'reports') renderReports();
       if (page === 'cabinet') renderCabinet();
       if (page === 'super-admin') renderSuperAdmin();
+      window.checkRefreshShell?.(page);
     }
 
     async function renderSuperAdmin() {
@@ -1286,11 +1289,18 @@
       document.getElementById('stat-pending').textContent = tasks.filter(t => t.status === 'pending').length;
       const list = document.getElementById('dash-today-list');
       if (!tasks.length) { list.innerHTML = '<p class="text-subtle text-sm">Задач нет</p>'; return; }
-      list.innerHTML = tasks.map(t => `
-        <div class="flex items-center justify-between bg-raised/50 rounded-2xl px-4 py-3">
-          <div><div class="font-medium text-sm">${esc(t.title)}</div><div class="text-xs text-muted">${esc(t.equipName)}</div></div>
-          <span class="text-xs px-2.5 py-1 rounded-full ${t.status==='done'?'bg-emerald-500/20 text-success':'bg-amber-500/20 text-warning'}">${t.status==='done'?'Выполнено':'Ожидает'}</span>
-        </div>`).join('');
+      list.innerHTML = tasks.map(renderMaintenanceTaskCard).join('');
+    }
+
+    function renderMaintenanceTaskCard(task) {
+      const done = task.status === 'done';
+      const icon = name => window.checkInterfaceIcon?.(name) || '';
+      return `<article class="maintenance-task${done ? ' maintenance-task-done' : ''}">
+        <div class="maintenance-task-meta"><span>${icon('calendar')}Плановое ТО</span><span class="maintenance-task-status ${done ? 'is-done' : 'is-pending'}">${done ? 'Выполнено' : 'Ожидает'}</span></div>
+        <h3>${esc(task.title)}</h3><p class="maintenance-task-equipment">${esc(task.equipName || '—')}</p>
+        ${task.description ? `<p class="maintenance-task-description">${esc(task.description)}</p>` : ''}
+        ${done ? '' : `<div class="maintenance-task-footer"><span>${icon('camera')}Нужен фотоотчёт</span><button type="button" data-maintenance-task="${esc(task.id)}">${icon('check')}Выполнить</button></div>`}
+      </article>`;
     }
 
     function renderToday() {
@@ -1307,17 +1317,7 @@
       const empty = document.getElementById('today-empty');
       if (!tasks.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
       empty.classList.add('hidden');
-      list.innerHTML = tasks.map(t => {
-        const isDone = t.status === 'done';
-        return `<div class="bg-surface border border-line rounded-2xl p-4 ${isDone?'opacity-60':''}">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex-1"><div class="font-semibold">${esc(t.title)}</div>
-            <div class="text-sm text-muted mt-0.5">${esc(t.equipName)}</div>
-            ${t.description?`<div class="text-xs text-subtle mt-2">${esc(t.description)}</div>`:''}</div>
-            ${isDone?`<span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-success">✓ Выполнено</span>`
-              :`<button onclick="openCompleteModal('${t.id}')" class="bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium px-4 py-2 rounded-2xl">Выполнить</button>`}
-          </div></div>`;
-      }).join('');
+      list.innerHTML = tasks.map(renderMaintenanceTaskCard).join('');
     }
 
     function renderEquipment() {
