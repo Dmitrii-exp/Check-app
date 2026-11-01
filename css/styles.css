@@ -358,3 +358,27 @@ input[type="file"] { display: none; }
   .maintenance-task-footer button { padding-inline:12px; }
   .interface-menu-items { grid-template-columns:1fr; }
 }
+/* Engine-hour entry reuses the native modal and shared theme tokens. */
+.check-hours-dialog { width:min(440px,calc(100% - 32px)); max-height:calc(100dvh - 32px); overflow:auto; padding:24px; border:1px solid rgb(var(--check-control-rgb)); border-radius:16px; background:rgb(var(--check-surface-rgb)); color:rgb(var(--check-text-rgb)); }
+.check-hours-dialog::backdrop { background:rgb(0 0 0 / .65); }
+.check-hours-dialog form { display:grid; gap:12px; }
+.check-hours-dialog label { font-size:14px; }
+.check-hours-dialog input,.check-hours-dialog select { width:100%; min-height:48px; padding:10px 12px; background:rgb(var(--check-raised-rgb)); border:1px solid rgb(var(--check-control-rgb)); border-radius:var(--check-radius-control); color:inherit; }
+.hour-dialog-actions { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.hour-dialog-actions button { min-height:48px; border-radius:var(--check-radius-control); }
+.hour-dialog-actions button:first-child { background:rgb(var(--check-raised-rgb)); }
+.hour-link { min-height:44px; text-align:left; color:rgb(var(--check-brand-rgb)); font-size:14px; text-decoration:underline; text-underline-offset:4px; }
+.hour-link:hover { text-decoration-thickness:2px; }
+.hour-status { min-height:44px; font-size:14px; color:rgb(var(--check-danger-rgb)); }
+.hour-overview { padding:16px; border:1px solid rgb(var(--check-border-rgb)); border-radius:var(--check-radius-card); background:rgb(var(--check-surface-rgb)); }
+.hour-overview-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.hour-overview-heading h2 { font-size:16px; font-weight:600; }
+.hour-overview-row { border-top:1px solid rgb(var(--check-border-rgb)); padding-top:12px; margin-top:8px; }
+.equipment-hour-summary { font-size:13px; line-height:1.6; color:rgb(var(--check-muted-rgb)); margin-top:8px; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.equipment-hour-summary strong { color:rgb(var(--check-text-rgb)); font-weight:500; }
+.hour-overview .equipment-hour-summary .hour-link { display:none; }
+
+.equipment-card { gap:12px; align-items:flex-start; }
+.equipment-card>div { min-width:0; }
+.equipment-card>button { flex:none; }
+.equipment-card .font-semibold { overflow-wrap:anywhere; }

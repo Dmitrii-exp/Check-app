@@ -25,7 +25,7 @@
     if(date < today) return saved;
     const out=[...saved];
     actions().forEach(a=>{
-      if(ids.has(a.id)) return;
+      if(ids.has(a.id) || a.scheduleType==='hours') return;
       const freq=Math.max(1,Number(a.frequency)||1);
       const last=(c.completions||[]).filter(x=>x.actionId===a.id).sort((x,y)=>String(y.date).localeCompare(String(x.date)))[0];
       let first=last ? addDays(last.date,freq) : today;

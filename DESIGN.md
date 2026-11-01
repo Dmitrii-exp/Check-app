@@ -151,7 +151,7 @@ raised #eef2f8, text #172438 and muted #56657b, retaining solid violet actions.
 Status foregrounds darken in light mode for contrast; image/SVG asset colors and
 solid-action white labels are not inverted. Native inputs/selects inherit the
 root color-scheme. js/theme.js applies the saved choice before first paint and
-mounts the same two-button control on login and cabinet. Preference is device-local
+mounts the two-button control only in the cabinet. Preference is device-local
 and survives sign-out; switching themes does not change account/company state.
 
 ## Approved mobile workspace (2026-11-01, second iteration)
@@ -187,3 +187,13 @@ structure supersedes the earlier keep-top-navigation rule only below 768px.
 - Verification: scripts/check-mobile-interface.mjs exercises real page switches,
   current-page state, all More destinations, role filtering, focus/Escape,
   completion delegation, logout, empty state and both themes at four widths.
+
+## Engine-hour maintenance (2026-11-01)
+
+Existing schedule selectors remain native and OS-owned. The action form chooses
+days or engine hours; intervals use a decimal mobile keyboard and explicit Russian
+validation. Employee navigation stays unchanged: Today owns the shared meter-entry
+button, while equipment cards reuse the same entry dialog for staff. The dialog
+uses native focus containment/Escape and shared --check-*-rgb theme tokens; 48px
+controls, an inline status region, duplicate-submit protection and stable actions.
+Task cards keep the existing photo workflow and add the actual hour threshold.

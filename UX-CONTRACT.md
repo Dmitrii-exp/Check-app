@@ -96,3 +96,24 @@ Maintenance cards show the same title, equipment, description and done/pending
 state. A completion button only delegates a still-visible unfinished task to
 openCompleteModal; the previous required-worker/photo/status flow is unchanged.
 Opening the dialog must not write a result. Calendar remains informational.
+
+## Engine-hour maintenance
+
+Business source: explicit user requirement, 2026-11-01: a reading of 3560 and
+interval 2000 produces the next TO at 4000, with 440 remaining. Existing date
+schedules retain their day frequency. Each new action selects days or engine hours.
+
+| Capability | Canonical owner | Contract |
+| --- | --- | --- |
+| Select/Listbox | Existing native selects | OS popup accepted; equipment stays in active department |
+| Form | engine-hours.js + hours-form | Total meter reading, decimal comma accepted, inline validation, preserve errors/input, no duplicate save |
+| Modal | Native dialog, shared CSS tokens | Named dialog, initial reading focus, Escape/cancel disabled while pending, restore source or current page heading |
+| CRUD | record_equipment_hours RPC | Stored profile scope and subscription checks; monotonic reading; compare expected value; audit actor/time |
+| Scheduling | ensure_due_maintenance_tasks | Aligned thresholds from zero; no TO at zero; at most one pending hour task per action |
+| Completion | Existing photo report + database triggers | Snapshot current reading; next threshold is the first aligned multiple after actual service, at least one interval beyond task threshold |
+| Feedback | Existing toast + inline status | Success only after RPC; refresh failure says reading saved and requests reload |
+| Conflict | RPC SQLSTATE 40001 | Never silently overwrite another reading; reload current data and preserve proposed input |
+
+No speculative calendar dates are shown for hour schedules. Existing date tasks,
+roles, billing, Auth and photo validation remain authoritative. Audit history
+is tenant/department scoped and follows company/equipment cascade deletion.

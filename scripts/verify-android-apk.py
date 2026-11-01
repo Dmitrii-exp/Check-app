@@ -6,7 +6,7 @@ from pathlib import Path
 
 version = json.loads(Path('package.json').read_text())['version']
 with zipfile.ZipFile(sys.argv[1]) as apk:
-    for path in ['js/interface.js', 'js/app.js', 'css/styles.css', 'js/update-center.js']:
+    for path in ['js/interface.js', 'js/engine-hours.js', 'js/app.js', 'css/styles.css', 'js/update-center.js']:
         assert apk.read('assets/public/' + path) == Path('dist-mobile', path).read_bytes(), path
     html = apk.read('assets/public/index.html').decode()
     assert html == Path('dist-mobile/index.html').read_text(), 'Packaged HTML differs from build'

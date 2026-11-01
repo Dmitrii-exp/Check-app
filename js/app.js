@@ -157,10 +157,10 @@
         id: company.id,
         name: company.name,
         departments: (departments || []).map(d => ({id:d.id, name:d.name, inviteCode:d.invite_code})),
-        equipment: (equipment || []).map(e => ({id:e.id, name:e.name, code:e.code || '', location:e.location || '', photoPath:e.photo_path || null, departmentId:e.department_id})),
-        actions: (actions || []).map(a => ({id:a.id, equipmentId:a.equipment_id, name:a.name, description:a.description || '', frequency:a.frequency, departmentId:a.department_id})),
-        tasks: (tasks || []).map(t => ({id:t.id, actionId:t.action_id, equipmentId:t.equipment_id, assignedUserId:t.assigned_user_id, departmentId:t.department_id, date:t.date, status:t.status, title:t.title, equipName:t.equip_name || '', equipCode:t.equip_code || '', description:t.description || '', blockedComment:t.blocked_comment || '', blockedWorkerName:t.blocked_worker_name || '', blockedAt:t.blocked_at || null})),
-        completions: (completions || []).map(c => ({id:c.id, taskId:c.task_id, actionId:c.action_id, equipmentId:c.equipment_id, departmentId:c.department_id, userId:c.user_id, title:c.title, equipName:c.equip_name || '', date:c.date, time:c.time || '', photoPath:c.photo_path || '', photo:'', comment:c.comment || '', workerName:c.worker_name || ''})),
+        equipment: (equipment || []).map(e => ({id:e.id, name:e.name, code:e.code || '', location:e.location || '', photoPath:e.photo_path || null, engineHours:e.engine_hours == null ? null : Number(e.engine_hours), engineHoursUpdatedAt:e.engine_hours_updated_at || null, departmentId:e.department_id})),
+        actions: (actions || []).map(a => ({id:a.id, equipmentId:a.equipment_id, name:a.name, description:a.description || '', frequency:a.frequency, scheduleType:a.schedule_type || 'days', hoursInterval:a.hours_interval == null ? null : Number(a.hours_interval), nextDueHours:a.next_due_hours == null ? null : Number(a.next_due_hours), departmentId:a.department_id})),
+        tasks: (tasks || []).map(t => ({id:t.id, actionId:t.action_id, equipmentId:t.equipment_id, assignedUserId:t.assigned_user_id, departmentId:t.department_id, date:t.date, dueEngineHours:t.due_engine_hours == null ? null : Number(t.due_engine_hours), status:t.status, title:t.title, equipName:t.equip_name || '', equipCode:t.equip_code || '', description:t.description || '', blockedComment:t.blocked_comment || '', blockedWorkerName:t.blocked_worker_name || '', blockedAt:t.blocked_at || null})),
+        completions: (completions || []).map(c => ({id:c.id, taskId:c.task_id, actionId:c.action_id, equipmentId:c.equipment_id, departmentId:c.department_id, userId:c.user_id, title:c.title, equipName:c.equip_name || '', date:c.date, time:c.time || '', engineHours:c.engine_hours == null ? null : Number(c.engine_hours), photoPath:c.photo_path || '', photo:'', comment:c.comment || '', workerName:c.worker_name || ''})),
         users: (profiles || []).map(u => ({id:u.id, name:u.name, email:(u.id === authUser.id ? (authUser.email || '') : ''), phone:u.phone || '', role:u.role, departmentId:u.department_id})),
         workLimits,
         subscription: subscriptions ? {planId:subscriptions.plan_id, startedAt:subscriptions.started_at, expiresAt:subscriptions.expires_at} : null
@@ -1298,6 +1298,7 @@
       return `<article class="maintenance-task${done ? ' maintenance-task-done' : ''}">
         <div class="maintenance-task-meta"><span>${icon('calendar')}Плановое ТО</span><span class="maintenance-task-status ${done ? 'is-done' : 'is-pending'}">${done ? 'Выполнено' : 'Ожидает'}</span></div>
         <h3>${esc(task.title)}</h3><p class="maintenance-task-equipment">${esc(task.equipName || '—')}</p>
+        ${task.dueEngineHours != null ? `<p class="maintenance-task-description">ТО на ${checkHourFormat(task.dueEngineHours)} м·ч</p>` : ''}
         ${task.description ? `<p class="maintenance-task-description">${esc(task.description)}</p>` : ''}
         ${done ? '' : `<div class="maintenance-task-footer"><span>${icon('camera')}Нужен фотоотчёт</span><button type="button" data-maintenance-task="${esc(task.id)}">${icon('check')}Выполнить</button></div>`}
       </article>`;
@@ -1312,6 +1313,7 @@
         const dept = getCompany().departments.find(d => d.id === user.departmentId);
         label.textContent = dept ? dept.name : ''; label.classList.remove('hidden');
       } else label.classList.add('hidden');
+      window.checkRenderTodayHours?.();
       const tasks = getDeptTasks(today);
       const list = document.getElementById('today-list');
       const empty = document.getElementById('today-empty');
@@ -1327,12 +1329,13 @@
       const plan = getPlan();
       if (!items.length) { list.innerHTML = '<p class="text-subtle text-sm py-8 text-center">Нет оборудования</p>'; return; }
       list.innerHTML = items.map(e => `
-        <div class="bg-surface border border-line rounded-2xl p-4 flex items-center justify-between ${e._active ? '' : 'opacity-50'}">
+        <div class="equipment-card bg-surface border border-line rounded-2xl p-4 flex items-center justify-between ${e._active ? '' : 'opacity-50'}">
           <div class="flex items-center gap-3">
             ${e.photoPath ? `<img class="hidden w-16 h-16 rounded-xl object-cover" data-check-photo-bucket="equipment-photos" data-check-photo-path="${esc(e.photoPath)}" alt="Фото оборудования">` : ''}
             <div>
             <div class="font-semibold">${esc(e.name)} ${e._active ? '' : '<span class="text-xs text-danger font-normal">· заморожено</span>'}</div>
             <div class="text-sm text-muted">${esc(e.code||'—')} · ${esc(e.location||'—')}</div>
+            ${window.checkEquipmentHourSummary?.(e) || ''}
             ${e._active && canManageDepartment(e.departmentId) ? `<button type="button" onclick="checkOpenReplacePhoto('equipment','${e.id}')" class="mt-2 text-xs text-brand hover:text-brand">${e.photoPath ? 'Заменить фото' : 'Добавить фото'}</button>` : ''}
             </div>
           </div>
@@ -1352,7 +1355,7 @@
         const equip = equipAll.find(e => e.id === a.equipmentId);
         return `<div class="bg-surface border border-line rounded-2xl p-4 flex items-center justify-between">
           <div><div class="font-semibold">${esc(a.name)}</div>
-          <div class="text-sm text-muted">${equip?esc(equip.name):'—'} · ${freqLabels[a.frequency]||a.frequency+' дн.'}</div></div>
+          <div class="text-sm text-muted">${equip?esc(equip.name):'—'} · ${a.scheduleType === 'hours' ? 'Каждые '+checkHourFormat(a.hoursInterval)+' м·ч' : (freqLabels[a.frequency]||a.frequency+' дн.')}<p class="text-sm text-soft mt-1">${a.scheduleType === 'hours' ? esc(checkHourScheduleText(a,equip)) : ''}</p></div></div>
           ${canManageDepartment(a.departmentId) ? `<button onclick="deleteAction('${a.id}')" class="text-subtle hover:text-danger text-sm px-2 py-1">Удалить</button>` : ''}
         </div>`;
       }).join('');
@@ -1389,7 +1392,7 @@
         department: dept?.name || '—',
         room: equip?.location || '—',
         equipment: equip?.name || item.equipName || '—',
-        maintenance: action?.name || item.title || '—',
+        maintenance: (action?.name || item.title || '—') + (task?.dueEngineHours != null ? ' · ТО на '+checkHourFormat(task.dueEngineHours)+' м·ч' : '') + (item.completion?.engineHours != null ? ' · Выполнено при '+checkHourFormat(item.completion.engineHours)+' м·ч' : ''),
         comment: item.comment || '—'
       };
     }
@@ -1494,6 +1497,11 @@
       const deptActions = getDeptActions(); const deptComps = getDeptCompletions();
       const overdue = [];
       deptActions.forEach(action => {
+        if (action.scheduleType === 'hours') {
+          const equipment=c.equipment.find(e=>e.id===action.equipmentId);
+          if (equipment?.engineHours != null && equipment.engineHours >= action.nextDueHours) overdue.push({actionName:action.name,equipName:equipment.name,daysOverdue:0,statusText:checkHourScheduleText(action,equipment),hoursOverdue:Math.round((equipment.engineHours-action.nextDueHours)*10)/10});
+          return;
+        }
         const equip = c.equipment.find(e => e.id === action.equipmentId);
         const last = deptComps.filter(comp => comp.actionId === action.id).sort((a,b) => b.date.localeCompare(a.date))[0];
         let daysOverdue = 0, statusText = '';
@@ -1517,7 +1525,7 @@
             <div><div class="font-medium text-sm">${esc(item.actionName)}</div>
             <div class="text-xs text-muted">${esc(item.equipName)}</div>
             <div class="text-xs text-subtle mt-1">${item.statusText}</div></div>
-            <div class="text-right"><div class="text-sm font-semibold text-danger">${item.daysOverdue} дн.</div></div>
+            <div class="text-right"><div class="text-sm font-semibold text-danger">${item.hoursOverdue == null ? item.daysOverdue+' дн.' : checkHourFormat(item.hoursOverdue)+' м·ч'}</div></div>
           </div>`).join('');
       }
       const employees = getDeptUsers();
@@ -1647,6 +1655,10 @@
       document.getElementById('action-name').value = '';
       document.getElementById('action-desc').value = '';
       document.getElementById('action-freq').value = '7';
+      document.getElementById('action-schedule-type').value = 'days';
+      document.getElementById('action-hours-interval').value = '2000';
+      document.getElementById('action-save').disabled = false;
+      checkSetActionSchedule();
       document.getElementById('modal-action').classList.remove('hidden');
     }
     function closeActionModal() { document.getElementById('modal-action').classList.add('hidden'); }
@@ -1654,19 +1666,26 @@
       if(!canManageDepartment(getActiveDeptId()))return toast('Недостаточно прав в этом подразделении');
       const name = document.getElementById('action-name').value.trim();
       if (!name) return toast('Укажите название');
+      const schedule = checkHourActionValues();
+      if (!schedule) return;
+      if (document.getElementById('action-save').disabled) return;
       const company = getCompany();
       const action = {id:uid(), equipmentId:document.getElementById('action-equip').value,
         name, description:document.getElementById('action-desc').value.trim(),
-        frequency:parseInt(document.getElementById('action-freq').value,10), departmentId:getActiveDeptId()};
-      const {error} = await supabaseClient.from('maintenance_actions').insert({
+        frequency:schedule.schedule_type === 'hours' ? 1 : parseInt(document.getElementById('action-freq').value,10), departmentId:getActiveDeptId()};
+      const button = document.getElementById('action-save');
+      button.disabled = true;
+      let error;
+      try { ({error} = await supabaseClient.from('maintenance_actions').insert({
         id:action.id, company_id:company.id, department_id:action.departmentId,
         equipment_id:action.equipmentId, name:action.name, description:action.description || null,
-        frequency:action.frequency
-      });
-      if (error) return toast('Не удалось сохранить ТО: ' + error.message);
+        frequency:action.frequency, ...schedule
+      })); } catch (requestError) { error = requestError; } finally { button.disabled = false; }
+      if (error) { document.getElementById('action-schedule-status').textContent = 'Не удалось сохранить ТО: '+error.message; return; }
+      action.scheduleType = schedule.schedule_type; action.hoursInterval = schedule.hours_interval;
       company.actions.push(action);
       closeActionModal(); renderActions();
-      try {await hydrateCurrentUser();renderActions();toast('ТО сохранено');}
+      try {await hydrateCurrentUser();if(getUser()?.role==='manager'){currentDeptId=action.departmentId;renderDeptSelect();}renderActions();toast('ТО сохранено');}
       catch(error){toast('ТО сохранено. Не удалось обновить задачи: '+error.message);}
     }
     async function deleteAction(id) {
@@ -1893,6 +1912,7 @@
           blocked_worker_name:task.blockedWorkerName || null, blocked_at:task.blockedAt || null
         }).eq('id',task.id).eq('company_id',c.id);
         if (taskError) throw taskError;
+        if (task.dueEngineHours != null && completionStatus === 'done') await window.checkRefreshHourCompletion?.();
         void refreshMaintenanceNotifications().catch(console.error);
 
         closeCompleteModal();

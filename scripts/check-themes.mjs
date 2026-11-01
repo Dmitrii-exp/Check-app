@@ -21,7 +21,7 @@ try{
  const from=table=>{const b={select(){return b},eq(){return b},order(){return b},limit(){return b},maybeSingle:async()=>({data:table==='profiles'?rows.profiles[0]:rows[table]}),single:async()=>({data:rows[table]}),then(resolve){return Promise.resolve({data:rows[table]||[]}).then(resolve)}};return b;};
  window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:null}}),getUser:async()=>({data:{user:{id:'owner',email:'owner@test.invalid'}}}),onAuthStateChange:()=>({}),signOut:async()=>({})},from,rpc:async(name)=>{themeCalls.push(name);return{data:name==='get_current_work_limits'?{max_departments:1,max_equipment:5,work_active:true,active_department_ids:['dep'],active_equipment_ids:['machine']}:name==='is_super_admin'||name==='current_company_is_unlimited'?false:0};},functions:{invoke:async()=>({data:{data:[]}})}})};
  });
- for(const file of ['js/photo-attachments.js','js/consumables.js','js/team.js','js/interface.js','js/app.js','js/calendar-core.js'])await page.addScriptTag({path:file});
+ for(const file of ['js/photo-attachments.js','js/consumables.js','js/team.js','js/interface.js','js/engine-hours.js','js/app.js','js/calendar-core.js'])await page.addScriptTag({path:file});
  await page.evaluate(async()=>{await hydrateCurrentUser();enterApp();});
  // Dashboard navigation uses the same scope as the global selector.
  await page.evaluate(()=>{

@@ -10,9 +10,10 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1
 try{
  browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE,args:['--no-sandbox','--disable-dev-shm-usage']});
  const context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage();await page.emulateMedia({reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('https://fonts.googleapis.com/**',r=>r.abort());await page.goto(url);
+ assert.equal(await page.locator('#auth-screen [data-theme-control]').count(),0);assert.equal(await page.locator('[data-theme-control]').count(),1);
  assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'dark');
- await page.locator('#auth-screen [data-theme-choice="light"]').click();assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'light');assert.equal(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor),'rgb(244, 246, 251)');assert.equal(await page.evaluate(()=>getComputedStyle(document.body).color),'rgb(23, 36, 56)');
- await page.reload();assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'light');assert.equal(await page.locator('#auth-screen [data-theme-choice="light"]').getAttribute('aria-pressed'),'true');
+ await page.evaluate(()=>{document.getElementById('app-screen').classList.remove('hidden');document.getElementById('auth-screen').classList.add('hidden');document.querySelector('#page-cabinet').classList.remove('hidden');});await page.locator('#page-cabinet [data-theme-choice="light"]').click();assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'light');assert.equal(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor),'rgb(244, 246, 251)');assert.equal(await page.evaluate(()=>getComputedStyle(document.body).color),'rgb(23, 36, 56)');
+ await page.reload();assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'light');assert.equal(await page.locator('#page-cabinet [data-theme-choice="light"]').getAttribute('aria-pressed'),'true');
  await page.screenshot({path:'/tmp/check-theme-light-login.png'});
  await page.evaluate(()=>{
  const today=new Date().toISOString().slice(0,10);window.themeCalls=[];
@@ -20,7 +21,7 @@ try{
  const from=table=>{const b={select(){return b},eq(){return b},order(){return b},limit(){return b},maybeSingle:async()=>({data:table==='profiles'?rows.profiles[0]:rows[table]}),single:async()=>({data:rows[table]}),then(resolve){return Promise.resolve({data:rows[table]||[]}).then(resolve)}};return b;};
  window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:null}}),getUser:async()=>({data:{user:{id:'owner',email:'owner@test.invalid'}}}),onAuthStateChange:()=>({}),signOut:async()=>({})},from,rpc:async(name)=>{themeCalls.push(name);return{data:name==='get_current_work_limits'?{max_departments:1,max_equipment:5,work_active:true,active_department_ids:['dep'],active_equipment_ids:['machine']}:name==='is_super_admin'||name==='current_company_is_unlimited'?false:0};},functions:{invoke:async()=>({data:{data:[]}})}})};
  });
- for(const file of ['js/photo-attachments.js','js/consumables.js','js/team.js','js/interface.js','js/app.js','js/calendar-core.js'])await page.addScriptTag({path:file});
+ for(const file of ['js/photo-attachments.js','js/consumables.js','js/team.js','js/interface.js','js/engine-hours.js','js/app.js','js/calendar-core.js'])await page.addScriptTag({path:file});
  await page.evaluate(async()=>{await hydrateCurrentUser();enterApp();});
 
  // Test new navigation against the existing role-filtered pages and handlers.
