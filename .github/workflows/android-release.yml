@@ -2,9 +2,12 @@ name: Publish signed Android update
 
 on:
   workflow_dispatch:
+  push:
+    branches: [release/android-v1.2.12]
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   release:
@@ -85,3 +88,7 @@ jobs:
             echo "::error::Release tag already exists or release publishing failed. Bump package.json version for a new release."
             exit 1
           }
+      - name: Deploy release download to REG.RU with backup
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-reg-ru.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}"
