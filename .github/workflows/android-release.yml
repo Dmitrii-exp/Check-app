@@ -2,12 +2,9 @@ name: Publish signed Android update
 
 on:
   workflow_dispatch:
-  push:
-    branches: [release/android-v1.2.10]
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   release:
@@ -72,8 +69,10 @@ jobs:
           grep '^Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/old-signature.txt" > "$RUNNER_TEMP/old-cert.txt"
           test -s "$RUNNER_TEMP/new-cert.txt"
           cmp "$RUNNER_TEMP/new-cert.txt" "$RUNNER_TEMP/old-cert.txt"
-          "$BUILD_TOOLS/aapt" dump badging android/app/build/outputs/apk/release/app-release.apk | awk 'NR==1' | grep "package: name='ru.checkapp.mobile' versionCode='10210' versionName='1.2.10'"
-          echo 'Verified APK signature matches v1.2.9 and Android version increased to 1.2.10 (10210).'
+          VERSION=$(node -p "require('./package.json').version")
+          VERSION_CODE=$(node -p "require('./package.json').version.split('.').reduce((code,part)=>code*100+Number(part),0)")
+          "$BUILD_TOOLS/aapt" dump badging android/app/build/outputs/apk/release/app-release.apk | awk 'NR==1' | grep "package: name='ru.checkapp.mobile' versionCode='$VERSION_CODE' versionName='$VERSION'"
+          echo "Verified APK signature matches v1.2.9 and Android version is $VERSION ($VERSION_CODE)."
       - name: Publish GitHub Release with changelog
         env:
           GH_TOKEN: ${{ github.token }}
@@ -85,7 +84,3 @@ jobs:
             echo "::error::Release tag already exists or release publishing failed. Bump package.json version for a new release."
             exit 1
           }
-      - name: Deploy release download to REG.RU with backup
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run deploy-reg-ru.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}"
