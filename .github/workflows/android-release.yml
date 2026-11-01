@@ -62,12 +62,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -o pipefail
           python3 scripts/verify-android-apk.py android/app/build/outputs/apk/release/app-release.apk
           mkdir -p "$RUNNER_TEMP/previous-apk"
           gh release download v1.2.9 --repo "${{ github.repository }}" --pattern 'Check-App-v1.2.9.apk' --dir "$RUNNER_TEMP/previous-apk"
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
-          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk > "$RUNNER_TEMP/new-signature.txt"
-          "$BUILD_TOOLS/apksigner" verify --print-certs "$RUNNER_TEMP/previous-apk/Check-App-v1.2.9.apk" > "$RUNNER_TEMP/old-signature.txt"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk | tee "$RUNNER_TEMP/new-signature.txt"
+          "$BUILD_TOOLS/apksigner" verify --print-certs "$RUNNER_TEMP/previous-apk/Check-App-v1.2.9.apk" | tee "$RUNNER_TEMP/old-signature.txt"
           grep '^Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/new-signature.txt" > "$RUNNER_TEMP/new-cert.txt"
           grep '^Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/old-signature.txt" > "$RUNNER_TEMP/old-cert.txt"
           test -s "$RUNNER_TEMP/new-cert.txt"
