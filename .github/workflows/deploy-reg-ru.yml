@@ -55,6 +55,20 @@ jobs:
               exit 1
             fi
           done
+      - name: Back up every replaced server file before upload
+        env:
+          REG_FTP_HOST: ${{ secrets.REG_FTP_HOST }}
+          REG_FTP_USER: ${{ secrets.REG_FTP_USER }}
+          REG_FTP_PASSWORD: ${{ secrets.REG_FTP_PASSWORD }}
+        run: python3 scripts/backup-reg-ru.py --output "$RUNNER_TEMP/check-app-before-deploy"
+      - name: Preserve the recovery files
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-app-before-deploy-${{ github.run_id }}
+          path: ${{ runner.temp }}/check-app-before-deploy
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
       - name: Upload website over verified FTPS
         env:
           REG_FTP_HOST: ${{ secrets.REG_FTP_HOST }}

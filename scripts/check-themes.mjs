@@ -10,9 +10,10 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1
 try{
  browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE,args:['--no-sandbox','--disable-dev-shm-usage']});
  const context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage();await page.emulateMedia({reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('https://fonts.googleapis.com/**',r=>r.abort());await page.goto(url);
+ assert.equal(await page.locator('#auth-screen [data-theme-control]').count(),0);assert.equal(await page.locator('[data-theme-control]').count(),1);
  assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'dark');
- await page.locator('#auth-screen [data-theme-choice="light"]').click();assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'light');assert.equal(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor),'rgb(244, 246, 251)');assert.equal(await page.evaluate(()=>getComputedStyle(document.body).color),'rgb(23, 36, 56)');
- await page.reload();assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'light');assert.equal(await page.locator('#auth-screen [data-theme-choice="light"]').getAttribute('aria-pressed'),'true');
+ await page.evaluate(()=>{document.getElementById('app-screen').classList.remove('hidden');document.getElementById('auth-screen').classList.add('hidden');document.querySelector('#page-cabinet').classList.remove('hidden');});await page.locator('#page-cabinet [data-theme-choice="light"]').click();assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'light');assert.equal(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor),'rgb(244, 246, 251)');assert.equal(await page.evaluate(()=>getComputedStyle(document.body).color),'rgb(23, 36, 56)');
+ await page.reload();assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'light');assert.equal(await page.locator('#page-cabinet [data-theme-choice="light"]').getAttribute('aria-pressed'),'true');
  await page.screenshot({path:'/tmp/check-theme-light-login.png'});
  await page.evaluate(()=>{
  const today=new Date().toISOString().slice(0,10);window.themeCalls=[];
@@ -20,7 +21,7 @@ try{
  const from=table=>{const b={select(){return b},eq(){return b},order(){return b},limit(){return b},maybeSingle:async()=>({data:table==='profiles'?rows.profiles[0]:rows[table]}),single:async()=>({data:rows[table]}),then(resolve){return Promise.resolve({data:rows[table]||[]}).then(resolve)}};return b;};
  window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:null}}),getUser:async()=>({data:{user:{id:'owner',email:'owner@test.invalid'}}}),onAuthStateChange:()=>({}),signOut:async()=>({})},from,rpc:async(name)=>{themeCalls.push(name);return{data:name==='get_current_work_limits'?{max_departments:1,max_equipment:5,work_active:true,active_department_ids:['dep'],active_equipment_ids:['machine']}:name==='is_super_admin'||name==='current_company_is_unlimited'?false:0};},functions:{invoke:async()=>({data:{data:[]}})}})};
  });
- for(const file of ['js/photo-attachments.js','js/consumables.js','js/team.js','js/app.js','js/calendar-core.js'])await page.addScriptTag({path:file});
+ for(const file of ['js/photo-attachments.js','js/consumables.js','js/team.js','js/interface.js','js/app.js','js/calendar-core.js'])await page.addScriptTag({path:file});
  await page.evaluate(async()=>{await hydrateCurrentUser();enterApp();});
  // Dashboard navigation uses the same scope as the global selector.
  await page.evaluate(()=>{
@@ -31,7 +32,7 @@ try{
    renderDashboard();
  });
  assert.equal(await page.locator('#dashboard-dept-select option').count(),2);
- await page.locator('#dashboard-dept-select').selectOption('dep2');
+ await page.locator('#dept-select').selectOption('dep2');
  assert.equal(await page.locator('#dept-select').inputValue(),'dep2');
  assert.equal(await page.locator('#stat-equipment').textContent(),'2');
  assert.match(await page.locator('#dash-today-list').textContent(),/Проверить компрессор/);
@@ -39,7 +40,7 @@ try{
  await page.locator('#dept-select').selectOption('dep');
  assert.equal(await page.locator('#dashboard-dept-select').inputValue(),'dep');
  assert.equal(await page.locator('#stat-equipment').textContent(),'1');
- await page.locator('#dashboard-dept-select').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+ await page.locator('#dept-select').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
  assert.equal(await page.locator('#dept-select').inputValue(),'dep2');
  await page.evaluate(()=>{getCompany().subscription={planId:'free'};getCompany().workLimits.active_department_ids=['dep'];renderDashboard();});
  assert.equal(await page.locator('#dashboard-dept-select option[value="dep2"]').isDisabled(),true);
@@ -54,7 +55,7 @@ try{
  await page.evaluate(()=>{getCompany().departments=window.savedDepartments;renderDashboard();});
  for(const theme of ['light','dark']){
   await page.evaluate(()=>showPage('cabinet'));await page.locator('#page-cabinet [data-theme-choice="'+theme+'"]').click();
-  assert.equal(await page.locator('#auth-screen [data-theme-choice="'+theme+'"]').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('#page-cabinet [data-theme-choice="'+theme+'"]').getAttribute('aria-pressed'),'true');
   for(const name of ['calendar','dashboard','today','equipment','actions','consumables','team','history','reports','cabinet']){
    await page.evaluate(name=>name==='calendar'?openCalendar():showPage(name),name);await page.waitForTimeout(60);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'horizontal overflow: '+name);
@@ -75,7 +76,7 @@ try{
  assert.deepEqual(errors,[]);
  // Preference also synchronizes between already-open tabs.
  const second=await context.newPage();await second.route('https://fonts.googleapis.com/**',r=>r.abort());await second.goto(url);
- await page.evaluate(()=>{document.getElementById('app-screen').classList.add('hidden');document.getElementById('auth-screen').classList.remove('hidden');});await page.locator('#auth-screen [data-theme-choice="light"]').click();await second.waitForFunction(()=>document.documentElement.dataset.theme==='light');
- const blocked=await browser.newContext();await blocked.addInitScript(()=>{Storage.prototype.setItem=function(){throw new DOMException('Blocked','SecurityError');};});const blockedPage=await blocked.newPage();await blockedPage.route('https://fonts.googleapis.com/**',r=>r.abort());await blockedPage.goto(url);await blockedPage.locator('#auth-screen [data-theme-choice="light"]').click();assert.equal(await blockedPage.evaluate(()=>document.documentElement.dataset.theme),'light');assert.match(await blockedPage.locator('#auth-screen [data-theme-status]').textContent(),/Не удалось сохранить/);await blocked.close();
- console.log('PASS: dashboard department switching/synchronized counts/tasks, long names, frozen/empty/role guards; theme persistence/reload, both controls synchronized, device preference survives logout, cross-tab changes, light/dark page matrix and dialogs, contrast-oriented semantic palette, no mobile overflow or JS errors (mocked data)');
+ await page.evaluate(()=>{showPage('cabinet');});await page.locator('#page-cabinet [data-theme-choice="light"]').click();await second.waitForFunction(()=>document.documentElement.dataset.theme==='light');
+ const blocked=await browser.newContext();await blocked.addInitScript(()=>{Storage.prototype.setItem=function(){throw new DOMException('Blocked','SecurityError');};});const blockedPage=await blocked.newPage();await blockedPage.route('https://fonts.googleapis.com/**',r=>r.abort());await blockedPage.goto(url);await blockedPage.evaluate(()=>{document.getElementById('app-screen').classList.remove('hidden');document.getElementById('auth-screen').classList.add('hidden');document.querySelector('#page-cabinet').classList.remove('hidden');});await blockedPage.locator('#page-cabinet [data-theme-choice="light"]').click();assert.equal(await blockedPage.evaluate(()=>document.documentElement.dataset.theme),'light');assert.match(await blockedPage.locator('#page-cabinet [data-theme-status]').textContent(),/Не удалось сохранить/);await blocked.close();
+ console.log('PASS: dashboard department switching/synchronized counts/tasks, long names, frozen/empty/role guards; theme persistence/reload, theme control exists only in cabinet, device preference survives logout, cross-tab changes, light/dark page matrix and dialogs, contrast-oriented semantic palette, no mobile overflow or JS errors (mocked data)');
 }finally{if(browser)await browser.close();server.close();}
