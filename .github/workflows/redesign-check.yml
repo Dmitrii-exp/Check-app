@@ -27,4 +27,5 @@ jobs:
       - name: Verify generated artifacts
         run: |
           test -s css/tailwind.css
-          test -f dist/index.html || test -f www/index.html || test -f mobile/index.html
+          test -s dist-mobile/index.html
+          test -s dist-mobile/js/interface.js
