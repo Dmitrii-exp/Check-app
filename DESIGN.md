@@ -197,3 +197,12 @@ button, while equipment cards reuse the same entry dialog for staff. The dialog
 uses native focus containment/Escape and shared --check-*-rgb theme tokens; 48px
 controls, an inline status region, duplicate-submit protection and stable actions.
 Task cards keep the existing photo workflow and add the actual hour threshold.
+
+## Department Excel export (2026-11-01)
+
+Reports owns an export section with an independent, explicitly labelled native
+department select for the file. Existing on-screen report scope stays with the
+global department selector. Export uses shared CSS tokens, 48px controls, stable
+button width and inline live status. The Excel dependency loads locally on demand.
+Workbook styling uses the same calm navy/neutral palette, frozen headers, filters,
+wrapped descriptions and typed dates/counts.

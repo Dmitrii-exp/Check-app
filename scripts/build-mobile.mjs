@@ -20,6 +20,10 @@ fs.copyFileSync(path.join(root, 'app', '.htaccess'), path.join(output, 'app', '.
 const supabaseUmd = path.join(root, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js');
 if (!fs.existsSync(supabaseUmd)) throw new Error('Missing local Supabase UMD bundle: ' + supabaseUmd);
 fs.copyFileSync(supabaseUmd, path.join(output, 'js', 'supabase.js'));
+// Excel is bundled locally and loaded only when a report is requested.
+fs.copyFileSync(path.join(root, 'node_modules/exceljs/dist/exceljs.min.js'), path.join(output, 'js/exceljs.min.js'));
+fs.mkdirSync(path.join(output, 'public/licenses'), {recursive:true});
+fs.copyFileSync(path.join(root, 'node_modules/exceljs/LICENSE'), path.join(output, 'public/licenses/exceljs.txt'));
 const version = JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version;
 let html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
 html=html.replace(/(<p\s+id="auth-version"[^>]*>)[^<]*(<\/p>)/, '$1Версия '+version+'$2');

@@ -117,3 +117,22 @@ schedules retain their day frequency. Each new action selects days or engine hou
 No speculative calendar dates are shown for hour schedules. Existing date tasks,
 roles, billing, Auth and photo validation remain authoritative. Audit history
 is tenant/department scoped and follows company/equipment cascade deletion.
+
+## Department Excel export
+
+Business source: user request 2026-11-01, download employee completion counts and
+completed/uncompleted tasks for one selected department.
+
+| Capability | Canonical owner | Contract |
+| --- | --- | --- |
+| Select/Listbox | Report export native select | Manager chooses any visible department; lead only own department; selection is for the file |
+| Form/status | report-export.js + report-export-status | Preserve choice on error, explicit busy state, block duplicate clicks, announce actual save handoff |
+| Data | Existing Supabase RLS | Read-only fresh company/department queries, keyset pagination, no partial file on API failure or account change |
+| Workbook | report-export.js | Three sheets: employee summary, completed, unfinished; include TO and one-time tasks; typed dates and counts, filters/frozen headers |
+| Attribution | Existing result and assignment fields | Actual worker name from report; sender separate; pending by assigned user or explicit blocked worker name; otherwise unassigned group |
+| Dates | Existing UTC task dates | Export all history; unfinished includes today/overdue, excludes future planned tasks; no claim of historical snapshot reconstruction |
+| Save | Browser Blob / native cache + Share | Local workbook; no upload to server; Android user chooses save destination via system menu |
+
+Manual names without a unique account-name match remain explicitly labelled, not
+asserted to be verified account identities. Completion report wins over a transient
+pending task status. Duplicate completion records for one task count once.

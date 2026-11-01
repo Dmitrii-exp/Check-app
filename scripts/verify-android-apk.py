@@ -6,7 +6,7 @@ from pathlib import Path
 
 version = json.loads(Path('package.json').read_text())['version']
 with zipfile.ZipFile(sys.argv[1]) as apk:
-    for path in ['js/interface.js', 'js/engine-hours.js', 'js/app.js', 'css/styles.css', 'js/update-center.js']:
+    for path in ['js/report-export.js', 'js/exceljs.min.js', 'js/interface.js', 'js/engine-hours.js', 'js/app.js', 'css/styles.css', 'js/update-center.js']:
         assert apk.read('assets/public/' + path) == Path('dist-mobile', path).read_bytes(), path
     html = apk.read('assets/public/index.html').decode()
     assert html == Path('dist-mobile/index.html').read_text(), 'Packaged HTML differs from build'
@@ -15,4 +15,8 @@ with zipfile.ZipFile(sys.argv[1]) as apk:
     assert html.count('data-theme-control') == 1, 'Keep one theme control in cabinet'
     assert 'Версия ' + version in html, 'Incorrect displayed version'
     assert json.loads(apk.read('assets/capacitor.config.json'))['appId'] == 'ru.checkapp.mobile'
+    plugins = json.loads(apk.read('assets/capacitor.plugins.json'))
+    classes = [p['classpath'] for p in plugins]
+    assert any(name.endswith('.FilesystemPlugin') for name in classes), 'Missing native file saving plugin'
+    assert any(name.endswith('.SharePlugin') for name in classes), 'Missing native share/save menu plugin'
 print('PASS: APK contains the verified UI and version ' + version)

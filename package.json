@@ -1,6 +1,6 @@
 {
   "name": "check-app",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "private": true,
   "description": "Check App — система контроля технического обслуживания",
   "scripts": {
@@ -14,12 +14,15 @@
     "build:mobile": "npm run build:css && node scripts/build-mobile.mjs"
   },
   "dependencies": {
-    "@capacitor/core": "^8.0.0",
     "@capacitor/android": "^8.0.0",
-    "@capacitor/ios": "^8.0.0",
     "@capacitor/app": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/ios": "^8.0.0",
     "@capacitor/local-notifications": "^8.0.0",
-    "@supabase/supabase-js": "2.114.0"
+    "@capacitor/share": "8.0.3",
+    "@supabase/supabase-js": "2.114.0",
+    "exceljs": "4.4.0"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.0.0",

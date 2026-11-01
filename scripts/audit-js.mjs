@@ -1,13 +1,13 @@
 import fs from 'node:fs';
 
 const html = ['index.html','app/index.html'].map(file=>fs.readFileSync(file,'utf8')).join('\n');
-const js = ['js/app.js', 'js/interface.js', 'js/engine-hours.js', 'js/theme.js', 'js/team.js', 'js/company-deletion.js', 'js/update-center.js', 'js/calendar-core.js', 'js/onboarding.js', 'js/consumables.js', 'js/photo-attachments.js'].map(file => fs.readFileSync(file, 'utf8')).join('\n');
+const js = ['js/app.js', 'js/interface.js', 'js/engine-hours.js', 'js/report-export.js', 'js/theme.js', 'js/team.js', 'js/company-deletion.js', 'js/update-center.js', 'js/calendar-core.js', 'js/onboarding.js', 'js/consumables.js', 'js/photo-attachments.js'].map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
 const defined = new Set();
 for (const match of js.matchAll(/(?:^|\n)\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)) defined.add(match[1]);
 for (const match of js.matchAll(/(?:^|\n)\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\(/g)) defined.add(match[1]);
 // Onboarding and other modules expose handlers by assigning functions to window.
-for (const match of js.matchAll(/\bwindow\.([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?function\s*\(/g)) defined.add(match[1]);
+for (const match of js.matchAll(/\b(?:window|root)\.([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?function\s*\(/g)) defined.add(match[1]);
 
 const referenced = new Set();
 for (const match of html.matchAll(/(?:onclick|onchange|oninput|onkeydown|onkeyup|onsubmit)\s*=\s*["']([^"']+)["']/gi)) {
