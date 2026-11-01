@@ -2,6 +2,9 @@ name: Deploy Check App to REG.RU
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - deploy/mobile-ui-20261101
 
 permissions:
   contents: read
