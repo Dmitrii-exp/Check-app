@@ -55,6 +55,25 @@ jobs:
       - name: Build signed release APK
         working-directory: android
         run: ./gradlew assembleRelease
+      - name: Verify packaged interface and upgrade signing certificate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          python3 scripts/verify-android-apk.py android/app/build/outputs/apk/release/app-release.apk
+          mkdir -p "$RUNNER_TEMP/previous-apk"
+          gh release download v1.2.9 --repo "${{ github.repository }}" --pattern 'Check-App-v1.2.9.apk' --dir "$RUNNER_TEMP/previous-apk"
+          BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk | tee "$RUNNER_TEMP/new-signature.txt"
+          "$BUILD_TOOLS/apksigner" verify --print-certs "$RUNNER_TEMP/previous-apk/Check-App-v1.2.9.apk" | tee "$RUNNER_TEMP/old-signature.txt"
+          sed -n 's/^.*certificate SHA-256 digest: //p' "$RUNNER_TEMP/new-signature.txt" | sort -u > "$RUNNER_TEMP/new-cert.txt"
+          sed -n 's/^.*certificate SHA-256 digest: //p' "$RUNNER_TEMP/old-signature.txt" | sort -u > "$RUNNER_TEMP/old-cert.txt"
+          test -s "$RUNNER_TEMP/new-cert.txt"
+          cmp "$RUNNER_TEMP/new-cert.txt" "$RUNNER_TEMP/old-cert.txt"
+          VERSION=$(node -p "require('./package.json').version")
+          VERSION_CODE=$(node -p "require('./package.json').version.split('.').reduce((code,part)=>code*100+Number(part),0)")
+          "$BUILD_TOOLS/aapt" dump badging android/app/build/outputs/apk/release/app-release.apk | awk 'NR==1' | grep "package: name='ru.checkapp.mobile' versionCode='$VERSION_CODE' versionName='$VERSION'"
+          echo "Verified APK signature matches v1.2.9 and Android version is $VERSION ($VERSION_CODE)."
       - name: Publish GitHub Release with changelog
         env:
           GH_TOKEN: ${{ github.token }}
