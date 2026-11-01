@@ -69,12 +69,14 @@ jobs:
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk | tee "$RUNNER_TEMP/new-signature.txt"
           "$BUILD_TOOLS/apksigner" verify --print-certs "$RUNNER_TEMP/previous-apk/Check-App-v1.2.9.apk" | tee "$RUNNER_TEMP/old-signature.txt"
-          grep '^Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/new-signature.txt" > "$RUNNER_TEMP/new-cert.txt"
-          grep '^Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/old-signature.txt" > "$RUNNER_TEMP/old-cert.txt"
+          sed -n 's/^.*certificate SHA-256 digest: //p' "$RUNNER_TEMP/new-signature.txt" | sort -u > "$RUNNER_TEMP/new-cert.txt"
+          sed -n 's/^.*certificate SHA-256 digest: //p' "$RUNNER_TEMP/old-signature.txt" | sort -u > "$RUNNER_TEMP/old-cert.txt"
           test -s "$RUNNER_TEMP/new-cert.txt"
           cmp "$RUNNER_TEMP/new-cert.txt" "$RUNNER_TEMP/old-cert.txt"
-          "$BUILD_TOOLS/aapt" dump badging android/app/build/outputs/apk/release/app-release.apk | awk 'NR==1' | grep "package: name='ru.checkapp.mobile' versionCode='10210' versionName='1.2.10'"
-          echo 'Verified APK signature matches v1.2.9 and Android version increased to 1.2.10 (10210).'
+          VERSION=$(node -p "require('./package.json').version")
+          VERSION_CODE=$(node -p "require('./package.json').version.split('.').reduce((code,part)=>code*100+Number(part),0)")
+          "$BUILD_TOOLS/aapt" dump badging android/app/build/outputs/apk/release/app-release.apk | awk 'NR==1' | grep "package: name='ru.checkapp.mobile' versionCode='$VERSION_CODE' versionName='$VERSION'"
+          echo "Verified APK signature matches v1.2.9 and Android version is $VERSION ($VERSION_CODE)."
       - name: Publish GitHub Release with changelog
         env:
           GH_TOKEN: ${{ github.token }}
