@@ -32,6 +32,9 @@ assert.equal(saved.getWorksheet('Сводка').getRow(8 + data.summary.length).
 assert.equal(saved.getWorksheet('Сводка').getRow(8 + data.summary.length).getCell(4).result, 4);
 assert.equal(saved.getWorksheet('Выполненные').getColumn(14).hidden, true);
 assert.equal(saved.getWorksheet('Невыполненные').views[0].ySplit, 7);
+assert.equal(saved.getWorksheet('Выполненные').autoFilter, 'A7:M12');
+assert.equal(saved.getWorksheet('Невыполненные').autoFilter, 'A7:M11');
+assert.equal(saved.getWorksheet('Сводка').autoFilter, 'A7:F' + (7 + data.summary.length));
 const rows = []; saved.getWorksheet('Выполненные').eachRow((r, i) => { if (i >= 8) rows.push(r); });
 const first = rows.find(r => r.getCell(13).value === 't1');
 assert.equal(first.getCell(5).value, '0012'); assert.ok(first.getCell(7).value instanceof Date); assert.equal(first.getCell(11).value, 4000);

@@ -111,6 +111,7 @@
         row.height = Math.min(409, Math.max(30, lines * 15));
         row.eachCell(cell => { cell.alignment = {vertical: 'top', wrapText: true}; if (!cell.font?.bold) cell.font = {name: 'Calibri', size: 11, color: {argb: 'FF172438'}}; if (index % 2 === 0) cell.fill = {type: 'pattern', pattern: 'solid', fgColor: {argb: 'FFF4F6FB'}}; });
       });
+      ws.autoFilter = {from: {row: 7, column: 1}, to: {row: Math.max(7, ws.rowCount - (ws === sheets.summary ? 1 : 0)), column: ws === sheets.summary ? 6 : 13}};
       ws.pageSetup = {orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9};
     }
     for (const ws of [sheets.done, sheets.pending]) { ws.getColumn(6).numFmt = 'dd.mm.yyyy'; ws.getColumn(14).hidden = true; }
