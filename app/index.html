@@ -62,6 +62,10 @@
           <span id="login-submit-text">Войти</span>
         </button>
         <p id="login-loading-status" class="hidden text-center text-sm text-muted" role="status" aria-live="polite">Выполняется вход…</p>
+        <div id="session-restore-retry" class="hidden text-center text-sm text-muted">
+          <p role="status">Не удалось восстановить сохранённый вход. Проверьте интернет и попробуйте снова.</p>
+          <button type="button" onclick="restoreWebsiteSession()">Восстановить вход</button>
+        </div>
         <button type="button" onclick="openPasswordRecovery()">Забыли пароль?</button>
       </form>
 
@@ -721,7 +725,7 @@
   <script src="js/report-export.js?v=1.2.13"></script>
   <script src="js/engine-hours.js?v=20261101-report-2"></script>
   <script src="js/interface.js?v=20261101-report-2"></script>
-  <script src="js/app.js?v=20261101-report-2"></script>
+  <script src="js/app.js?v=20261110-session"></script>
   <script src="js/calendar.js?v=20261101-report-2"></script>
 </body>
 </html>

@@ -106,11 +106,13 @@
       return false;
     }
 
-    async function hydrateCurrentUser(signal) {
+    async function hydrateCurrentUser(signal, authUser) {
       checkAuthAttempt(signal);
-      const { data: authData } = await supabaseClient.auth.getUser();
-      checkAuthAttempt(signal);
-      const authUser = authData?.user;
+      if (!authUser) {
+        const { data: authData } = await supabaseClient.auth.getUser();
+        checkAuthAttempt(signal);
+        authUser = authData?.user;
+      }
       if (!authUser) return false;
 
       const { data: profile, error: profileError } = await supabaseClient
@@ -833,6 +835,7 @@
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('Введите корректный Email.');
 
       loginInProgress = true;
+      document.getElementById('session-restore-retry')?.classList.add('hidden');
       setLoginLoading(true, 'Проверяем данные для входа…');
       try {
         await withAuthDeadline(async (signal) => {
@@ -2220,6 +2223,9 @@
       if (!document.getElementById('app-screen').classList.contains('hidden')) return;
       if (loginInProgress) return;
       if (restoringWebsiteSession) return restoringWebsiteSession;
+      const retry = document.getElementById('session-restore-retry');
+      retry?.classList.add('hidden');
+      setLoginLoading(true, 'Восстанавливаем сохранённый вход…');
       restoringWebsiteSession = (async () => {
         try {
           await withAuthDeadline(async (signal) => {
@@ -2228,12 +2234,13 @@
             if (loginInProgress) return;
             if (error) throw error;
             if (!data?.session) return;
-            // getUser validates and refreshes the current identity before restoring UI.
+            // Validate the saved account once and reuse that identity to load its profile.
             const { data: identity, error: identityError } = await supabaseClient.auth.getUser();
             checkAuthAttempt(signal);
             if (loginInProgress) return;
-            if (identityError || !identity?.user) return;
-            const ok = await hydrateCurrentUser(signal);
+            if (identityError) throw identityError;
+            if (!identity?.user) return;
+            const ok = await hydrateCurrentUser(signal, identity.user);
             checkAuthAttempt(signal);
             if (ok && !passwordRecoveryActive && !loginInProgress) {
               enterApp();
@@ -2241,11 +2248,13 @@
             }
           });
         } catch (e) {
-          if (e.code === 'AUTH_SUPERSEDED') return;
+          if (e.code === 'AUTH_SUPERSEDED' || e.name === 'AuthSessionMissingError' ||
+              ['session_not_found', 'refresh_token_not_found', 'refresh_token_already_used'].includes(e.code)) return;
           console.error('Check App session restoration error:', e);
-          showError('Не удалось восстановить вход. Проверьте интернет и попробуйте снова.');
+          retry?.classList.remove('hidden');
         } finally {
           restoringWebsiteSession = null;
+          if (!loginInProgress) setLoginLoading(false);
         }
       })();
       return restoringWebsiteSession;
@@ -2255,6 +2264,10 @@
     if(typeof initEmailInvitation==='function')void initEmailInvitation();
     window.addEventListener('pageshow', event => {
       if (event.persisted) void restoreWebsiteSession();
+    });
+    window.addEventListener('online', () => {
+      const retry = document.getElementById('session-restore-retry');
+      if (retry && !retry.classList.contains('hidden')) void restoreWebsiteSession();
     });
   
     document.addEventListener('keydown', (event) => {
