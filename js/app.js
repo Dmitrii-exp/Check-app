@@ -2217,7 +2217,8 @@
     // Supabase persists and refreshes the session; passwords are never stored here.
     let restoringWebsiteSession = null;
     async function restoreWebsiteSession() {
-      if (!supabaseClient || passwordRecoveryActive || window.emailInvitationActive || window.location.hash.includes('invite_token=') ||
+      if (!supabaseClient || passwordRecoveryActive || window.emailInvitationActive || window.location.hash === '#register' ||
+          window.location.hash.includes('invite_token=') ||
           window.location.hash.includes('type=recovery') ||
           window.location.search.includes('type=recovery')) return;
       if (!document.getElementById('app-screen').classList.contains('hidden')) return;
@@ -2244,6 +2245,7 @@
             checkAuthAttempt(signal);
             if (ok && !passwordRecoveryActive && !loginInProgress) {
               enterApp();
+              document.documentElement.removeAttribute('data-opening-session');
               await handlePaymentReturn();
             }
           });
@@ -2259,7 +2261,9 @@
       })();
       return restoringWebsiteSession;
     }
-    void restoreWebsiteSession();
+    void restoreWebsiteSession().finally(() => {
+      document.documentElement.removeAttribute('data-opening-session');
+    });
     void handlePasswordRecoveryLink();
     if(typeof initEmailInvitation==='function')void initEmailInvitation();
     window.addEventListener('pageshow', event => {
